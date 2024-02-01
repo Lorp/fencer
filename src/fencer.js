@@ -68,6 +68,9 @@ function initFencer() {
 	fontinfo.addEventListener("drop", onDropFont);
 
 
+	// init the mappings xml
+	const mappingsEl = document.querySelector(".mappings-xml textarea");
+	mappingsEl.value = "<mappings>\n</mappings>";
 
 
 
