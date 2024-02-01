@@ -25,13 +25,19 @@ function onDropFont (e) {
 		const font = new SamsaFont(new SamsaBuffer(arrayBuffer));
 		let str = "";
 
-		// set name
+		// filename, font name
+		str += file.name + "\n";
 		str += font.names[6] + "\n";
-		str += "-".repeat(font.names[6].length) + "\n";
+		//str += "-".repeat(font.names[6].length) + "\n";
+		str += "---\n";
+
+		// file name
+
 
 		// repeat string 6 times
 
 		// report axes
+		str += "AXES: \n";
 		font.fvar.axes.forEach(axis => {
 			str += `${axis.axisTag} ${axis.minValue} ${axis.defaultValue} ${axis.maxValue}\n`;
 		});
