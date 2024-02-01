@@ -1,11 +1,6 @@
 "use strict"
 
-// import the samsa-core module
-//import { SamsaFont, SamsaInstance, SamsaBuffer, SAMSAGLOBAL } from "https://lorp.github.io/samsa-core/src/samsa-core.js";
-//import { * }  from "./models.js";
-
-//export {SamsaFont, SamsaGlyph, SamsaInstance, SamsaBuffer, SAMSAGLOBAL} from "https://lorp.github.io/samsa-core/src/samsa-core.js";
-
+// import samsa-core and fontTools.varLib models
 import { SamsaFont, SamsaInstance, SamsaBuffer, SAMSAGLOBAL } from "https://lorp.github.io/samsa-core/src/samsa-core.js";
 import { normalizeValue, piecewiseLinearMap } from "./models.js";
 
@@ -21,8 +16,7 @@ function onDropFont (e) {
 	e.preventDefault();
 
 	// open font as SamsaFont
-
-
+	// - not yet
 
 
 	// get arrayBuffer from dropped object
@@ -48,12 +42,13 @@ function onDropFont (e) {
 		// set the font face to the arraybuffer
 		const fontFace = new FontFace(font.names[6], arrayBuffer);
 		fontFace.load().then(loadedFace => {
+			const renderEl = document.querySelector(".render-native");
 			document.fonts.add(loadedFace);
-			document.querySelector(".render-native").style.fontFamily = font.names[6];
-			console.log("loaded font: " + font.names[6])
+			renderEl.style.fontFamily = font.names[6];
+			renderEl.style.color = "black";
+			console.log("loaded font: " + font.names[6]);
 		});
 	});
-
 }
 
 function initFencer() {
