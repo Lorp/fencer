@@ -22,9 +22,8 @@ body {
 	float: left;
 	position: relative;
 	display: grid;
-	grid-template-rows: auto 1fr;
+	grid-template-rows: auto 400px;
 	width: 200px;
-	height: 400px;
 	background-color: lightblue;
 }
 
@@ -36,14 +35,13 @@ body {
 	float: left;
 	position: relative;
 	display: grid;
-	grid-template-rows: auto 1fr;
+	grid-template-rows: auto 400px;
 	width: 400px;
-	height: 400px;
 	background-color: yellow;
 }
 
 .mappings-ui #mappings-visual {
-	background-color: red;
+	background-color: #eee;
 	width: 100%;
 	height: 100%;
 }
@@ -52,10 +50,18 @@ body {
 	float: left;
 	position: relative;
 	display: grid;
-	grid-template-rows: auto 1fr;
+	grid-template-rows: auto 400px;
 	background-color: #eee;
 	width: 400px;
 	height: 400px;
+}
+
+.output {
+	color: #093;
+}
+
+.input {
+	color: #c91616;
 }
 
 .mappings-xml textarea {
@@ -102,7 +108,7 @@ body {
 
 <body>
 
-	<div id="title-bar"><span style="font-weight:bold;">FENCER</span> 🤺 avar2 mappings creator</div>
+	<div id="title-bar"><span style="font-weight:bold;">FENCER</span> 🤺 avar2 mappings editor</div>
 
 	<div class="fontinfo">
 		<h3>Fontinfo</h3>
@@ -110,10 +116,17 @@ body {
 	</div>	
 
 	<div class="mappings-ui">
-		<h3>Mappings visual</h3>
-		<svg id="mappings-visual">
+		<h3>Mappings visual
 
-		</svg>
+			<button id="add-mapping" disabled>+</button>
+
+		</h3>
+		<!-- <svg id="mappings-visual">
+
+		</svg> -->
+		<!-- <div id="mappings-visual">
+
+		</div> -->
 	</div>	
 
 	<div class="mappings-xml">
@@ -125,10 +138,14 @@ body {
 
 	<div class="result">
 		<h3>Result
-		<select>
-			<option value="native">Native</option>
-			<option value="samsa">Samsa</option>
-		</select>
+		
+			<select>
+				<option value="native">Native</option>
+				<option value="samsa">Samsa</option>
+			</select>
+
+			<button id="download-font" disabled>Download</button>
+
 		</h3>
 		
 		<div class="render-native">
