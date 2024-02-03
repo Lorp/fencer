@@ -100,6 +100,23 @@ function onDropFont (e) {
 			}
 		}
 
+		// init x-axis-select and y-axis-select select elements
+		const xAxisSelectEl = document.querySelector("#x-axis-select");
+		const yAxisSelectEl = document.querySelector("#y-axis-select");
+		xAxisSelectEl.innerHTML = "";
+		yAxisSelectEl.innerHTML = "";
+		GLOBAL.font.fvar.axes.forEach(axis => {
+			const xOption = EL("option", {value: axis.axisTag});
+			const yOption = EL("option", {value: axis.axisTag});
+			xOption.textContent = axis.axisTag;
+			yOption.textContent = axis.axisTag;
+			xAxisSelectEl.append(xOption);
+			yAxisSelectEl.append(yOption);
+		});
+
+
+
+
 
 		// draw mappings SVG
 		updateMappingsSVG();
@@ -156,19 +173,39 @@ function addMapping() {
 				y = value;
 		});
 
-		console.log(`translate(${x}, ${y})`);
-		return `translate(${x}, ${y})`;
+		return [x, y];
+
+		// console.log(`translate(${x}, ${y})`);
+		// return `translate(${x}, ${y})`;
 	}
 
-	elFrom.attr({transform: translationFromViewAxisValues()});
-	elTo.attr({transform: translationFromViewAxisValues()});
+	const delta = translationFromViewAxisValues();
 
-	const svgEl = document.querySelector("#mappings-visual");
-	svgEl.appendChild(elFrom);
-	svgEl.appendChild(elTo);
+	// elFrom.attr({transform: translationFromViewAxisValues()});
+	// elTo.attr({transform: translationFromViewAxisValues()});
+
+	elFrom.attr({transform: `translate(${delta[0]}, ${delta[1]})`});
+	elTo.attr({transform: `translate(${delta[0]}, ${delta[1]})`});
+
+	GLOBAL.svgEl.appendChild(elFrom);
+	GLOBAL.svgEl.appendChild(elTo);
+
+	// draw x=0 and y=0 lines
+	const xAxisEl = SVG("line", {x1:0, y1:delta[1], x2:400, y2:delta[1], stroke: "grey"});
+	const yAxisEl = SVG("line", {x1:delta[0], y1:0, x2:delta[0], y2:400, stroke: "grey"});
+	GLOBAL.svgEl.appendChild(xAxisEl);
+	GLOBAL.svgEl.appendChild(yAxisEl);
 
 
 	updateMappingsXML();
+
+}
+
+function svgMouseMove(e) {
+	const rect = GLOBAL.svgEl.getBoundingClientRect();
+	const x = e.clientX;
+	const y = e.clientY;
+	console.log("MOUSE MOVE", x - rect.left, y - rect.top);
 
 }
 
@@ -221,13 +258,15 @@ function initFencer() {
 		addMapping();
 	};
 
-
 	// init the svg
-	const svgEl = document.createElementNS('http://www.w3.org/2000/svg', "svg");
-	svgEl.id = "mappings-visual";
-	Q(".mappings-ui").append(svgEl);
+	GLOBAL.svgEl = SVG("svg");
+	GLOBAL.svgEl.id = "mappings-visual";
 
-	
+	Q(".mappings-ui").insertBefore(GLOBAL.svgEl, Q("#mappings-ui-info"));
+	//Q(".mappings-ui").append(GLOBAL.svgEl);
+
+	// set up the mouse move event
+	GLOBAL.svgEl.onmousemove = svgMouseMove;
 	
 
 	//const svgEl = document.querySelector(".mappings-svg");

@@ -7,10 +7,14 @@
 	<meta charset="utf-8">
 	<style>
 
+:root {
+	font-family: IBM Plex Sans;
+	font-size: 16px;
+}
+
 body {
 	margin: 0;
 	padding: 0;
-	font-family: IBM Plex Sans;
 }
 
 #title-bar {
@@ -22,7 +26,7 @@ body {
 	float: left;
 	position: relative;
 	display: grid;
-	grid-template-rows: auto 400px;
+	grid-template-rows: auto 400px 3rem;
 	width: 200px;
 	background-color: lightblue;
 }
@@ -35,7 +39,7 @@ body {
 	float: left;
 	position: relative;
 	display: grid;
-	grid-template-rows: auto 400px;
+	grid-template-rows: auto 400px 3rem;
 	width: 400px;
 	background-color: yellow;
 }
@@ -50,7 +54,7 @@ body {
 	float: left;
 	position: relative;
 	display: grid;
-	grid-template-rows: auto 400px;
+	grid-template-rows: auto 400px 3rem;
 	background-color: #eee;
 	width: 400px;
 	height: 400px;
@@ -113,7 +117,8 @@ body {
 	<div class="fontinfo">
 		<h3>Fontinfo</h3>
 		<textarea placeholder="Drop font here"></textarea>
-	</div>	
+		<div></div>	
+	</div>
 
 	<div class="mappings-ui">
 		<h3>Mappings visual
@@ -127,11 +132,16 @@ body {
 		<!-- <div id="mappings-visual">
 
 		</div> -->
-	</div>	
+		<div id="mappings-ui-info">
+			<label for="#x-axis-select">x-axis</label><select id="x-axis-select"></select>
+			<label for="#y-axis-select">y-axis</label><select id="y-axis-select"></select>
+		</div>
+	</div>
 
 	<div class="mappings-xml">
 		<h3>Mappings XML</h3>
 		<textarea placeholder=".designspace XML goes here"></textarea>
+		<div></div>
 	</div>
 
 	<br clear="all"/>
@@ -144,7 +154,7 @@ body {
 				<option value="samsa">Samsa</option>
 			</select>
 
-			<button id="download-font" disabled>Download</button>
+			<button id="download-font" disabled>Download font</button>
 
 		</h3>
 		
