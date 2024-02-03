@@ -89,8 +89,26 @@ function onDropFont (e) {
 		});
 		// document.querySelector(".fontinfo textarea").value = str; // set the textarea content to the string
 
+
+		// add key
+
+		const keyEl = EL("div");
+		keyEl.classList.add("key");
+		const key = [ EL("div"), EL("div"), EL("div"), EL("div"), EL("div"), EL("div") ];
+		key[0].textContent = "tag";
+		key[1].textContent = "v";
+		key[2].textContent = "slider";
+		key[3].style.fontFamily = "Material Symbols Outlined";
+		key[3].textContent = "refresh";
+		key[3].title = "reset all";
+		key[3].onclick = axisReset;
+		key[4].textContent = "x";
+		key[5].textContent = "y";
+		keyEl.append(...key);
+		Q("#axes").append(keyEl);
+
 		
-		/* tag value slider check check */
+		// tag value slider reset check check
 		GLOBAL.font.fvar.axes.forEach((axis, a) => {
 			const axisEl = EL("div");
 			axisEl.classList.add("axis");
@@ -101,6 +119,7 @@ function onDropFont (e) {
 			row[0].value = axis.axisTag;
 			row[0].classList.add("monospace");
 			row[0].disabled = true;
+			row[0].title = `${axis.axisTag} (${GLOBAL.font.names[axis.axisNameID]})\nmin: ${axis.minValue}\ndefault: ${axis.defaultValue}\nmax: ${axis.maxValue}`;
 
 			row[1].value = axis.defaultValue;
 			row[1].classList.add("axis-input");
@@ -112,6 +131,7 @@ function onDropFont (e) {
 			row[3].style.fontFamily = "Material Symbols Outlined";
 			row[3].textContent = "refresh";
 			row[3].onclick = axisReset;
+			row[3].title = "reset";
 
 			row[4].type = "checkbox";
 			row[4].classList.add("x-axis");
@@ -120,15 +140,14 @@ function onDropFont (e) {
 
 			row[5].type = "checkbox";
 			row[5].classList.add("y-axis");
-			row[5].checked = axisCheckboxChange;
+			row[5].checked = (a==1);
+			row[5].onchange = axisCheckboxChange;
 
 			axisEl.append(...row);
 
-			//Q("#axes").append(...row);
 			Q("#axes").append(axisEl);
 		});
-		//Q("#axes").append(...row);
-		
+
 
 		function axisSliderChange (e) {
 			const el = e.target;
@@ -139,14 +158,25 @@ function onDropFont (e) {
 
 		function axisReset (e) {
 			const el = e.target;
-			const axisEl = el.closest(".axis");
-			const axis = GLOBAL.font.fvar.axes[parseInt(axisEl.dataset.axisId)];
-			axisEl.querySelector(".axis-input").value = axis.defaultValue;
-			axisEl.querySelector(".axis-slider").value = axis.defaultValue;
+			const axisEl = el.closest(".axis,.key");
+
+			if (axisEl.classList.contains("key")) {
+				Qall("#axes .axis").forEach(axisEl => {
+					const axis = GLOBAL.font.fvar.axes[parseInt(axisEl.dataset.axisId)];
+					axisEl.querySelector(".axis-input").value = axis.defaultValue;
+					axisEl.querySelector(".axis-slider").value = axis.defaultValue;	
+				});
+			}
+			else {
+				const axis = GLOBAL.font.fvar.axes[parseInt(axisEl.dataset.axisId)];
+				axisEl.querySelector(".axis-input").value = axis.defaultValue;
+				axisEl.querySelector(".axis-slider").value = axis.defaultValue;	
+			}
 			refreshResults();
 		}
 
 		function axisCheckboxChange(e) {
+			alert("axisCheckboxChange");
 		}
 		
 		
