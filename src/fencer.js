@@ -133,13 +133,17 @@ function onDropFont (e) {
 			row[3].onclick = axisReset;
 			row[3].title = "reset";
 
-			row[4].type = "checkbox";
-			row[4].classList.add("x-axis");
+			row[4].type = "radio";
+			row[4].name = "x-axis";
+			row[4].value = a;
+			//row[4].classList.add("x-axis");
 			row[4].checked = (a==0);
 			row[4].onchange = axisCheckboxChange;
 
-			row[5].type = "checkbox";
-			row[5].classList.add("y-axis");
+			row[5].type = "radio";
+			row[5].name = "y-axis";
+			row[5].value = a;
+			//row[5].classList.add("y-axis");
 			row[5].checked = (a==1);
 			row[5].onchange = axisCheckboxChange;
 
@@ -176,7 +180,33 @@ function onDropFont (e) {
 		}
 
 		function axisCheckboxChange(e) {
-			alert("axisCheckboxChange");
+			let xSelected, ySelected;
+			const orientationChosen = e.target.name === "x-axis" ? "x-axis" : "y-axis";
+			const orientationNotChosen = e.target.name === "y-axis" ? "x-axis" : "y-axis";
+			Qall("#axes .axis").forEach(axisEl => {
+				if (axisEl.querySelector("input[name=x-axis]").checked)
+					xSelected = axisEl.querySelector("input[name=x-axis]").value;
+
+				if (axisEl.querySelector("input[name=y-axis]").checked)
+					ySelected = axisEl.querySelector("input[name=y-axis]").value;
+			});
+
+			// ensure the x and y axis are different: force the other axis to be the first available axis
+			// - TODO: make this work for single-axis fonts
+			if (xSelected && ySelected && (xSelected === ySelected)) {
+				const axisEls = Qall("#axes .axis");
+				for (let a=0; a<axisEls.length; a++) {
+					const axisEl = axisEls[a];
+					if (!axisEl.querySelector(`input[name=${orientationNotChosen}]`).checked) {
+						axisEl.querySelector(`input[name=${orientationNotChosen}]`).checked = true;
+						break;
+					}
+				}				
+			}
+
+			// redraw the mappings SVG
+			// - TODO: decide if we need to update the mappingsView array
+			updateMappingsSVG();
 		}
 		
 		
