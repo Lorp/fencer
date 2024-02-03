@@ -66,15 +66,6 @@ function onDropFont (e) {
 		str += GLOBAL.font.names[6] + "\n";
 		str += "---\n";
 
-		// report axes
-		str += "AXES: \n";
-		GLOBAL.font.fvar.axes.forEach(axis => {
-			str += `${axis.axisTag} ${axis.minValue} ${axis.defaultValue} ${axis.maxValue}\n`;
-		});
-
-		// set the textarea content to the string
-		document.querySelector(".fontinfo textarea").value = str;
-
 		// set the font face to the arraybuffer
 		const fontFace = new FontFace(GLOBAL.font.names[6], arrayBuffer);
 		fontFace.load().then(loadedFace => {
@@ -82,7 +73,7 @@ function onDropFont (e) {
 			document.fonts.add(loadedFace);
 			renderEl.style.fontFamily = GLOBAL.font.names[6];
 			renderEl.style.color = "black";
-				console.log("loaded font: " + GLOBAL.font.names[6]);
+		//		console.log("loaded font: " + GLOBAL.font.names[6]);
 
 			const downloadFontEl = document.querySelector("#download-font");
 			downloadFontEl.disabled = false;
@@ -91,6 +82,74 @@ function onDropFont (e) {
 
 		});
 
+		// build axis controls
+		str += "AXES: \n";
+		GLOBAL.font.fvar.axes.forEach(axis => {
+			str += `${axis.axisTag} ${axis.minValue} ${axis.defaultValue} ${axis.maxValue}\n`;
+		});
+		// document.querySelector(".fontinfo textarea").value = str; // set the textarea content to the string
+
+		
+		/* tag value slider check check */
+		GLOBAL.font.fvar.axes.forEach((axis, a) => {
+			const axisEl = EL("div");
+			axisEl.classList.add("axis");
+			axisEl.dataset.axisId = a;
+
+			const row = [ EL("input"), EL("input"), EL("input"), EL("div"), EL("input"), EL("input") ];
+
+			row[0].value = axis.axisTag;
+			row[0].classList.add("monospace");
+			row[0].disabled = true;
+
+			row[1].value = axis.defaultValue;
+			row[1].classList.add("axis-input");
+
+			row[2].type = "range"; row[2].min = axis.minValue; row[2].max = axis.maxValue; row[2].value = axis.defaultValue; row[2].step = "0.001";
+			row[2].classList.add("axis-slider");
+			row[2].oninput = axisSliderChange;
+
+			row[3].style.fontFamily = "Material Symbols Outlined";
+			row[3].textContent = "refresh";
+			row[3].onclick = axisReset;
+
+			row[4].type = "checkbox";
+			row[4].classList.add("x-axis");
+			row[4].checked = (a==0);
+			row[4].onchange = axisCheckboxChange;
+
+			row[5].type = "checkbox";
+			row[5].classList.add("y-axis");
+			row[5].checked = axisCheckboxChange;
+
+			axisEl.append(...row);
+
+			//Q("#axes").append(...row);
+			Q("#axes").append(axisEl);
+		});
+		//Q("#axes").append(...row);
+		
+
+		function axisSliderChange (e) {
+			const el = e.target;
+			const axisEl = el.closest(".axis");
+			axisEl.querySelector(".axis-input").value = el.value;
+			refreshResults();
+		}
+
+		function axisReset (e) {
+			const el = e.target;
+			const axisEl = el.closest(".axis");
+			const axis = GLOBAL.font.fvar.axes[parseInt(axisEl.dataset.axisId)];
+			axisEl.querySelector(".axis-input").value = axis.defaultValue;
+			axisEl.querySelector(".axis-slider").value = axis.defaultValue;
+			refreshResults();
+		}
+
+		function axisCheckboxChange(e) {
+		}
+		
+		
 		// init mappings SVG based on first two axes
 		mappingsView.length = 0;
 		if (GLOBAL.font.fvar.axes.length > 0) {
@@ -114,9 +173,11 @@ function onDropFont (e) {
 			yAxisSelectEl.append(yOption);
 		});
 
-
-
-
+		// // init global axis values
+		// GLOBAL.axisValues = [];
+		// GLOBAL.font.fvar.axes.forEach(axis => {
+		// 	axisValues.push(axis.defaultValue);
+		// });
 
 		// draw mappings SVG
 		updateMappingsSVG();
@@ -272,6 +333,23 @@ function initFencer() {
 	//const svgEl = document.querySelector(".mappings-svg");
 
 }
+
+function refreshResults() {
+
+	// get the axis values
+	const fvsEntries = [];
+	Qall("#axes .axis").forEach(axisEl => {
+		const axisId = parseInt(axisEl.dataset.axisId);
+		const axis = GLOBAL.font.fvar.axes[axisId];
+		const value = axisEl.querySelector(".axis-input").value;
+		fvsEntries.push(`"${axis.axisTag}" ${value}`);
+	});
+	Q(".render-native").style.fontVariationSettings = fvsEntries.join();
+	console.log(fvsEntries.join())
+
+
+}
+
 
 
 initFencer();

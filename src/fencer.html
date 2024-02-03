@@ -27,7 +27,7 @@ body {
 	position: relative;
 	display: grid;
 	grid-template-rows: auto 400px 3rem;
-	width: 200px;
+	width: 400px;
 	background-color: lightblue;
 }
 
@@ -99,6 +99,17 @@ body {
 	color: #eee;
 }
 
+#axes {
+	height: 400px;
+	background-color: white;
+	overflow-y: scroll;
+}
+
+#axes .axis {
+	display: grid;
+	grid-template-columns: 4ch 40px 1fr auto auto auto; /* tag value slider reset check check */
+}
+
 </style>
 
 <!-- Google Fonts preconnect -->
@@ -108,6 +119,9 @@ body {
 <!-- Roboto Mono, IBM Plex -->
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;700&family=Roboto+Mono&display=swap" rel="stylesheet">
 
+<!-- Material Symbols Outlined -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet" />
+
 </head>
 
 <body>
@@ -115,8 +129,9 @@ body {
 	<div id="title-bar"><span style="font-weight:bold;">FENCER</span> 🤺 avar2 mappings editor</div>
 
 	<div class="fontinfo">
-		<h3>Fontinfo</h3>
-		<textarea placeholder="Drop font here"></textarea>
+		<h3>Drop font here</h3>
+		<!-- <textarea placeholder="Drop font here"></textarea> -->
+		<div id="axes"></div>
 		<div></div>	
 	</div>
 
