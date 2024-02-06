@@ -224,6 +224,7 @@ function onDropFont (e) {
 			}
 		}
 
+		/*
 		// init x-axis-select and y-axis-select select elements
 		const xAxisSelectEl = document.querySelector("#x-axis-select");
 		const yAxisSelectEl = document.querySelector("#y-axis-select");
@@ -237,6 +238,7 @@ function onDropFont (e) {
 			xAxisSelectEl.append(xOption);
 			yAxisSelectEl.append(yOption);
 		});
+		*/
 
 		// // init global axis values
 		// GLOBAL.axisValues = [];
@@ -246,6 +248,7 @@ function onDropFont (e) {
 
 		// draw mappings SVG
 		updateMappingsSVG();
+
 
 		refreshResults();
 	});
@@ -500,25 +503,17 @@ function refreshResults() {
 			});		
 		}
 		else {
-			//const thisRenderVariationSettings = [];
 			const axisValues = getCurrentAxisValues();
 			const axisEls = renderItemEl.querySelectorAll(".axis");
-
-			// get the locked/unlocked status of each axis
 			axisEls.forEach((axisEl, a) => {
 				const axis = GLOBAL.font.fvar.axes[a];
 				const valueEl = axisEl.querySelector(".value");
 				if (!axisEl.querySelector(".lock").classList.contains("locked")) {
-					valueEl.value = axisValues[a];
+					valueEl.value = axisValues[a]; // if unlocked, update it to the current axis value
 				}
-				//thisRenderVariationSettings.push(`"${axis.axisTag}" ${valueEl.value}`);
 				fvsEntries.push(`"${axis.axisTag}" ${valueEl.value}`);
-			//});
 			});
-
-			//renderEl.style.fontVariationSettings = thisRenderVariationSettings.join();
 		}
-
 		renderEl.style.fontVariationSettings = fvsEntries.join();
 	});
 }
