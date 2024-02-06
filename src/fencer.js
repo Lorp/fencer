@@ -282,7 +282,7 @@ function addRender() {
 
 		// axis row
 		const axisEl = EL("div");
-		axisEl.classList.add("axis");
+		axisEl.classList.add("axis", "locked");
 
 		// axis tag
 		const tagEl = EL("div");
@@ -296,7 +296,7 @@ function addRender() {
 
 		// lock/unlock
 		const lockEl = EL("div");
-		lockEl.classList.add("lock", "locked"); // we remove the class "locked" when it is unlocked
+		lockEl.classList.add("lock"); // we remove the class "locked" when it is unlocked
 		lockEl.onclick = lockElclick;
 	
 		axisEl.append(tagEl, valueEl, lockEl);
@@ -324,7 +324,9 @@ function addRender() {
 
 function lockElclick(e) {
 	const lockEl = e.target;
-	lockEl.classList.toggle("locked");
+	//lockEl.classList.toggle("locked");
+
+	lockEl.closest(".axis").classList.toggle("locked");
 	refreshResults();
 }
 
@@ -517,7 +519,7 @@ function refreshResults() {
 			axisEls.forEach((axisEl, a) => {
 				const axis = GLOBAL.font.fvar.axes[a];
 				const valueEl = axisEl.querySelector(".value");
-				if (!axisEl.querySelector(".lock").classList.contains("locked")) {
+				if (!axisEl.classList.contains("locked")) {
 					valueEl.value = axisValues[a]; // if unlocked, update it to the current axis value
 				}
 				fvsEntries.push(`"${axis.axisTag}" ${valueEl.value}`);

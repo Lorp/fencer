@@ -172,8 +172,16 @@ a:hover, a:visited {
 	content: "lock_open_right";
 }
 
-.lock.locked::before {
+.locked .lock::before {
 	content: "lock";
+}
+
+.axis .value {
+	background-color: lightgreen;
+}
+
+.axis.locked .value {
+	background-color: inherit;
 }
 
 </style>
