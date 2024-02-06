@@ -340,6 +340,13 @@ function clickControls(e) {
 
 }
 
+function sampleTextChange(e) {
+
+	Qall(".render").forEach(renderEl => {
+		renderEl.innerText = e.target.value;
+	});
+}
+
 function addMapping() {
 
 	const from = [];
@@ -478,6 +485,8 @@ function initFencer() {
 
 	// set up the mouse move event
 	GLOBAL.svgEl.onmousemove = svgMouseMove;
+
+	Q("#sample-text").oninput = sampleTextChange;
 	
 
 	//const svgEl = document.querySelector(".mappings-svg");
