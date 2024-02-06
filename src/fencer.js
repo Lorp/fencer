@@ -69,11 +69,16 @@ function onDropFont (e) {
 		// set the font face to the arraybuffer
 		const fontFace = new FontFace(GLOBAL.font.names[6], arrayBuffer);
 		fontFace.load().then(loadedFace => {
-			const renderEl = document.querySelector(".render-native");
+
 			document.fonts.add(loadedFace);
-			renderEl.style.fontFamily = GLOBAL.font.names[6];
-			renderEl.style.color = "black";
-		//		console.log("loaded font: " + GLOBAL.font.names[6]);
+			const renderEls = Qall(".render");
+
+			// locked axes are stored in dataset
+			renderEls.forEach(renderEl => {
+				renderEl.style.fontFamily = GLOBAL.font.names[6];
+			});
+
+			//		console.log("loaded font: " + GLOBAL.font.names[6]);
 
 			const downloadFontEl = document.querySelector("#download-font");
 			downloadFontEl.disabled = false;
@@ -242,10 +247,95 @@ function onDropFont (e) {
 		// draw mappings SVG
 		updateMappingsSVG();
 
+		refreshResults();
 	});
 }
 
 
+function getCurrentAxisValues() {
+
+	return GLOBAL.font.fvar.axes.map((axis, a) => {
+		const axisEl = Qall("#axes .axis")[a];
+		return parseFloat(axisEl.querySelector(".axis-input").value);
+	});
+}
+
+
+function addRender() {
+
+	const currentAxisValues = getCurrentAxisValues();
+	
+	// the controls icon
+	const controlsButtonEl = EL("div");
+	controlsButtonEl.classList.add("render-controls-button");
+	controlsButtonEl.innerText = "tune";
+	controlsButtonEl.onclick = clickControls;
+
+	// the controls
+	const controlsEl = EL("div");
+	controlsEl.classList.add("render-controls");
+	controlsEl.style.display = "none";
+	GLOBAL.font.fvar.axes.forEach((axis, a) => {
+
+		// axis row
+		const axisEl = EL("div");
+		axisEl.classList.add("axis");
+
+		// axis tag
+		const tagEl = EL("div");
+		tagEl.textContent = axis.axisTag;
+
+		// value
+		const valueEl = EL("input");
+		valueEl.classList.add("value");
+		valueEl.disabled = true;
+		valueEl.value = currentAxisValues[a];
+
+		// lock/unlock
+		const lockEl = EL("div");
+		lockEl.classList.add("lock", "locked"); // we remove the class "locked" when it is unlocked
+		lockEl.onclick = lockElclick;
+	
+		axisEl.append(tagEl, valueEl, lockEl);
+		controlsEl.append(axisEl);
+	});
+
+	// the render item
+	const renderItemEl = EL("div");
+	renderItemEl.classList.add("render-item");
+
+	// the render itself
+	const renderEl = EL("div");
+	renderEl.classList.add("render");
+	renderEl.innerText = Q("#sample-text").value;
+	renderEl.style.fontFamily = GLOBAL.font.names[6];
+	
+	renderItemEl.append(renderEl, controlsEl, controlsButtonEl);
+
+	Q(".render-container").append(renderItemEl);
+
+
+	refreshResults();
+	
+}
+
+function lockElclick(e) {
+	const lockEl = e.target;
+	lockEl.classList.toggle("locked");
+	refreshResults();
+}
+
+function clickControls(e) {
+	const renderItemEl = e.target.closest(".render-item");
+	const controlsEl = renderItemEl.querySelector(".render-controls");
+
+	if (controlsEl.style.display === "none")
+		//controlsEl.style.display = "grid";
+		controlsEl.style.display = "block";
+	else
+		controlsEl.style.display = "none";
+
+}
 
 function addMapping() {
 
@@ -295,9 +385,6 @@ function addMapping() {
 		});
 
 		return [x, y];
-
-		// console.log(`translate(${x}, ${y})`);
-		// return `translate(${x}, ${y})`;
 	}
 
 	const delta = translationFromViewAxisValues();
@@ -392,22 +479,48 @@ function initFencer() {
 
 	//const svgEl = document.querySelector(".mappings-svg");
 
+	Q("#add-render").onclick = addRender;
+
 }
 
 function refreshResults() {
 
 	// get the axis values
-	const fvsEntries = [];
-	Qall("#axes .axis").forEach(axisEl => {
-		const axisId = parseInt(axisEl.dataset.axisId);
-		const axis = GLOBAL.font.fvar.axes[axisId];
-		const value = axisEl.querySelector(".axis-input").value;
-		fvsEntries.push(`"${axis.axisTag}" ${value}`);
+
+	// update all renders
+	Qall(".render-item").forEach((renderItemEl, r) => {
+		const renderEl = renderItemEl.querySelector(".render");
+		const fvsEntries = [];
+		if (r==0){
+			Qall("#axes .axis").forEach(axisEl => {
+				const axisId = parseInt(axisEl.dataset.axisId);
+				const axis = GLOBAL.font.fvar.axes[axisId];
+				const value = axisEl.querySelector(".axis-input").value;
+				fvsEntries.push(`"${axis.axisTag}" ${value}`);
+			});		
+		}
+		else {
+			//const thisRenderVariationSettings = [];
+			const axisValues = getCurrentAxisValues();
+			const axisEls = renderItemEl.querySelectorAll(".axis");
+
+			// get the locked/unlocked status of each axis
+			axisEls.forEach((axisEl, a) => {
+				const axis = GLOBAL.font.fvar.axes[a];
+				const valueEl = axisEl.querySelector(".value");
+				if (!axisEl.querySelector(".lock").classList.contains("locked")) {
+					valueEl.value = axisValues[a];
+				}
+				//thisRenderVariationSettings.push(`"${axis.axisTag}" ${valueEl.value}`);
+				fvsEntries.push(`"${axis.axisTag}" ${valueEl.value}`);
+			//});
+			});
+
+			//renderEl.style.fontVariationSettings = thisRenderVariationSettings.join();
+		}
+
+		renderEl.style.fontVariationSettings = fvsEntries.join();
 	});
-	Q(".render-native").style.fontVariationSettings = fvsEntries.join();
-	console.log(fvsEntries.join())
-
-
 }
 
 
