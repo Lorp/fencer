@@ -169,11 +169,11 @@ a:hover, a:visited {
 }
 
 .lock::before {
-	content: "lock_open_right";
+	content: "lock_open_right"; /* in Material Symbols Outlined */
 }
 
 .locked .lock::before {
-	content: "lock";
+	content: "lock"; /* in Material Symbols Outlined */
 }
 
 .axis .value {
@@ -227,6 +227,10 @@ a:hover, a:visited {
 			<label for="#x-axis-select">x-axis</label><select id="x-axis-select"></select>
 			<label for="#y-axis-select">y-axis</label><select id="y-axis-select"></select>
 		</div> -->
+
+		<div id="mappings-ui-info">
+			<div id="coords"></div>
+		</div>
 	</div>
 
 	<div class="mappings-xml">

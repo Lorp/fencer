@@ -10,14 +10,19 @@ import { normalizeValue, piecewiseLinearMap } from "./models.js";
 
 
 let mappingsSVG;
-const mappings = [];
 const mappingsView = [];
 const svgPre = `<svg width="100%" height="100%" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">`;
 const svgPost = `</svg>`;
-const svgArrowHead = `<circle cx="0" cy="0" r="45" fill="none" stroke="currentColor" stroke-width="10"/><circle cx="0" cy="0" r="5" fill="currentColor" stroke="none"/>`;
-const svgArrowTail = `<circle cx="0" cy="0" r="45" fill="none" stroke="currentColor" stroke-width="10"/><line x1="0" y1="-45" x2="0" y2="45" stroke="currentColor" stroke-width="10"/><line x1="-45" y1="0" x2="45" y2="0" stroke="currentColor" stroke-width="10"/>`;
+const svgArrowHandleRadius = 45;
+const svgArrowHandleRadiusRoot2 = svgArrowHandleRadius * 1/Math.sqrt(2);
+const svgArrowHead = `<circle cx="0" cy="0" r="${svgArrowHandleRadius}" fill="#0003" stroke="currentColor" stroke-width="10"/><circle cx="0" cy="0" r="5" fill="currentColor" stroke="none"/>`;
+//const svgArrowTail = `<circle cx="0" cy="0" r="45" fill="none" stroke="currentColor" stroke-width="10"/><line x1="0" y1="-45" x2="0" y2="45" stroke="currentColor" stroke-width="10"/><line x1="-45" y1="0" x2="45" y2="0" stroke="currentColor" stroke-width="10"/>`;
+const svgArrowTail = `<circle cx="0" cy="0" r="${svgArrowHandleRadius}" fill="#0003" stroke="currentColor" stroke-width="10"/><line x1="${-svgArrowHandleRadiusRoot2}" y1="${-svgArrowHandleRadiusRoot2}" x2="${svgArrowHandleRadiusRoot2}" y2="${svgArrowHandleRadiusRoot2}" stroke="currentColor" stroke-width="10"/><line x1="${-svgArrowHandleRadiusRoot2}" y1="${svgArrowHandleRadiusRoot2}" x2="${svgArrowHandleRadiusRoot2}" y2="${-svgArrowHandleRadiusRoot2}" stroke="currentColor" stroke-width="10"/>`;
 
-const GLOBAL = {};
+const GLOBAL = {
+	svgElWidth: 400,
+	mappings: [],
+};
 
 function Q (selector) {
 	return document.querySelector(selector)
@@ -45,6 +50,31 @@ Element.prototype.attr = function (attrs) {
 	}
 }
 
+
+function axisCoordsFromSvgCoords (x, y) {
+
+
+}
+
+function svgCoordFromAxisCoord (a, val) {
+	console.log(GLOBAL.font.fvar.axes)
+	console.log(a);
+	console.log("---");
+
+	const axis = GLOBAL.font.fvar.axes[a];
+	return (val - axis.minValue) / (axis.maxValue - axis.minValue) * GLOBAL.svgElWidth;
+}
+
+function svgCoordsFromAxisCoords (coords) {
+
+	const a0 = coords[mappingsView[0]];
+	const a1 = coords[mappingsView[1]];
+
+	const s0 = svgCoordFromAxisCoord(mappingsView[0], a0);
+	const s1 = svgCoordFromAxisCoord(mappingsView[1], a1);
+
+	return [s0, s1];
+}
 
 function onDropFont (e) {
 	const el = e.target;
@@ -162,7 +192,7 @@ function onDropFont (e) {
 			const el = e.target;
 			const axisEl = el.closest(".axis");
 			axisEl.querySelector(".axis-input").value = el.value;
-			refreshResults();
+			updateRenders();
 		}
 
 		function axisReset (e) {
@@ -181,7 +211,7 @@ function onDropFont (e) {
 				axisEl.querySelector(".axis-input").value = axis.defaultValue;
 				axisEl.querySelector(".axis-slider").value = axis.defaultValue;	
 			}
-			refreshResults();
+			updateRenders();
 		}
 
 		function axisCheckboxChange(e) {
@@ -204,10 +234,21 @@ function onDropFont (e) {
 					const axisEl = axisEls[a];
 					if (!axisEl.querySelector(`input[name=${orientationNotChosen}]`).checked) {
 						axisEl.querySelector(`input[name=${orientationNotChosen}]`).checked = true;
+						// mappingsView[1] = a;
 						break;
 					}
-				}				
+				}
 			}
+
+			// update the mappingsView array
+			Qall("#axes .axis").forEach((axisEl, a) => {
+				if (axisEl.querySelector("input[name=x-axis]").checked)
+					mappingsView[0] = a;
+
+				if (axisEl.querySelector("input[name=y-axis]").checked)
+					mappingsView[1] = a;
+			});
+
 
 			// redraw the mappings SVG
 			// - TODO: decide if we need to update the mappingsView array
@@ -218,9 +259,9 @@ function onDropFont (e) {
 		// init mappings SVG based on first two axes
 		mappingsView.length = 0;
 		if (GLOBAL.font.fvar.axes.length > 0) {
-			mappingsView.push(GLOBAL.font.fvar.axes[0]); // set x axis to the first axis
+			mappingsView.push(0); // set x axis to the first axis
 			if (GLOBAL.font.fvar.axes.length > 1) {
-				mappingsView.push(GLOBAL.font.fvar.axes[1]); // set y axis to the second axis
+				mappingsView.push(1); // set y axis to the second axis
 			}
 		}
 
@@ -248,9 +289,7 @@ function onDropFont (e) {
 
 		// draw mappings SVG
 		updateMappingsSVG();
-
-
-		refreshResults();
+		updateRenders();
 	});
 }
 
@@ -263,6 +302,13 @@ function getCurrentAxisValues() {
 	});
 }
 
+
+function getDefaultAxisValues() {
+
+	return GLOBAL.font.fvar.axes.map((axis, a) => {
+		return axis.defaultValue;
+	});
+}
 
 function addRender() {
 
@@ -355,9 +401,15 @@ function addMapping() {
 	const to = [];
 	const mapping = [from, to];
 
-	GLOBAL.font.fvar.axes.forEach((axis, i) => {
-		from.push(axis.defaultValue);
-		to.push(axis.defaultValue);
+	const currentCoords = getCurrentAxisValues();
+
+	// initialize the mapping to the default values
+	GLOBAL.font.fvar.axes.forEach((axis, a) => {
+		// from.push(axis.defaultValue);
+		// to.push(axis.defaultValue);
+		from.push(currentCoords[a]);
+		to.push(currentCoords[a]);
+
 	});
 
 	console.log (mapping[0])
@@ -372,51 +424,10 @@ function addMapping() {
 		console.log("YAY", i);
 	}
 
-	mappings.push(mapping);
+	GLOBAL.mappings.push(mapping);
 
-	const elFrom = SVG("g");
-	const elTo =   SVG("g");
-
-	elFrom.classList.add("input");
-	elTo.classList.add("output");
-
-	elFrom.innerHTML = svgArrowTail
-	elTo.innerHTML = svgArrowHead;
-
-
-	function translationFromViewAxisValues () {
-
-		const svgElWidth = 400;
-		let x,y;
-		mappingsView.forEach((axis, v) => {
-			const value = (axis.defaultValue - axis.minValue) / (axis.maxValue - axis.minValue) * svgElWidth;
-			if (v==0)
-				x = value;
-			else if (v==1)
-				y = value;
-		});
-
-		return [x, y];
-	}
-
-	const delta = translationFromViewAxisValues();
-
-	// elFrom.attr({transform: translationFromViewAxisValues()});
-	// elTo.attr({transform: translationFromViewAxisValues()});
-
-	elFrom.attr({transform: `translate(${delta[0]}, ${delta[1]})`});
-	elTo.attr({transform: `translate(${delta[0]}, ${delta[1]})`});
-
-	GLOBAL.svgEl.appendChild(elFrom);
-	GLOBAL.svgEl.appendChild(elTo);
-
-	// draw x=0 and y=0 lines
-	const xAxisEl = SVG("line", {x1:0, y1:delta[1], x2:400, y2:delta[1], stroke: "grey"});
-	const yAxisEl = SVG("line", {x1:delta[0], y1:0, x2:delta[0], y2:400, stroke: "grey"});
-	GLOBAL.svgEl.appendChild(xAxisEl);
-	GLOBAL.svgEl.appendChild(yAxisEl);
-
-
+	// update stuff
+	updateMappingsSVG();
 	updateMappingsXML();
 
 }
@@ -429,23 +440,101 @@ function svgMouseMove(e) {
 
 }
 
+function mappingMouseDown (e) {
 
-function updateMappingsSVG() {
-
-	let svg = "";
+	const rect = GLOBAL.svgEl.getBoundingClientRect();
+	const x = e.clientX;
+	const y = e.clientY;
+	console.log("MOUSE DOWN", x - rect.left, y - rect.top);
 
 
 }
 
+function updateMappingsSVG() {
+
+	//const svgEl = Q("#mappings-visual");
+	GLOBAL.svgEl.innerHTML = "";
+
+	// draw x=0 and y=0 lines
+	const svgOriginCoords = svgCoordsFromAxisCoords(getDefaultAxisValues());
+	
+
+	const xAxisEl = SVG("line", {x1:0, y1:svgOriginCoords[1], x2:400, y2:svgOriginCoords[1], stroke: "grey"});
+	const yAxisEl = SVG("line", {x1:svgOriginCoords[0], y1:0, x2:svgOriginCoords[0], y2:400, stroke: "grey"});
+	GLOBAL.svgEl.appendChild(xAxisEl);
+	GLOBAL.svgEl.appendChild(yAxisEl);
+
+
+
+
+
+	
+
+	GLOBAL.mappings.forEach(mapping => {
+
+		const elFrom = SVG("g");
+		const elTo =   SVG("g");
+	
+		elFrom.classList.add("input");
+		elTo.classList.add("output");
+	
+		elFrom.innerHTML = svgArrowTail
+		elTo.innerHTML = svgArrowHead;
+	
+		elFrom.onclick = mappingMouseDown;
+		elTo.onclick = mappingMouseDown;
+	
+	
+		// function translationFromViewAxisValues () {
+	
+		// 	const svgElWidth = 400;
+		// 	let x,y;
+		// 	mappingsView.forEach((axis, v) => {
+		// 		const value = (axis.defaultValue - axis.minValue) / (axis.maxValue - axis.minValue) * svgElWidth;
+		// 		if (v==0)
+		// 			x = value;
+		// 		else if (v==1)
+		// 			y = value;
+		// 	});
+	
+		// 	return [x, y];
+		// }
+	
+		//const delta = translationFromViewAxisValues();
+	
+	
+		//const svgCoords = svgCoordsFromAxisCoords(0,0);
+		//const svgCoords = svgCoordsFromAxisCoords(getCurrentAxisValues());
+
+		const svgCoords = svgCoordsFromAxisCoords(mapping[0]);
+
+		// elFrom.attr({transform: translationFromViewAxisValues()});
+		// elTo.attr({transform: translationFromViewAxisValues()});
+	
+		elFrom.attr({transform: `translate(${svgCoords[0]}, ${svgCoords[1]})`});
+		elTo.attr({transform: `translate(${svgCoords[0]}, ${svgCoords[1]})`});
+	
+		GLOBAL.svgEl.appendChild(elFrom);
+		GLOBAL.svgEl.appendChild(elTo);
+	
+	});
+
+}
+
+
+
+
 function updateMappingsXML() {
 
+
 	let str = "<mappings>\n";
-	mappings.forEach(mapping => {
+	GLOBAL.mappings.forEach(mapping => {
 		str += `  <mapping>\n`;
 		["input","output"].forEach((io, i) => {
 			str += `    <${io}>\n`;
 			mapping[i].forEach((x, a) => {
-				if (x !== undefined)
+				const axis = GLOBAL.font.fvar.axes[a];
+				if (x !== undefined && axis.defaultValue !== x)
 					str += `      <dimension tag="${GLOBAL.font.fvar.axes[a].axisTag}" xvalue="${x}">\n`;
 			});
 			str += `    </${io}>\n`;
@@ -497,7 +586,7 @@ function initFencer() {
 
 }
 
-function refreshResults() {
+function updateRenders() {
 
 	// get the axis values
 
