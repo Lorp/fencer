@@ -54,7 +54,7 @@ a:hover, a:visited {
 	height: 100%;
 }
 
-.mappings-xml {
+.mappings {
 	float: left;
 	position: relative;
 	display: grid;
@@ -62,6 +62,15 @@ a:hover, a:visited {
 	background-color: #eee;
 	width: 400px;
 	height: 400px;
+}
+
+.mappings .html {
+	font-size: 0.75em;
+}
+
+.mappings .xml {
+	width: 100%;
+	height: 100%;
 }
 
 .output {
@@ -72,7 +81,7 @@ a:hover, a:visited {
 	color: #c91616;
 }
 
-.mappings-xml textarea {
+.mappings textarea.xml {
 	font-family: Roboto Mono, monospace;
 }
 
@@ -184,6 +193,18 @@ a:hover, a:visited {
 	background-color: inherit;
 }
 
+.hidden {
+	display: none;
+}
+
+.mappings details[open] {
+	background-color: #bad5fe;
+}
+
+input.numeric {
+	width: calc(100% - 7px);
+}
+
 </style>
 
 <!-- Google Fonts preconnect -->
@@ -203,7 +224,9 @@ a:hover, a:visited {
 	<div id="title-bar"><span style="font-weight:bold;">FENCER</span> 🤺 avar2 mappings editor <img width="16" src="https://emojis.slackmojis.com/emojis/images/1670280918/63091/garden-fence.png"> <a href="https://github.com/lorp/fencer" target="_blank">https://github.com/lorp/fencer</a></div>
 
 	<div class="fontinfo">
-		<h3>Drop font here</h3>
+		<h3>Drop font here
+			<select id="select-mode"><option value="axes">Axes</option><option value="mappings">Mappings</option></select>
+		</h3>
 		<!-- <textarea placeholder="Drop font here"></textarea> -->
 		<div id="axes"></div>
 		<div></div>	
@@ -233,10 +256,22 @@ a:hover, a:visited {
 		</div>
 	</div>
 
-	<div class="mappings-xml">
-		<h3>Mappings XML</h3>
-		<textarea placeholder=".designspace XML goes here"></textarea>
-		<div></div>
+	<div class="mappings">
+		<h3>Mappings XML <button id="toggle-xml">Toggle XML</button></h3>
+
+		<div>
+			<div class="html">
+			</div>
+
+			<textarea class="xml hidden" placeholder=".designspace XML goes here"></textarea>
+			
+		</div>
+
+		<div>
+
+
+
+		</div>
 	</div>
 
 	<br clear="all"/>
