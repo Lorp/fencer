@@ -13,11 +13,11 @@ let mappingsSVG;
 const mappingsView = [];
 // const svgPre = `<svg width="100%" height="100%" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">`;
 // const svgPost = `</svg>`;
-const svgArrowHandleRadius = 45;
+const svgArrowHandleRadius = 15;
 const svgArrowHandleRadiusRoot2 = svgArrowHandleRadius * 1/Math.sqrt(2);
-const svgArrowHead = `<circle cx="0" cy="0" r="${svgArrowHandleRadius}" fill="#0003" stroke="currentColor" stroke-width="10"/><circle cx="0" cy="0" r="5" fill="currentColor" stroke="none"/>`;
-//const svgArrowTail = `<circle cx="0" cy="0" r="45" fill="none" stroke="currentColor" stroke-width="10"/><line x1="0" y1="-45" x2="0" y2="45" stroke="currentColor" stroke-width="10"/><line x1="-45" y1="0" x2="45" y2="0" stroke="currentColor" stroke-width="10"/>`;
-const svgArrowTail = `<circle cx="0" cy="0" r="${svgArrowHandleRadius}" fill="#0003" stroke="currentColor" stroke-width="10"/><line x1="${-svgArrowHandleRadiusRoot2}" y1="${-svgArrowHandleRadiusRoot2}" x2="${svgArrowHandleRadiusRoot2}" y2="${svgArrowHandleRadiusRoot2}" stroke="currentColor" stroke-width="10"/><line x1="${-svgArrowHandleRadiusRoot2}" y1="${svgArrowHandleRadiusRoot2}" x2="${svgArrowHandleRadiusRoot2}" y2="${-svgArrowHandleRadiusRoot2}" stroke="currentColor" stroke-width="10"/>`;
+const svgArrowLineWidth = 2;
+const svgArrowHead = `<circle cx="0" cy="0" r="${svgArrowHandleRadius}" fill="#0003" stroke="currentColor" stroke-width="${svgArrowLineWidth}"/><circle cx="0" cy="0" r="5" fill="currentColor" stroke="none"/>`;
+const svgArrowTail = `<circle cx="0" cy="0" r="${svgArrowHandleRadius}" fill="#0003" stroke="currentColor" stroke-width="${svgArrowLineWidth}"/><line x1="${-svgArrowHandleRadiusRoot2}" y1="${-svgArrowHandleRadiusRoot2}" x2="${svgArrowHandleRadiusRoot2}" y2="${svgArrowHandleRadiusRoot2}" stroke="currentColor" stroke-width="${svgArrowLineWidth}"/><line x1="${-svgArrowHandleRadiusRoot2}" y1="${svgArrowHandleRadiusRoot2}" x2="${svgArrowHandleRadiusRoot2}" y2="${-svgArrowHandleRadiusRoot2}" stroke="currentColor" stroke-width="${svgArrowLineWidth}"/>`;
 
 const GLOBAL = {
 	svgElWidth: 400,
@@ -166,7 +166,6 @@ function loadFontFromArrayBuffer (arrayBuffer, options={}) {
 		axisEl.classList.add("axis");
 		axisEl.dataset.axisId = a;
 
-		//const row = [ EL("input"), EL("input"), EL("input"), EL("div"), EL("input"), EL("input") ];
 		const row = [ EL("input"), EL("div"), EL("div"), EL("div"), EL("input"), EL("input") ];
 
 		row[0].value = axis.axisTag;
@@ -484,37 +483,19 @@ function addMapping() {
 
 	const from = [];
 	const to = [];
-	const mapping = [from, to];
-
 	const currentCoords = getCurrentAxisValues();
 
 	// initialize the mapping to the default values
 	GLOBAL.font.fvar.axes.forEach((axis, a) => {
-		// from.push(axis.defaultValue);
-		// to.push(axis.defaultValue);
 		from.push(currentCoords[a]);
 		to.push(currentCoords[a]);
-
 	});
 
-	// console.log (mapping[0])
-	// console.log (mapping[0].length)
-
-
-	mapping[0].forEach((x, i) => {
-		console.log("YAY", x, i);
-	});
-
-	for (let i=0; i<mapping[0].length; i++) {
-		console.log("YAY", i);
-	}
-
-	GLOBAL.mappings.push(mapping);
+	GLOBAL.mappings.push([from, to]);
 
 	// update stuff
 	updateMappingsSVG();
 	updateMappings();
-
 }
 
 function svgArrow(i, x1, y1, x2, y2) {
@@ -534,50 +515,21 @@ function svgMouseMove(e) {
 
 	e.stopPropagation();
 
-	//const el = e.target.closest("g");
 	const el = GLOBAL.dragging;
 	const index = parseInt(el.dataset.index);
 	const mapping = GLOBAL.mappings[index];
-	//const svgHeight = GLOBAL.svgEl.getBoundingClientRect().height;
 	const rect = GLOBAL.svgEl.getBoundingClientRect();
-	//console.log("SVG HEIGHT", svgHeight);
-
-	// report x and y of element
 
 	// get the transform attribute of the element
 	const transform = el.getAttribute("transform");
 	const coords = transform.match(/translate\(([^)]+),\s*([^)]+)\)/); // parse float in JS, not regex
-	//console.log("element at ", parseFloat(coords[1]), parseFloat(coords[2]));
 	const elX = parseFloat(coords[1]);
 	const elY = parseFloat(coords[2]);
 
 	const mousex = e.clientX;
 	const mousey = rect.height - e.clientY;
-
-	// console.log(mousex, mousey);
-
-
 	const x = mousex - rect.left;
 	const y = mousey + rect.top;
-
-	// console.log(x, y); // these are the coords in the svg space
-
-
-	// const dx = svgX - elX;
-	// const dy = svgY - elY;
-	// const x = e.clientX;
-	// const y = e.clientY;
-
-	// console.log("MOUSE MOVE", mousex - rect.left, mousey + rect.top);
-	// console.log("DX DY", dx, dy);
-
-	//GLOBAL.dragOffset = [dx, dy];
-
-	//console.log(GLOBAL.dragOffset);
-
-	// const svgX = mousex - GLOBAL.dragOffset[0];
-	// const svgY = mousey - GLOBAL.dragOffset[1];
-
 	const svgX = x - GLOBAL.dragOffset[0];
 	const svgY = y - GLOBAL.dragOffset[1];
 
@@ -616,7 +568,6 @@ function svgMouseUp(e) {
 	const rect = GLOBAL.svgEl.getBoundingClientRect();
 	const x = e.clientX;
 	const y = e.clientY;
-	//console.log("Ending move mouse up", x - rect.left, y - rect.top);
 
 	GLOBAL.svgEl.removeEventListener("mousemove", svgMouseMove); // = undefined;
 	GLOBAL.svgEl.removeEventListener("onmouseup", svgMouseUp); // = undefined;
@@ -640,17 +591,6 @@ function mappingMouseDown (e) {
 	const y = e.clientY;
 
 	const el = e.target.closest("g.location");
-	// console.log(el);
-	// console.log(`MOUSE DOWN #${el.dataset.index}`, x - rect.left, y - rect.top);
-
-	// if (e.shiftKey) {
-	// 	console.log("SHIFT KEY");
-	// 	el = e.target.closest("g.location.input") || e.target.closest("g.location");
-	// }
-	// else {
-	// 	console.log("NO SHIFT KEY");
-	// 	el = e.target.closest("g.location");
-	// }
 
 	const transform = el.getAttribute("transform");
 	const coords = transform.match(/translate\(([^)]+),\s*([^)]+)\)/); // parse float in JS, not regex
@@ -658,24 +598,14 @@ function mappingMouseDown (e) {
 	const mousex = e.clientX;
 	const mousey = rect.height - e.clientY;
 
-	// console.log(rect.top, mousey);
 	const svgX = mousex - rect.left;
 	const svgY = mousey + rect.top;
 
 	const dx = svgX - coords[1];
 	const dy = svgY - coords[2];
-	// const x = e.clientX;
-	// const y = e.clientY;
-	// console.log("MOUSE MOVE", mousex - rect.left, mousey + rect.top);
-	// console.log("DX DY", dx, dy);
 
 	GLOBAL.dragOffset = [dx, dy];
 	GLOBAL.dragging = el;
-
-	// set up the mouse move event
-
-	// GLOBAL.svgEl.onmousemove = svgMouseMove;
-	// GLOBAL.svgEl.onmouseup = svgMouseUp;
 
 	GLOBAL.svgEl.addEventListener("mousemove", svgMouseMove);
 	GLOBAL.svgEl.addEventListener("mouseup", svgMouseUp);
@@ -684,8 +614,7 @@ function mappingMouseDown (e) {
 
 function updateMappingsSVG() {
 
-	//const svgEl = Q("#mappings-visual");
-	console.log(GLOBAL);
+//	console.log(GLOBAL);
 	GLOBAL.svgEl.innerHTML = "";
 
 	// draw x=0 and y=0 lines
@@ -706,7 +635,7 @@ function updateMappingsSVG() {
 		elInput.classList.add("input", "location");
 		elOutput.classList.add("output", "location");
 	
-		elInput.innerHTML = svgArrowTail
+		elInput.innerHTML = svgArrowTail;
 		elOutput.innerHTML = svgArrowHead;
 	
 		elInput.onmousedown = mappingMouseDown;
