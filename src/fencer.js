@@ -796,10 +796,14 @@ function updateMappingsSliders(m) {
 
 	Qall(".axis").forEach((axisEl, a) => {
 		const inputSliderEl = axisEl.querySelector(".input.slider");
+		const inputNumericEl = axisEl.querySelector(".input.numeric");
 		const outputSliderEl = axisEl.querySelector(".output.slider");
+		const outputNumericEl = axisEl.querySelector(".output.numeric");
 
 		inputSliderEl.value = GLOBAL.mappings[m][0][a];
 		outputSliderEl.value = GLOBAL.mappings[m][1][a];
+		inputNumericEl.value = GLOBAL.mappings[m][0][a];
+		outputNumericEl.value = GLOBAL.mappings[m][1][a];
 	});
 }
 
