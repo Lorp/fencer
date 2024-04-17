@@ -67,6 +67,43 @@ function setMode(e) {
 	}
 }
 
+function getArrowPath (arrow) {
+
+	// call with getArrowParams({x1: x1, x2: x2, y1: y1, y2: y2, tipLen: tipLen, tipWid: tipWid})
+
+	const x1 = arrow.x1, y1 = arrow.y1, x2 = arrow.x2, y2 = arrow.y2;
+	const tipLen = arrow.tipLen, tipWid = arrow.tipWid;
+	const points = [];
+
+	if (x2!=x1 || y2!=y1) {
+		const len = Math.sqrt((x2-x1)*(x2-x1)+(y2-y1)*(y2-y1));
+		const arrowBackX = (y2-y1) * tipWid/2/len, arrowBackY = (x2-x1) * tipWid/2/len;
+
+		console.log(arrow)
+		console.log("len", len)
+
+		arrow.arrowX1 = arrow.arrowX2 = arrow.newX2 = x1 + (x2-x1) * (len-tipLen)/len;
+		arrow.arrowY1 = arrow.arrowY2 = arrow.newY2 = y1 + (y2-y1) * (len-tipLen)/len;
+		arrow.arrowX1 += arrowBackX;
+		arrow.arrowY1 -= arrowBackY;
+		arrow.arrowX2 -= arrowBackX;
+		arrow.arrowY2 += arrowBackY;
+
+		points.push([arrow.arrowX1, arrow.arrowY1], [arrow.arrowX2, arrow.arrowY2], [arrow.x2, arrow.y2]);
+
+	}
+
+	let pathStr = "";
+	points.forEach((point, p) => {
+		pathStr += (p===0 ? "M" : "L") + point[0] + " " + point[1];
+		if (p===points.length-1) {
+			pathStr += "Z";
+		}
+	});
+
+	return pathStr;
+}
+
 function axisCoordFromSvgCoord (a, val) {
 	const axis = GLOBAL.font.fvar.axes[a];
 	// console.log(a, "axis");
@@ -508,6 +545,11 @@ function svgArrow(i, x1, y1, x2, y2) {
 	lineEl.attr({x1: x1, y1: y1, x2: x2, y2: y2, stroke: "black", "stroke-width": 2});
 	arrowSvg.appendChild(lineEl);
 
+	const pathEl = SVG("path");
+	const pathStr = getArrowPath({x1: x1, y1: y1, x2: x2, y2: y2, tipLen: 20, tipWid: 15});
+	pathEl.attr({d: pathStr, stroke: "none" });
+	arrowSvg.appendChild(pathEl);
+
 	return arrowSvg;
 }
 
@@ -519,6 +561,7 @@ function svgMouseMove(e) {
 	const index = parseInt(el.dataset.index);
 	const mapping = GLOBAL.mappings[index];
 	const rect = GLOBAL.svgEl.getBoundingClientRect();
+
 
 	// get the transform attribute of the element
 	const transform = el.getAttribute("transform");
@@ -533,6 +576,7 @@ function svgMouseMove(e) {
 	const svgX = x - GLOBAL.dragOffset[0];
 	const svgY = y - GLOBAL.dragOffset[1];
 
+	// move the location marker
 	el.setAttribute("transform", `translate(${svgX}, ${svgY})`);
 
 	// recalculate the mapping
@@ -543,18 +587,32 @@ function svgMouseMove(e) {
 
 	// look for the line with this index
 	const arrowEl = [...Qall(".arrow")].find(arrowEl => parseInt(arrowEl.dataset.index) === index);
+	
 	if (arrowEl) {
 		const lineEl = arrowEl.querySelector("line");
+		const pathEl = arrowEl.querySelector("path");
+		let x1 = parseFloat(lineEl.getAttribute("x1"));
+		let y1 = parseFloat(lineEl.getAttribute("y1"));
+		let x2 = parseFloat(lineEl.getAttribute("x2"));
+		let y2 = parseFloat(lineEl.getAttribute("y2"));
 		if (el.classList.contains("input")) {
-			lineEl.attr({x1: svgX, y1: svgY});
+			x1 = svgX;
+			y1 = svgY;
+			lineEl.attr({x1: x1, y1: y1});
 			mapping[0][xAxisIndex] = axisCoordFromSvgCoord(xAxisIndex, svgX);
-			mapping[0][yAxisIndex] = axisCoordFromSvgCoord(yAxisIndex, svgY);
+			mapping[0][yAxisIndex] = axisCoordFromSvgCoord(yAxisIndex, svgY);			
 		}
 		else if (el.classList.contains("output")) {
-			lineEl.attr({x2: svgX, y2: svgY});
+			x2 = svgX;
+			y2 = svgY;
+			lineEl.attr({x2: x2, y2: y2});
 			mapping[1][xAxisIndex] = axisCoordFromSvgCoord(xAxisIndex, svgX);
 			mapping[1][yAxisIndex] = axisCoordFromSvgCoord(yAxisIndex, svgY);
 		}
+
+		const pathStr = getArrowPath({x1: x1, x2: x2, y1: y1, y2: y2, tipLen: 20, tipWid: 15});
+		pathEl.attr({d: pathStr});
+
 		
 		updateMappingsSliders(index);
 		updateMappings();
