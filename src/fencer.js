@@ -15,9 +15,11 @@ const mappingsView = [];
 // const svgPost = `</svg>`;
 const svgArrowHandleRadius = 15;
 const svgArrowHandleRadiusRoot2 = svgArrowHandleRadius * 1/Math.sqrt(2);
+const svgCurrentLocationRadius = 10;
 const svgArrowLineWidth = 2;
 const svgArrowHead = `<circle cx="0" cy="0" r="${svgArrowHandleRadius}" fill="#0003" stroke="currentColor" stroke-width="${svgArrowLineWidth}"/><circle cx="0" cy="0" r="5" fill="currentColor" stroke="none"/>`;
 const svgArrowTail = `<circle cx="0" cy="0" r="${svgArrowHandleRadius}" fill="#0003" stroke="currentColor" stroke-width="${svgArrowLineWidth}"/><line x1="${-svgArrowHandleRadiusRoot2}" y1="${-svgArrowHandleRadiusRoot2}" x2="${svgArrowHandleRadiusRoot2}" y2="${svgArrowHandleRadiusRoot2}" stroke="currentColor" stroke-width="${svgArrowLineWidth}"/><line x1="${-svgArrowHandleRadiusRoot2}" y1="${svgArrowHandleRadiusRoot2}" x2="${svgArrowHandleRadiusRoot2}" y2="${-svgArrowHandleRadiusRoot2}" stroke="currentColor" stroke-width="${svgArrowLineWidth}"/>`;
+const svgCurrentLocation = `<circle cx="0" cy="0" r="${svgCurrentLocationRadius+svgArrowLineWidth}" fill="white" stroke="none"/><circle cx="0" cy="0" r="${svgCurrentLocationRadius}" fill="#077bf6" stroke="none"/>`;
 
 const GLOBAL = {
 	svgElWidth: 400,
@@ -48,6 +50,10 @@ Element.prototype.attr = function (attrs) {
 	for (const prop in attrs) {
 		this.setAttributeNS(null, prop, attrs[prop])
 	}
+}
+
+Element.prototype.setPosition = function (position) {
+	this.setAttribute("transform", `translate(${position[0]}, ${position[1]})`)
 }
 
 function setMode(e) {
@@ -218,6 +224,8 @@ function loadFontFromArrayBuffer (arrayBuffer, options={}) {
 		outNumEl.value = axis.defaultValue;
 		outNumEl.classList.add("output", "numeric");
 		row[1].append(inNumEl, outNumEl);
+		// inNumEl.oninput = axisChange;
+		// outNumEl.oninput = axisChange;
 
 		// input/output sliders
 		const inEl = EL("input");
@@ -228,7 +236,7 @@ function loadFontFromArrayBuffer (arrayBuffer, options={}) {
 		inEl.value = axis.defaultValue;
 		inEl.step = "0.001";
 		inEl.classList.add("slider", "input", "slider");
-		inEl.oninput = axisSliderChange;
+		// inEl.oninput = axisChange;
 
 		const outEl = EL("input");
 		outEl.type = "range";
@@ -238,7 +246,11 @@ function loadFontFromArrayBuffer (arrayBuffer, options={}) {
 		outEl.value = axis.defaultValue;
 		outEl.step = "0.001";
 		outEl.classList.add("slider", "output", "slider");
-		outEl.oninput = axisSliderChange;
+		// outEl.oninput = axisChange;
+
+		//inNumEl.oninput = axisChange;
+		// set change event for all input elements
+		inNumEl.oninput = outNumEl.oninput = inEl.oninput = outEl.oninput = axisChange;
 
 
 		row[2].append(inEl, outEl);
@@ -273,7 +285,7 @@ function loadFontFromArrayBuffer (arrayBuffer, options={}) {
 	// set initial mode to "axes", make the output axes disabled
 	setMode();
 
-	function axisSliderChange (e) {
+	function axisChange (e) {
 
 		// which mode are we in? "font" or "mapping"
 		// - mapping mode
@@ -287,8 +299,23 @@ function loadFontFromArrayBuffer (arrayBuffer, options={}) {
 			if (e.target.classList.contains("input")) {
 				const el = e.target;
 				const axisEl = el.closest(".axis");
-				axisEl.querySelector(".input.numeric").value = el.value;
+				const otherEl = el.classList.contains("slider") ? axisEl.querySelector(".input.numeric") : axisEl.querySelector(".input.slider");
+				otherEl.value = el.value;
+
+				// if (el.classList.contains("numeric")) {
+
+				// 	axisEl.querySelector(".input.numeric").value = el.value;
+
+				// axisEl.querySelector(".input.numeric").value = el.value;
+
+				// update the current location icon
+				const elCurrent = Q("g.current");
+				elCurrent.setPosition(svgCoordsFromAxisCoords(getCurrentAxisValues()));
+
+
+				// update renders
 				updateRenders();
+
 			}
 			// output sliders are disabled
 		}
@@ -675,10 +702,9 @@ function updateMappingsSVG() {
 //	console.log(GLOBAL);
 	GLOBAL.svgEl.innerHTML = "";
 
-	// draw x=0 and y=0 lines
+	// draw x-axis and y-axis
 	const svgOriginCoords = svgCoordsFromAxisCoords(getDefaultAxisValues());
 	
-
 	const xAxisEl = SVG("line", {x1:0, y1:svgOriginCoords[1], x2:400, y2:svgOriginCoords[1], stroke: "grey"});
 	const yAxisEl = SVG("line", {x1:svgOriginCoords[0], y1:0, x2:svgOriginCoords[0], y2:400, stroke: "grey"});
 	GLOBAL.svgEl.appendChild(xAxisEl);
@@ -728,11 +754,10 @@ function updateMappingsSVG() {
 		const svgCoordsFrom = svgCoordsFromAxisCoords(mapping[0]);
 		const svgCoordsTo = svgCoordsFromAxisCoords(mapping[1]);
 
-		// elFrom.attr({transform: translationFromViewAxisValues()});
-		// elTo.attr({transform: translationFromViewAxisValues()});
-	
-		elInput.attr({transform: `translate(${svgCoordsFrom[0]}, ${svgCoordsFrom[1]})`});
-		elOutput.attr({transform: `translate(${svgCoordsTo[0]}, ${svgCoordsTo[1]})`});
+		elInput.setPosition(svgCoordsFrom);
+		elOutput.setPosition(svgCoordsTo);
+		// elInput.attr({transform: `translate(${svgCoordsFrom[0]}, ${svgCoordsFrom[1]})`});
+		// elOutput.attr({transform: `translate(${svgCoordsTo[0]}, ${svgCoordsTo[1]})`});
 	
 		GLOBAL.svgEl.appendChild(elInput);
 		GLOBAL.svgEl.appendChild(elOutput);
@@ -743,6 +768,14 @@ function updateMappingsSVG() {
 	
 	});
 
+
+	// // update the current location icon
+	const elCurrent = SVG("g");
+	elCurrent.classList.add("current");
+	elCurrent.innerHTML = svgCurrentLocation;
+	elCurrent.setPosition(svgCoordsFromAxisCoords(getCurrentAxisValues()));
+	GLOBAL.svgEl.appendChild(elCurrent);
+	
 }
 
 
@@ -800,10 +833,8 @@ function updateMappingsSliders(m) {
 		const outputSliderEl = axisEl.querySelector(".output.slider");
 		const outputNumericEl = axisEl.querySelector(".output.numeric");
 
-		inputSliderEl.value = GLOBAL.mappings[m][0][a];
-		outputSliderEl.value = GLOBAL.mappings[m][1][a];
-		inputNumericEl.value = GLOBAL.mappings[m][0][a];
-		outputNumericEl.value = GLOBAL.mappings[m][1][a];
+		inputSliderEl.value = inputNumericEl.value = GLOBAL.mappings[m][0][a];
+		outputSliderEl.value = outputNumericEl.value = GLOBAL.mappings[m][1][a];
 	});
 }
 
