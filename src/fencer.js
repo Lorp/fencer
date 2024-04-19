@@ -218,7 +218,7 @@ function loadFontFromArrayBuffer (arrayBuffer, options={}) {
 
 	// axis-controls-select
 
-	axisControlSelectorPopulate()
+	axisControlSelectorPopulate();
 
 	// build axis controls
 	str += "AXES: \n";
@@ -724,6 +724,9 @@ function svgMouseMove(e) {
 			updateMappings();
 		}
 	}
+
+	// 
+	updateRenders();
 }
 
 function updateArrow(arrowEl, inputOrOutputId, svgX, svgY) {
