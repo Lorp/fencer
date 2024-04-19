@@ -362,7 +362,8 @@ function loadFontFromArrayBuffer (arrayBuffer, options={}) {
 
 		if (GLOBAL.draggingIndex === -1) {
 
-			// set output = input
+			// hack (set output = input)
+			// FIX THIS WHEN avar2 COMPILATION WORKING
 			axisEl.querySelectorAll("input.output").forEach(outputEl => outputEl.value = parseFloat(el.value));
 
 		}
@@ -464,6 +465,11 @@ function loadFontFromArrayBuffer (arrayBuffer, options={}) {
 	// draw mappings SVG
 	updateMappingsSVG();
 	updateRenders();
+
+	// disable all the initial outputs
+	if (GLOBAL.draggingIndex === -1) {
+		Qall(".axis input.output").forEach(el => el.disabled = true);
+	}
 
 }
 
