@@ -170,7 +170,19 @@ a:hover, a:visited {
 
 #axes .axis, #axes .key {
 	display: grid;
-	grid-template-columns: 40px 40px 1fr auto 16px 16px; /* tag value slider reset check check */
+	grid-template-columns: 40px 40px 1fr auto 40px 1fr auto 16px 16px;
+}
+
+#axes .key>*:nth-child(4), #axes .axis>*:nth-child(4) {
+	padding: 0 2px;
+}
+
+#axes .key>*:nth-child(4), #axes .axis>*:nth-child(4) {
+	padding: 0 2px;
+}
+
+#axes .key>*:nth-child(8), #axes .key>*:nth-child(9) {
+	text-align: center;
 }
 
 #axes .key {
@@ -224,8 +236,8 @@ input.numeric {
 	<div id="title-bar"><span style="font-weight:bold;">FENCER</span> 🤺 avar2 mappings editor <img width="16" src="https://emojis.slackmojis.com/emojis/images/1670280918/63091/garden-fence.png"> <a href="https://github.com/lorp/fencer" target="_blank">https://github.com/lorp/fencer</a></div>
 
 	<div class="fontinfo">
-		<h3>Drop font here
-			<select id="select-mode"><option value="axes">Axes</option><option value="mappings">Mappings</option></select>
+		<h3>Controls
+			<select id="select-axis-controls"></select>
 		</h3>
 		<!-- <textarea placeholder="Drop font here"></textarea> -->
 		<div id="axes"></div>

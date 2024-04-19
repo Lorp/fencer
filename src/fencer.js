@@ -24,6 +24,8 @@ const svgCurrentLocation = `<circle cx="0" cy="0" r="${svgCurrentLocationRadius+
 const GLOBAL = {
 	svgElWidth: 400,
 	mappings: [],
+	current: [[],[]],
+	draggingIndex: -1, // starts current location, not a mapping
 };
 
 function Q (selector) {
@@ -56,9 +58,45 @@ Element.prototype.setPosition = function (position) {
 	this.setAttribute("transform", `translate(${position[0]}, ${position[1]})`)
 }
 
+
+function axisControlSelectorPopulate() {
+
+	const selectEl = Q("#select-axis-controls");
+
+	selectEl.innerHTML = "";
+
+	const optionEl = EL("option");
+	optionEl.value = -1;
+	optionEl.textContent = "Current";
+	selectEl.append(optionEl);
+
+	GLOBAL.mappings.forEach((mapping, m) => {
+
+		const optionEl = EL("option");
+		optionEl.value = m;
+		optionEl.textContent = "Mapping " + m;
+		selectEl.append(optionEl);
+	
+	});
+
+}
+
+function setAxisControls(mappingIndex) {
+	
+	if (mappingIndex === undefined || mappingIndex === -1) {
+
+	}
+	else {
+
+
+	}
+
+
+}
+
 function setMode(e) {
 
-	GLOBAL.mode = document.querySelector("#select-mode").value;
+	GLOBAL.mode = Q("#select-mode").value;
 	switch (GLOBAL.mode) {
 		case "axes":
 			Qall(".axis .output").forEach(el => el.disabled = true);
@@ -170,12 +208,17 @@ function loadFontFromArrayBuffer (arrayBuffer, options={}) {
 
 		//		console.log("loaded font: " + GLOBAL.font.names[6]);
 
-		const downloadFontEl = document.querySelector("#download-font");
+		const downloadFontEl = Q("#download-font");
 		downloadFontEl.disabled = false;
-		const addMappingButtonEl = document.querySelector("#add-mapping");
+		const addMappingButtonEl = Q("#add-mapping");
 		addMappingButtonEl.disabled = false;
 
 	});
+
+
+	// axis-controls-select
+
+	axisControlSelectorPopulate()
 
 	// build axis controls
 	str += "AXES: \n";
@@ -189,19 +232,21 @@ function loadFontFromArrayBuffer (arrayBuffer, options={}) {
 
 	const keyEl = EL("div");
 	keyEl.classList.add("key");
-	const key = [ EL("div"), EL("div"), EL("div"), EL("div"), EL("div"), EL("div") ];
-	key[0].textContent = "tag";
-	key[1].textContent = "v";
-	key[2].textContent = "slider";
-	key[3].style.fontFamily = "Material Symbols Outlined";
-	key[3].textContent = "refresh";
-	key[3].title = "reset all";
-	key[3].onclick = axisReset;
-	key[4].textContent = "x";
-	key[5].textContent = "y";
+	const key = [ EL("div"), EL("div"), EL("div"), EL("div"), EL("div"), EL("div"), EL("div"), EL("div"), EL("div") ];
+	key[0].textContent = "TAG";
+	key[1].textContent = "IN";
+	key[2].textContent = "IN";
+	key[3].textContent = "→";
+	key[4].textContent = "OUT";
+	key[5].textContent = "OUT";
+	key[6].textContent = "refresh";
+	key[7].textContent = "X";
+	key[8].textContent = "Y";
+	key[6].style.fontFamily = "Material Symbols Outlined";
+	key[6].title = "reset all";
+	key[6].onclick = axisReset;
 	keyEl.append(...key);
 	Q("#axes").append(keyEl);
-
 	
 	// tag value slider reset check check
 	GLOBAL.font.fvar.axes.forEach((axis, a) => {
@@ -209,12 +254,18 @@ function loadFontFromArrayBuffer (arrayBuffer, options={}) {
 		axisEl.classList.add("axis");
 		axisEl.dataset.axisId = a;
 
-		const row = [ EL("input"), EL("div"), EL("div"), EL("div"), EL("input"), EL("input") ];
+		// grid-template-columns: 40px 40px 1fr auto 40px 1fr auto 16px 16px;
+
+		//const row = [ EL("input"), EL("div"), EL("div"), EL("div"), EL("input"), EL("input") ];
+		const row = [ EL("input"), EL("input"), EL("input"), EL("div"), EL("input"), EL("input"), EL("div"), EL("input"), EL("input")];
 
 		row[0].value = axis.axisTag;
 		row[0].classList.add("monospace");
 		row[0].disabled = true;
 		row[0].title = `${axis.axisTag} (${GLOBAL.font.names[axis.axisNameID]})\nmin: ${axis.minValue}\ndefault: ${axis.defaultValue}\nmax: ${axis.maxValue}`;
+
+		// right-arrow unicode is 
+		row[3].textContent = "→";
 
 		// input/output numerics
 		const inNumEl = EL("input");
@@ -223,9 +274,8 @@ function loadFontFromArrayBuffer (arrayBuffer, options={}) {
 		inNumEl.classList.add("input", "numeric");
 		outNumEl.value = axis.defaultValue;
 		outNumEl.classList.add("output", "numeric");
-		row[1].append(inNumEl, outNumEl);
-		// inNumEl.oninput = axisChange;
-		// outNumEl.oninput = axisChange;
+		row[1] = inNumEl;
+		row[4] = outNumEl;
 
 		// input/output sliders
 		const inEl = EL("input");
@@ -236,7 +286,6 @@ function loadFontFromArrayBuffer (arrayBuffer, options={}) {
 		inEl.value = axis.defaultValue;
 		inEl.step = "0.001";
 		inEl.classList.add("slider", "input", "slider");
-		// inEl.oninput = axisChange;
 
 		const outEl = EL("input");
 		outEl.type = "range";
@@ -246,80 +295,97 @@ function loadFontFromArrayBuffer (arrayBuffer, options={}) {
 		outEl.value = axis.defaultValue;
 		outEl.step = "0.001";
 		outEl.classList.add("slider", "output", "slider");
-		// outEl.oninput = axisChange;
 
-		//inNumEl.oninput = axisChange;
+		row[2] = inEl;
+		row[5] = outEl;
+
 		// set change event for all input elements
 		inNumEl.oninput = outNumEl.oninput = inEl.oninput = outEl.oninput = axisChange;
 
+		row[6].style.fontFamily = "Material Symbols Outlined";
+		row[6].textContent = "refresh";
+		row[6].onclick = axisReset;
+		row[6].title = "reset";
 
-		row[2].append(inEl, outEl);
-		// row[2].type = "range"; row[2].min = axis.minValue; row[2].max = axis.maxValue; row[2].value = axis.defaultValue; row[2].step = "0.001";
-		// row[2].classList.add("slider");
-		// row[2].oninput = axisSliderChange;
+		row[7].type = "radio";
+		row[7].name = "x-axis";
+		row[7].value = a;
+		row[7].checked = (a==0);
+		row[7].onchange = axisCheckboxChange;
 
-		row[3].style.fontFamily = "Material Symbols Outlined";
-		row[3].textContent = "refresh";
-		row[3].onclick = axisReset;
-		row[3].title = "reset";
-
-		row[4].type = "radio";
-		row[4].name = "x-axis";
-		row[4].value = a;
-		//row[4].classList.add("x-axis");
-		row[4].checked = (a==0);
-		row[4].onchange = axisCheckboxChange;
-
-		row[5].type = "radio";
-		row[5].name = "y-axis";
-		row[5].value = a;
-		//row[5].classList.add("y-axis");
-		row[5].checked = (a==1);
-		row[5].onchange = axisCheckboxChange;
+		row[8].type = "radio";
+		row[8].name = "y-axis";
+		row[8].value = a;
+		row[8].checked = (a==1);
+		row[8].onchange = axisCheckboxChange;
 
 		axisEl.append(...row);
 
 		Q("#axes").append(axisEl);
+
+		GLOBAL.current[0][a] = axis.defaultValue;
+		GLOBAL.current[1][a] = axis.defaultValue;
 	});
 
 	// set initial mode to "axes", make the output axes disabled
-	setMode();
+	//setMode();
+	selectAxisControls();
 
 	function axisChange (e) {
 
 		// which mode are we in? "font" or "mapping"
-		// - mapping mode
-		if (GLOBAL.mode === "mapping") {
 
+
+
+		const inputOrOutput = e.target.classList.contains("input") ? "input" : "output";
+		console.log(inputOrOutput);
+		const inputOrOutputId = (inputOrOutput === "input") ? 0 : 1;
+
+		const elMarker = (GLOBAL.draggingIndex === -1) ? Q("g.current") : Q(`g.location.${inputOrOutput}[data-index="${GLOBAL.draggingIndex}"]`);
+		const el = e.target;
+		const axisEl = el.closest(".axis");
+		const axisId = parseInt(axisEl.dataset.axisId);
+		const otherInputEl = el.classList.contains("slider") ? axisEl.querySelector(".input.numeric") : axisEl.querySelector(".input.slider");
+		otherInputEl.value = el.value;
+
+		if (GLOBAL.draggingIndex === -1) {
+			GLOBAL.current[inputOrOutputId][axisId] = parseFloat(el.value);
+		}
+		else {
+			const mapping = GLOBAL.mappings[GLOBAL.draggingIndex];
+			mapping[inputOrOutputId][axisId] = parseFloat(el.value);
+		}
+
+		// move the marker
+		elMarker.setPosition(svgCoordsFromAxisCoords(getCurrentAxisCoords()));
+		console.log("here")
+
+		if (GLOBAL.draggingIndex === -1) {
+
+			// set output = input
+			axisEl.querySelectorAll("input.output").forEach(outputEl => outputEl.value = parseFloat(el.value));
 
 		}
 
-		// - font mode
-		else {
-			if (e.target.classList.contains("input")) {
-				const el = e.target;
-				const axisEl = el.closest(".axis");
-				const otherEl = el.classList.contains("slider") ? axisEl.querySelector(".input.numeric") : axisEl.querySelector(".input.slider");
-				otherEl.value = el.value;
+		// move the arrow
+		if (GLOBAL.draggingIndex !== -1) {
+			const mapping = GLOBAL.mappings[GLOBAL.draggingIndex];
+			const [svgX, svgY] = svgCoordsFromAxisCoords(mapping[inputOrOutputId]);
+			
+			// update the arrow
+			const arrowEl = Q(`.arrow[data-index="${GLOBAL.draggingIndex}"]`);
+			if (arrowEl) { // sanity
 
-				// if (el.classList.contains("numeric")) {
-
-				// 	axisEl.querySelector(".input.numeric").value = el.value;
-
-				// axisEl.querySelector(".input.numeric").value = el.value;
-
-				// update the current location icon
-				const elCurrent = Q("g.current");
-				elCurrent.setPosition(svgCoordsFromAxisCoords(getCurrentAxisValues()));
-
-
-				// update renders
-				updateRenders();
+				updateArrow(arrowEl, inputOrOutputId, svgX, svgY);
 
 			}
-			// output sliders are disabled
+
 		}
 
+
+	
+
+		updateRenders();
 	}
 
 	function axisReset (e) {
@@ -334,7 +400,7 @@ function loadFontFromArrayBuffer (arrayBuffer, options={}) {
 			});
 		}
 
-		// is is the reset button in an axis row?
+		// is the reset button in an axis row?
 		else {
 			const axisEl = parentEl;
 			const axis = GLOBAL.font.fvar.axes[parseInt(axisEl.dataset.axisId)];
@@ -395,28 +461,6 @@ function loadFontFromArrayBuffer (arrayBuffer, options={}) {
 		}
 	}
 
-	/*
-	// init x-axis-select and y-axis-select select elements
-	const xAxisSelectEl = document.querySelector("#x-axis-select");
-	const yAxisSelectEl = document.querySelector("#y-axis-select");
-	xAxisSelectEl.innerHTML = "";
-	yAxisSelectEl.innerHTML = "";
-	GLOBAL.font.fvar.axes.forEach(axis => {
-		const xOption = EL("option", {value: axis.axisTag});
-		const yOption = EL("option", {value: axis.axisTag});
-		xOption.textContent = axis.axisTag;
-		yOption.textContent = axis.axisTag;
-		xAxisSelectEl.append(xOption);
-		yAxisSelectEl.append(yOption);
-	});
-	*/
-
-	// // init global axis values
-	// GLOBAL.axisValues = [];
-	// GLOBAL.font.fvar.axes.forEach(axis => {
-	// 	axisValues.push(axis.defaultValue);
-	// });
-
 	// draw mappings SVG
 	updateMappingsSVG();
 	updateRenders();
@@ -442,7 +486,7 @@ function onDropFont (e) {
 }
 
 
-function getCurrentAxisValues() {
+function getCurrentAxisCoords() {
 
 	return GLOBAL.font.fvar.axes.map((axis, a) => {
 		const axisEl = Qall(".axis")[a];
@@ -451,7 +495,7 @@ function getCurrentAxisValues() {
 }
 
 
-function getDefaultAxisValues() {
+function getDefaultAxisCoords() {
 
 	return GLOBAL.font.fvar.axes.map((axis, a) => {
 		return axis.defaultValue;
@@ -460,7 +504,7 @@ function getDefaultAxisValues() {
 
 function addRender() {
 
-	const currentAxisValues = getCurrentAxisValues();
+	const currentAxisCoords = getCurrentAxisCoords();
 	
 	// the controls icon
 	const controlsButtonEl = EL("div");
@@ -486,7 +530,7 @@ function addRender() {
 		const valueEl = EL("input");
 		valueEl.classList.add("value");
 		valueEl.disabled = true;
-		valueEl.value = currentAxisValues[a];
+		valueEl.value = currentAxisCoords[a];
 
 		// lock/unlock
 		const lockEl = EL("div");
@@ -547,7 +591,7 @@ function addMapping() {
 
 	const from = [];
 	const to = [];
-	const currentCoords = getCurrentAxisValues();
+	const currentCoords = getCurrentAxisCoords();
 
 	// initialize the mapping to the default values
 	GLOBAL.font.fvar.axes.forEach((axis, a) => {
@@ -556,6 +600,8 @@ function addMapping() {
 	});
 
 	GLOBAL.mappings.push([from, to]);
+
+	axisControlSelectorPopulate();
 
 	// update stuff
 	updateMappingsSVG();
@@ -584,18 +630,19 @@ function svgMouseMove(e) {
 
 	e.stopPropagation();
 
+
+	// which axes are we using?
+	const xAxisEl = Q("input[name=x-axis]:checked").closest(".axis");
+	const yAxisEl = Q("input[name=y-axis]:checked").closest(".axis");
+	const xAxisIndex = parseInt(xAxisEl.dataset.axisId);
+	const yAxisIndex = parseInt(yAxisEl.dataset.axisId);
+
 	const el = GLOBAL.dragging;
 	const index = parseInt(el.dataset.index);
-	const mapping = GLOBAL.mappings[index];
+
+	console.log("GLOBAL.draggingIndex", GLOBAL.draggingIndex);
+
 	const rect = GLOBAL.svgEl.getBoundingClientRect();
-
-
-	// get the transform attribute of the element
-	const transform = el.getAttribute("transform");
-	const coords = transform.match(/translate\(([^)]+),\s*([^)]+)\)/); // parse float in JS, not regex
-	const elX = parseFloat(coords[1]);
-	const elY = parseFloat(coords[2]);
-
 	const mousex = e.clientX;
 	const mousey = rect.height - e.clientY;
 	const x = mousex - rect.left;
@@ -605,45 +652,95 @@ function svgMouseMove(e) {
 
 	// move the location marker
 	el.setAttribute("transform", `translate(${svgX}, ${svgY})`);
+	const [xCoord, yCoord] = [axisCoordFromSvgCoord(xAxisIndex, svgX), axisCoordFromSvgCoord(yAxisIndex, svgY)];
 
-	// recalculate the mapping
-	const xAxisEl = Q("input[name=x-axis]:checked").closest(".axis");
-	const yAxisEl = Q("input[name=y-axis]:checked").closest(".axis");
-	const xAxisIndex = parseInt(xAxisEl.dataset.axisId);
-	const yAxisIndex = parseInt(yAxisEl.dataset.axisId);
 
-	// look for the line with this index
-	const arrowEl = [...Qall(".arrow")].find(arrowEl => parseInt(arrowEl.dataset.index) === index);
-	
-	if (arrowEl) {
-		const lineEl = arrowEl.querySelector("line");
-		const pathEl = arrowEl.querySelector("path");
-		let x1 = parseFloat(lineEl.getAttribute("x1"));
-		let y1 = parseFloat(lineEl.getAttribute("y1"));
-		let x2 = parseFloat(lineEl.getAttribute("x2"));
-		let y2 = parseFloat(lineEl.getAttribute("y2"));
-		if (el.classList.contains("input")) {
-			x1 = svgX;
-			y1 = svgY;
-			lineEl.attr({x1: x1, y1: y1});
-			mapping[0][xAxisIndex] = axisCoordFromSvgCoord(xAxisIndex, svgX);
-			mapping[0][yAxisIndex] = axisCoordFromSvgCoord(yAxisIndex, svgY);			
-		}
-		else if (el.classList.contains("output")) {
-			x2 = svgX;
-			y2 = svgY;
-			lineEl.attr({x2: x2, y2: y2});
-			mapping[1][xAxisIndex] = axisCoordFromSvgCoord(xAxisIndex, svgX);
-			mapping[1][yAxisIndex] = axisCoordFromSvgCoord(yAxisIndex, svgY);
-		}
 
-		const pathStr = getArrowPath({x1: x1, x2: x2, y1: y1, y2: y2, tipLen: 20, tipWid: 15});
-		pathEl.attr({d: pathStr});
+	if (index === -1) { // current location
+		// it’s the current location marker
 
-		
+		// input
+		GLOBAL.current[0][xAxisIndex] = xCoord;
+		GLOBAL.current[0][yAxisIndex] = yCoord;
+
+		// output
+		GLOBAL.current[1][xAxisIndex] = xCoord;
+		GLOBAL.current[1][yAxisIndex] = yCoord;
+
+		console.log("updating current location sliders")
 		updateMappingsSliders(index);
-		updateMappings();
 	}
+
+	else {
+		// it’s a mapping location marker
+
+		const mapping = GLOBAL.mappings[index];
+
+		// look for the line with this index
+		//const arrowEl = [...Qall(".arrow")].find(arrowEl => parseInt(arrowEl.dataset.index) === index);
+		const arrowEl = Q(`.arrow[data-index="${index}"]`);
+		if (arrowEl) { // sanity
+
+			let inputOrOutputId;
+			if (el.classList.contains("input"))
+				inputOrOutputId = 0;
+			else if (el.classList.contains("output"))
+				inputOrOutputId = 1;
+
+			updateArrow(arrowEl, inputOrOutputId, svgX, svgY);
+
+			// const lineEl = arrowEl.querySelector("line");
+			// const pathEl = arrowEl.querySelector("path");
+			// let x1 = parseFloat(lineEl.getAttribute("x1"));
+			// let y1 = parseFloat(lineEl.getAttribute("y1"));
+			// let x2 = parseFloat(lineEl.getAttribute("x2"));
+			// let y2 = parseFloat(lineEl.getAttribute("y2"));
+			// const pathStr = getArrowPath({x1: x1, x2: x2, y1: y1, y2: y2, tipLen: 20, tipWid: 15});
+			// pathEl.attr({d: pathStr});
+
+
+			if (el.classList.contains("input")) {
+				// x1 = svgX;
+				// y1 = svgY;
+				// lineEl.attr({x1: x1, y1: y1});
+				mapping[0][xAxisIndex] = xCoord;
+				mapping[0][yAxisIndex] = yCoord;
+			}
+			else if (el.classList.contains("output")) {
+				// x2 = svgX;
+				// y2 = svgY;
+				// lineEl.attr({x2: x2, y2: y2});
+				mapping[1][xAxisIndex] = xCoord;
+				mapping[1][yAxisIndex] = yCoord;
+			}
+			
+			updateMappingsSliders(index);
+			updateMappings();
+		}
+	}
+}
+
+function updateArrow(arrowEl, inputOrOutputId, svgX, svgY) {
+
+	const lineEl = arrowEl.querySelector("line");
+	let x1 = parseFloat(lineEl.getAttribute("x1"));
+	let y1 = parseFloat(lineEl.getAttribute("y1"));
+	let x2 = parseFloat(lineEl.getAttribute("x2"));
+	let y2 = parseFloat(lineEl.getAttribute("y2"));
+	if (inputOrOutputId === 0) {
+		x1 = svgX;
+		y1 = svgY;
+		lineEl.attr({x1: x1, y1: y1});
+	}
+	else if (inputOrOutputId === 1) {
+		x2 = svgX;
+		y2 = svgY;
+		lineEl.attr({x2: x2, y2: y2});
+	}
+
+	const pathEl = arrowEl.querySelector("path");
+	const pathStr = getArrowPath({x1: x1, x2: x2, y1: y1, y2: y2, tipLen: 20, tipWid: 15});
+	pathEl.attr({d: pathStr});
 
 }
 
@@ -655,7 +752,7 @@ function svgMouseUp(e) {
 	const y = e.clientY;
 
 	GLOBAL.svgEl.removeEventListener("mousemove", svgMouseMove); // = undefined;
-	GLOBAL.svgEl.removeEventListener("onmouseup", svgMouseUp); // = undefined;
+	GLOBAL.svgEl.removeEventListener("mouseup", svgMouseUp); // = undefined;
 	GLOBAL.dragging = undefined;
 	GLOBAL.dragOffset = undefined;
 
@@ -664,7 +761,9 @@ function svgMouseUp(e) {
 function mappingMouseDown (e) {
 
 	// if we hit the line, propagate the event
-	if (!e.target.closest("g.location")) {
+	// - this works for icons for mapping location and current location
+	const el = e.target.closest("g.location");
+	if (!el) {
 		return false;
 	}
 
@@ -672,13 +771,12 @@ function mappingMouseDown (e) {
 	e.stopPropagation();
 
 	const rect = GLOBAL.svgEl.getBoundingClientRect();
-	const x = e.clientX;
-	const y = e.clientY;
+	GLOBAL.draggingIndex = parseInt(el.dataset.index);
 
-	const el = e.target.closest("g.location");
 
 	const transform = el.getAttribute("transform");
-	const coords = transform.match(/translate\(([^)]+),\s*([^)]+)\)/); // parse float in JS, not regex
+	const coordsStr = transform.match(/translate\(([^)]+),\s*([^)]+)\)/); // parse float in JS, not regex
+	const coords = [parseFloat(coordsStr[1]), parseFloat(coordsStr[2])];
 
 	const mousex = e.clientX;
 	const mousey = rect.height - e.clientY;
@@ -686,14 +784,18 @@ function mappingMouseDown (e) {
 	const svgX = mousex - rect.left;
 	const svgY = mousey + rect.top;
 
-	const dx = svgX - coords[1];
-	const dy = svgY - coords[2];
+	const dx = svgX - coords[0];
+	const dy = svgY - coords[1];
 
 	GLOBAL.dragOffset = [dx, dy];
 	GLOBAL.dragging = el;
 
 	GLOBAL.svgEl.addEventListener("mousemove", svgMouseMove);
-	GLOBAL.svgEl.addEventListener("mouseup", svgMouseUp);
+	GLOBAL.svgEl.addEventListener("mouseup", svgMouseUp); // maybe mouseup should be when overflows (outside of min/max) are snapped back to [min,max]
+
+	// refresh sliders with data from the relevant mapping (or current location, which has index == -1)
+	Q("#select-axis-controls").value = GLOBAL.draggingIndex;
+	updateMappingsSliders(GLOBAL.draggingIndex);
 
 }
 
@@ -703,7 +805,7 @@ function updateMappingsSVG() {
 	GLOBAL.svgEl.innerHTML = "";
 
 	// draw x-axis and y-axis
-	const svgOriginCoords = svgCoordsFromAxisCoords(getDefaultAxisValues());
+	const svgOriginCoords = svgCoordsFromAxisCoords(getDefaultAxisCoords());
 	
 	const xAxisEl = SVG("line", {x1:0, y1:svgOriginCoords[1], x2:400, y2:svgOriginCoords[1], stroke: "grey"});
 	const yAxisEl = SVG("line", {x1:svgOriginCoords[0], y1:0, x2:svgOriginCoords[0], y2:400, stroke: "grey"});
@@ -725,39 +827,14 @@ function updateMappingsSVG() {
 		elInput.onmousedown = mappingMouseDown;
 		elOutput.onmousedown = mappingMouseDown;
 
-
 		elInput.dataset.index = m;
 		elOutput.dataset.index = m;
 	
-	
-		// function translationFromViewAxisValues () {
-	
-		// 	const svgElWidth = 400;
-		// 	let x,y;
-		// 	mappingsView.forEach((axis, v) => {
-		// 		const value = (axis.defaultValue - axis.minValue) / (axis.maxValue - axis.minValue) * svgElWidth;
-		// 		if (v==0)
-		// 			x = value;
-		// 		else if (v==1)
-		// 			y = value;
-		// 	});
-	
-		// 	return [x, y];
-		// }
-	
-		//const delta = translationFromViewAxisValues();
-	
-	
-		//const svgCoords = svgCoordsFromAxisCoords(0,0);
-		//const svgCoords = svgCoordsFromAxisCoords(getCurrentAxisValues());
-
 		const svgCoordsFrom = svgCoordsFromAxisCoords(mapping[0]);
 		const svgCoordsTo = svgCoordsFromAxisCoords(mapping[1]);
 
 		elInput.setPosition(svgCoordsFrom);
 		elOutput.setPosition(svgCoordsTo);
-		// elInput.attr({transform: `translate(${svgCoordsFrom[0]}, ${svgCoordsFrom[1]})`});
-		// elOutput.attr({transform: `translate(${svgCoordsTo[0]}, ${svgCoordsTo[1]})`});
 	
 		GLOBAL.svgEl.appendChild(elInput);
 		GLOBAL.svgEl.appendChild(elOutput);
@@ -769,12 +846,16 @@ function updateMappingsSVG() {
 	});
 
 
-	// // update the current location icon
+	// create the current location icon
 	const elCurrent = SVG("g");
-	elCurrent.classList.add("current");
+	elCurrent.classList.add("current", "location");
+	elCurrent.dataset.index = -1;
 	elCurrent.innerHTML = svgCurrentLocation;
-	elCurrent.setPosition(svgCoordsFromAxisCoords(getCurrentAxisValues()));
+	elCurrent.setPosition(svgCoordsFromAxisCoords(getCurrentAxisCoords()));
 	GLOBAL.svgEl.appendChild(elCurrent);
+	elCurrent.onmousedown = mappingMouseDown;
+	elCurrent.onmousedown = mappingMouseDown;
+
 	
 }
 
@@ -833,17 +914,39 @@ function updateMappingsSliders(m) {
 		const outputSliderEl = axisEl.querySelector(".output.slider");
 		const outputNumericEl = axisEl.querySelector(".output.numeric");
 
-		inputSliderEl.value = inputNumericEl.value = GLOBAL.mappings[m][0][a];
-		outputSliderEl.value = outputNumericEl.value = GLOBAL.mappings[m][1][a];
+		inputSliderEl.value = inputNumericEl.value = (m === -1) ? GLOBAL.current[0][a] : GLOBAL.mappings[m][0][a];
+		outputSliderEl.value = outputNumericEl.value = (m === -1) ? GLOBAL.current[1][a] : GLOBAL.mappings[m][1][a];
 	});
+
+	if (GLOBAL.draggingIndex === -1) {
+		// disable all the outputs
+		Qall(".axis input.output").forEach(el => el.disabled = true);
+	}
+	else {
+		// enable all the outputs
+		Qall(".axis input.output").forEach(el => el.disabled = false);
+	}
+
 }
 
+
+
+function selectAxisControls(e) {
+
+	//alert ("selectAxisControls");
+
+	// const selectEl = Q("#select-axis-controls");
+	// selectEl.value = GLOBAL.draggingIndex;
+
+	axisControlSelectorPopulate();
+
+}
 
 function initFencer() {
 
 	console.log("GLOBAL")
 
-	const fontinfo = document.querySelector(".fontinfo");
+	const fontinfo = Q(".fontinfo");
 	fontinfo.addEventListener("dragover", (event) => {
 		// prevent default to allow drop
 		event.preventDefault();
@@ -852,7 +955,10 @@ function initFencer() {
 	fontinfo.addEventListener("drop", onDropFont);
 
 
-	document.querySelector("#select-mode").onchange = setMode;
+	//document.querySelector("#select-mode").onchange = setMode;
+
+	Q("#select-axis-controls").onchange = selectAxisControls;
+
 
 	// init the svg
 	GLOBAL.svgEl = SVG("svg");
@@ -863,7 +969,7 @@ function initFencer() {
 	updateMappings();
 
 	// on add mapping button click
-	const addMappingButtonEl = document.querySelector("#add-mapping");
+	const addMappingButtonEl = Q("#add-mapping");
 	addMappingButtonEl.onclick = e => {
 		addMapping();
 	};
@@ -872,6 +978,9 @@ function initFencer() {
 	//Q(".mappings-ui").append(GLOBAL.svgEl);
 
 	Q("#sample-text").oninput = sampleTextChange;
+
+	// handle change of mappings selector
+	Q("#select-axis-controls").onchange = selectMapping;
 	
 
 	//const svgEl = document.querySelector(".mappings-svg");
@@ -884,9 +993,8 @@ function initFencer() {
 		Q(".mappings .xml").classList.toggle("hidden");
 	};
 
-
-	// get initial font
-	const filename = "RobotoA2-avar2-VF.ttf"
+	// load initial font
+	const filename = "RobotoA2-avar2-VF.ttf";
 	const filepath = "../fonts/" + filename;
 	fetch(filepath)
 		.then(response => response.arrayBuffer())
@@ -912,13 +1020,13 @@ function updateRenders() {
 			});		
 		}
 		else {
-			const axisValues = getCurrentAxisValues();
+			const axisCoords = getCurrentAxisCoords();
 			const axisEls = renderItemEl.querySelectorAll(".axis");
 			axisEls.forEach((axisEl, a) => {
 				const axis = GLOBAL.font.fvar.axes[a];
 				const valueEl = axisEl.querySelector(".value");
 				if (!axisEl.classList.contains("locked")) {
-					valueEl.value = axisValues[a]; // if unlocked, update it to the current axis value
+					valueEl.value = axisCoords[a]; // if unlocked, update it to the current axis value
 				}
 				fvsEntries.push(`"${axis.axisTag}" ${valueEl.value}`);
 			});
@@ -928,6 +1036,13 @@ function updateRenders() {
 }
 
 
+function selectMapping(e) {
+
+	GLOBAL.draggingIndex = parseInt(e.target.value);
+	console.log("selectMapping", GLOBAL.draggingIndex);
+	updateMappingsSliders(GLOBAL.draggingIndex);
+
+}
 
 initFencer();
 
