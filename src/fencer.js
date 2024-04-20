@@ -571,6 +571,7 @@ function addRender() {
 
 
 	//refreshResults();
+	updateRenders();
 	
 }
 
