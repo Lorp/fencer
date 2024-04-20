@@ -498,16 +498,6 @@ function onDropFont (e) {
 	});
 }
 
-
-function getCurrentAxisCoords() {
-
-	return GLOBAL.font.fvar.axes.map((axis, a) => {
-		const axisEl = Qall("#axes .axis")[a];
-		return parseFloat(axisEl.querySelector(".input").value);
-	});
-}
-
-
 function getDefaultAxisCoords() {
 
 	return GLOBAL.font.fvar.axes.map((axis, a) => {
@@ -517,7 +507,6 @@ function getDefaultAxisCoords() {
 
 function addRender() {
 
-	//const currentAxisCoords = getCurrentAxisCoords();
 	const currentAxisCoords = GLOBAL.current[0];
 	
 	// the controls icon
@@ -569,8 +558,6 @@ function addRender() {
 
 	Q(".render-container").append(renderItemEl);
 
-
-	//refreshResults();
 	updateRenders();
 	
 }
@@ -580,7 +567,7 @@ function lockElclick(e) {
 	//lockEl.classList.toggle("locked");
 
 	lockEl.closest(".axis").classList.toggle("locked");
-	refreshResults();
+	updateRenders();
 }
 
 function clickControls(e) {
@@ -606,7 +593,6 @@ function addMapping() {
 
 	const from = [];
 	const to = [];
-	//const currentCoords = getCurrentAxisCoords();
 	const currentCoords = GLOBAL.current[0];
 
 	// initialize the mapping to the default values
@@ -867,12 +853,10 @@ function updateMappingsSVG() {
 	elCurrent.classList.add("current", "location");
 	elCurrent.dataset.index = -1;
 	elCurrent.innerHTML = svgCurrentLocation;
-	//elCurrent.setPosition(svgCoordsFromAxisCoords(getCurrentAxisCoords()));
 	elCurrent.setPosition(svgCoordsFromAxisCoords(GLOBAL.current[0]));
 	GLOBAL.svgEl.appendChild(elCurrent);
 	elCurrent.onmousedown = mappingMouseDown;
 	elCurrent.onmousedown = mappingMouseDown;
-
 	
 }
 
