@@ -99,11 +99,11 @@ function setMode(e) {
 	GLOBAL.mode = Q("#select-mode").value;
 	switch (GLOBAL.mode) {
 		case "axes":
-			Qall(".axis .output").forEach(el => el.disabled = true);
+			Qall("#axes .axis .output").forEach(el => el.disabled = true);
 			break;
 
 		case "mappings":
-			Qall(".axis .output").forEach(el => el.disabled = false);
+			Qall("#axes .axis .output").forEach(el => el.disabled = false);
 			break;
 
 		default:
@@ -163,10 +163,6 @@ function axisCoordFromSvgCoord (a, val) {
 }
 
 function svgCoordFromAxisCoord (a, val) {
-	console.log(GLOBAL.font.fvar.axes)
-	console.log(a);
-	console.log("---");
-
 	const axis = GLOBAL.font.fvar.axes[a];
 	return (val - axis.minValue) / (axis.maxValue - axis.minValue) * GLOBAL.svgElWidth;
 }
@@ -333,10 +329,6 @@ function loadFontFromArrayBuffer (arrayBuffer, options={}) {
 
 	function axisChange (e) {
 
-		// which mode are we in? "font" or "mapping"
-
-
-
 		const inputOrOutput = e.target.classList.contains("input") ? "input" : "output";
 		console.log(inputOrOutput);
 		const inputOrOutputId = (inputOrOutput === "input") ? 0 : 1;
@@ -348,18 +340,35 @@ function loadFontFromArrayBuffer (arrayBuffer, options={}) {
 		const otherInputEl = el.classList.contains("slider") ? axisEl.querySelector(".input.numeric") : axisEl.querySelector(".input.slider");
 		otherInputEl.value = el.value;
 
+		// move the marker
 		if (GLOBAL.draggingIndex === -1) {
 			GLOBAL.current[inputOrOutputId][axisId] = parseFloat(el.value);
+			elMarker.setPosition(svgCoordsFromAxisCoords(GLOBAL.current[0]));
+
+			// hack (set output = input)
+			// FIX THIS WHEN avar2 COMPILATION WORKING
+			axisEl.querySelectorAll("input.output").forEach(outputEl => outputEl.value = parseFloat(el.value));
+
 		}
 		else {
+			// const mapping = GLOBAL.mappings[GLOBAL.draggingIndex];
+			// mapping[inputOrOutputId][axisId] = parseFloat(el.value);
+
 			const mapping = GLOBAL.mappings[GLOBAL.draggingIndex];
 			mapping[inputOrOutputId][axisId] = parseFloat(el.value);
+			const [svgX, svgY] = svgCoordsFromAxisCoords(mapping[inputOrOutputId]);
+			elMarker.setPosition([svgX, svgY]);
+			
+			// update the arrow
+			const arrowEl = Q(`.arrow[data-index="${GLOBAL.draggingIndex}"]`);
+			if (arrowEl) { // sanity
+
+				updateArrow(arrowEl, inputOrOutputId, svgX, svgY);
+
+			}
 		}
 
-		// move the marker
-		elMarker.setPosition(svgCoordsFromAxisCoords(getCurrentAxisCoords()));
-		console.log("here")
-
+		/*
 		if (GLOBAL.draggingIndex === -1) {
 
 			// hack (set output = input)
@@ -370,6 +379,7 @@ function loadFontFromArrayBuffer (arrayBuffer, options={}) {
 
 		// move the arrow
 		if (GLOBAL.draggingIndex !== -1) {
+
 			const mapping = GLOBAL.mappings[GLOBAL.draggingIndex];
 			const [svgX, svgY] = svgCoordsFromAxisCoords(mapping[inputOrOutputId]);
 			
@@ -382,6 +392,7 @@ function loadFontFromArrayBuffer (arrayBuffer, options={}) {
 			}
 
 		}
+		*/
 
 
 	
@@ -468,7 +479,7 @@ function loadFontFromArrayBuffer (arrayBuffer, options={}) {
 
 	// disable all the initial outputs
 	if (GLOBAL.draggingIndex === -1) {
-		Qall(".axis input.output").forEach(el => el.disabled = true);
+		Qall("#axes .axis input.output").forEach(el => el.disabled = true);
 	}
 
 }
@@ -477,10 +488,6 @@ function onDropFont (e) {
 	const el = e.target;
 
 	e.preventDefault();
-
-	// open font as SamsaFont
-	// - not yet
-
 
 	// get arrayBuffer from dropped object
 	const file = e.dataTransfer.files[0];
@@ -495,7 +502,7 @@ function onDropFont (e) {
 function getCurrentAxisCoords() {
 
 	return GLOBAL.font.fvar.axes.map((axis, a) => {
-		const axisEl = Qall(".axis")[a];
+		const axisEl = Qall("#axes .axis")[a];
 		return parseFloat(axisEl.querySelector(".input").value);
 	});
 }
@@ -510,7 +517,8 @@ function getDefaultAxisCoords() {
 
 function addRender() {
 
-	const currentAxisCoords = getCurrentAxisCoords();
+	//const currentAxisCoords = getCurrentAxisCoords();
+	const currentAxisCoords = GLOBAL.current[0];
 	
 	// the controls icon
 	const controlsButtonEl = EL("div");
@@ -562,7 +570,7 @@ function addRender() {
 	Q(".render-container").append(renderItemEl);
 
 
-	refreshResults();
+	//refreshResults();
 	
 }
 
@@ -597,7 +605,8 @@ function addMapping() {
 
 	const from = [];
 	const to = [];
-	const currentCoords = getCurrentAxisCoords();
+	//const currentCoords = getCurrentAxisCoords();
+	const currentCoords = GLOBAL.current[0];
 
 	// initialize the mapping to the default values
 	GLOBAL.font.fvar.axes.forEach((axis, a) => {
@@ -646,8 +655,6 @@ function svgMouseMove(e) {
 	const el = GLOBAL.dragging;
 	const index = parseInt(el.dataset.index);
 
-	console.log("GLOBAL.draggingIndex", GLOBAL.draggingIndex);
-
 	const rect = GLOBAL.svgEl.getBoundingClientRect();
 	const mousex = e.clientX;
 	const mousey = rect.height - e.clientY;
@@ -673,7 +680,6 @@ function svgMouseMove(e) {
 		GLOBAL.current[1][xAxisIndex] = xCoord;
 		GLOBAL.current[1][yAxisIndex] = yCoord;
 
-		console.log("updating current location sliders")
 		updateMappingsSliders(index);
 	}
 
@@ -860,7 +866,8 @@ function updateMappingsSVG() {
 	elCurrent.classList.add("current", "location");
 	elCurrent.dataset.index = -1;
 	elCurrent.innerHTML = svgCurrentLocation;
-	elCurrent.setPosition(svgCoordsFromAxisCoords(getCurrentAxisCoords()));
+	//elCurrent.setPosition(svgCoordsFromAxisCoords(getCurrentAxisCoords()));
+	elCurrent.setPosition(svgCoordsFromAxisCoords(GLOBAL.current[0]));
 	GLOBAL.svgEl.appendChild(elCurrent);
 	elCurrent.onmousedown = mappingMouseDown;
 	elCurrent.onmousedown = mappingMouseDown;
@@ -917,7 +924,7 @@ function updateMappings() {
 
 function updateMappingsSliders(m) {
 
-	Qall(".axis").forEach((axisEl, a) => {
+	Qall("#axes .axis").forEach((axisEl, a) => {
 		const inputSliderEl = axisEl.querySelector(".input.slider");
 		const inputNumericEl = axisEl.querySelector(".input.numeric");
 		const outputSliderEl = axisEl.querySelector(".output.slider");
@@ -929,11 +936,11 @@ function updateMappingsSliders(m) {
 
 	if (GLOBAL.draggingIndex === -1) {
 		// disable all the outputs
-		Qall(".axis input.output").forEach(el => el.disabled = true);
+		Qall("#axes .axis input.output").forEach(el => el.disabled = true);
 	}
 	else {
 		// enable all the outputs
-		Qall(".axis input.output").forEach(el => el.disabled = false);
+		Qall("#axes .axis input.output").forEach(el => el.disabled = false);
 	}
 
 }
@@ -1020,26 +1027,25 @@ function updateRenders() {
 	Qall(".render-item").forEach((renderItemEl, r) => {
 		const renderEl = renderItemEl.querySelector(".render");
 		const fvsEntries = [];
-		if (r==0){
-			Qall("#axes .axis").forEach(axisEl => {
-				const axisId = parseInt(axisEl.dataset.axisId);
-				const axis = GLOBAL.font.fvar.axes[axisId];
-				const value = axisEl.querySelector(".input.numeric").value;
-				fvsEntries.push(`"${axis.axisTag}" ${value}`);
-			});		
+
+		if (r===0) {
+			GLOBAL.font.fvar.axes.forEach((axis, a) => {
+				fvsEntries.push(`"${axis.axisTag}" ${GLOBAL.current[0][a]}`);
+			});
 		}
 		else {
-			const axisCoords = getCurrentAxisCoords();
-			const axisEls = renderItemEl.querySelectorAll(".axis");
-			axisEls.forEach((axisEl, a) => {
-				const axis = GLOBAL.font.fvar.axes[a];
+			const axisEls = [...renderItemEl.querySelectorAll(".axis")];
+			GLOBAL.font.fvar.axes.forEach((axis, a) => {
+				const axisEl = axisEls[a];
 				const valueEl = axisEl.querySelector(".value");
 				if (!axisEl.classList.contains("locked")) {
-					valueEl.value = axisCoords[a]; // if unlocked, update it to the current axis value
+					const valueEl = axisEl.querySelector(".value");
+					valueEl.value = GLOBAL.current[0][a];
 				}
 				fvsEntries.push(`"${axis.axisTag}" ${valueEl.value}`);
 			});
 		}
+		
 		renderEl.style.fontVariationSettings = fvsEntries.join();
 	});
 }
