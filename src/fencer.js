@@ -59,9 +59,9 @@ Element.prototype.setPosition = function (position) {
 }
 
 
-function axisControlSelectorPopulate() {
+function mappingsSelectorPopulate() {
 
-	const selectEl = Q("#select-axis-controls");
+	const selectEl = Q("#mapping-selector");
 
 	selectEl.innerHTML = "";
 
@@ -81,36 +81,6 @@ function axisControlSelectorPopulate() {
 
 }
 
-function setAxisControls(mappingIndex) {
-	
-	if (mappingIndex === undefined || mappingIndex === -1) {
-
-	}
-	else {
-
-
-	}
-
-
-}
-
-function setMode(e) {
-
-	GLOBAL.mode = Q("#select-mode").value;
-	switch (GLOBAL.mode) {
-		case "axes":
-			Qall("#axes .axis .output").forEach(el => el.disabled = true);
-			break;
-
-		case "mappings":
-			Qall("#axes .axis .output").forEach(el => el.disabled = false);
-			break;
-
-		default:
-			break;
-	}
-}
-
 function getArrowPath (arrow) {
 
 	// call with getArrowParams({x1: x1, x2: x2, y1: y1, y2: y2, tipLen: tipLen, tipWid: tipWid})
@@ -122,9 +92,6 @@ function getArrowPath (arrow) {
 	if (x2!=x1 || y2!=y1) {
 		const len = Math.sqrt((x2-x1)*(x2-x1)+(y2-y1)*(y2-y1));
 		const arrowBackX = (y2-y1) * tipWid/2/len, arrowBackY = (x2-x1) * tipWid/2/len;
-
-		console.log(arrow)
-		console.log("len", len)
 
 		arrow.arrowX1 = arrow.arrowX2 = arrow.newX2 = x1 + (x2-x1) * (len-tipLen)/len;
 		arrow.arrowY1 = arrow.arrowY2 = arrow.newY2 = y1 + (y2-y1) * (len-tipLen)/len;
@@ -202,19 +169,25 @@ function loadFontFromArrayBuffer (arrayBuffer, options={}) {
 			renderEl.style.fontFamily = GLOBAL.font.names[6];
 		});
 
-		//		console.log("loaded font: " + GLOBAL.font.names[6]);
+		// activate buttons
+		Q("#download-font").disabled = false;
+		Q("#add-mapping").disabled = false;
+		Q("#delete-mapping").disabled = false;
 
-		const downloadFontEl = Q("#download-font");
-		downloadFontEl.disabled = false;
-		const addMappingButtonEl = Q("#add-mapping");
-		addMappingButtonEl.disabled = false;
+		// on add/delete mapping button click
+		Q("#add-mapping").onclick = addMapping;
+		Q("#delete-mapping").onclick = deleteMapping;
+
+		// init the mappings xml
+		updateMappings();
+
 
 	});
 
 
 	// axis-controls-select
 
-	axisControlSelectorPopulate();
+	mappingsSelectorPopulate();
 
 	// build axis controls
 	str += "AXES: \n";
@@ -603,7 +576,40 @@ function addMapping() {
 
 	GLOBAL.mappings.push([from, to]);
 
-	axisControlSelectorPopulate();
+	mappingsSelectorPopulate();
+
+	// update stuff
+	updateMappingsSVG();
+	updateMappings();
+}
+
+function deleteMapping() {
+
+	if (GLOBAL.draggingIndex >= 0) {
+
+		console.log(`document.querySelector('.arrow[data-index="${GLOBAL.draggingIndex}"]')`);
+		console.log(`document.querySelector('.input.location[data-index="${GLOBAL.draggingIndex}"]')`);
+		console.log(`document.querySelector('.output.location[data-index="${GLOBAL.draggingIndex}"]')`);
+
+		Q(`.arrow[data-index="${GLOBAL.draggingIndex}"]`).remove();
+		Q(`.input.location[data-index="${GLOBAL.draggingIndex}"]`).remove();
+		Q(`.output.location[data-index="${GLOBAL.draggingIndex}"]`).remove();
+
+		GLOBAL.mappings.splice(GLOBAL.draggingIndex, 1);
+
+		GLOBAL.dragging = undefined;
+		GLOBAL.draggingIndex = 0;
+
+		mappingsSelectorPopulate();
+	}
+
+	Q("#mapping-selector").value = -1;
+	Q("#mapping-selector").dispatchEvent(new Event("change"));
+
+	// repopulate the mapping selector
+
+	// renumber the existing mappings
+
 
 	// update stuff
 	updateMappingsSVG();
@@ -755,7 +761,7 @@ function svgMouseUp(e) {
 
 	GLOBAL.svgEl.removeEventListener("mousemove", svgMouseMove); // = undefined;
 	GLOBAL.svgEl.removeEventListener("mouseup", svgMouseUp); // = undefined;
-	GLOBAL.dragging = undefined;
+	//GLOBAL.dragging = undefined;
 	GLOBAL.dragOffset = undefined;
 
 }
@@ -796,7 +802,7 @@ function mappingMouseDown (e) {
 	GLOBAL.svgEl.addEventListener("mouseup", svgMouseUp); // maybe mouseup should be when overflows (outside of min/max) are snapped back to [min,max]
 
 	// refresh sliders with data from the relevant mapping (or current location, which has index == -1)
-	Q("#select-axis-controls").value = GLOBAL.draggingIndex;
+	Q("#mapping-selector").value = GLOBAL.draggingIndex;
 	updateMappingsSliders(GLOBAL.draggingIndex);
 
 }
@@ -939,7 +945,7 @@ function selectAxisControls(e) {
 	// const selectEl = Q("#select-axis-controls");
 	// selectEl.value = GLOBAL.draggingIndex;
 
-	axisControlSelectorPopulate();
+	mappingsSelectorPopulate();
 
 }
 
@@ -958,7 +964,7 @@ function initFencer() {
 
 	//document.querySelector("#select-mode").onchange = setMode;
 
-	Q("#select-axis-controls").onchange = selectAxisControls;
+	Q("#mapping-selector").onchange = selectAxisControls;
 
 
 	// init the svg
@@ -966,22 +972,13 @@ function initFencer() {
 	GLOBAL.svgEl.id = "mappings-visual";
 	GLOBAL.svgEl.setAttribute("transform", "scale(1 -1)");
 	
-	// init the mappings xml
-	updateMappings();
-
-	// on add mapping button click
-	const addMappingButtonEl = Q("#add-mapping");
-	addMappingButtonEl.onclick = e => {
-		addMapping();
-	};
-
 	Q(".mappings-ui").insertBefore(GLOBAL.svgEl, Q("#mappings-ui-info"));
 	//Q(".mappings-ui").append(GLOBAL.svgEl);
 
 	Q("#sample-text").oninput = sampleTextChange;
 
 	// handle change of mappings selector
-	Q("#select-axis-controls").onchange = selectMapping;
+	Q("#mapping-selector").onchange = selectMapping;
 	
 
 	//const svgEl = document.querySelector(".mappings-svg");
@@ -1039,7 +1036,6 @@ function updateRenders() {
 function selectMapping(e) {
 
 	GLOBAL.draggingIndex = parseInt(e.target.value);
-	console.log("selectMapping", GLOBAL.draggingIndex);
 	updateMappingsSliders(GLOBAL.draggingIndex);
 
 }
