@@ -179,7 +179,7 @@ function loadFontFromArrayBuffer (arrayBuffer, options={}) {
 		Q("#delete-mapping").onclick = deleteMapping;
 
 		// init the mappings xml
-		updateMappings();
+		updateMappingsXML();
 
 
 	});
@@ -580,7 +580,7 @@ function addMapping() {
 
 	// update stuff
 	updateMappingsSVG();
-	updateMappings();
+	updateMappingsXML();
 }
 
 function deleteMapping() {
@@ -614,7 +614,7 @@ function deleteMapping() {
 
 	// update stuff
 	updateMappingsSVG();
-	updateMappings();
+	updateMappingsXML();
 }
 
 function svgArrow(i, x1, y1, x2, y2) {
@@ -721,7 +721,7 @@ function svgMouseMove(e) {
 			}
 			
 			updateMappingsSliders(index);
-			updateMappings();
+			updateMappingsXML();
 		}
 	}
 
@@ -870,7 +870,7 @@ function updateMappingsSVG() {
 
 
 
-function updateMappings() {
+function updateMappingsXML() {
 
 	// update XML
 	let str = "<mappings>\n";
