@@ -591,9 +591,10 @@ function deleteMapping() {
 		console.log(`document.querySelector('.input.location[data-index="${GLOBAL.draggingIndex}"]')`);
 		console.log(`document.querySelector('.output.location[data-index="${GLOBAL.draggingIndex}"]')`);
 
-		Q(`.arrow[data-index="${GLOBAL.draggingIndex}"]`).remove();
-		Q(`.input.location[data-index="${GLOBAL.draggingIndex}"]`).remove();
-		Q(`.output.location[data-index="${GLOBAL.draggingIndex}"]`).remove();
+		// we don’t actually have to remove the elements, because we immediately redraw the SVG
+		// Q(`.arrow[data-index="${GLOBAL.draggingIndex}"]`).remove();
+		// Q(`.input.location[data-index="${GLOBAL.draggingIndex}"]`).remove();
+		// Q(`.output.location[data-index="${GLOBAL.draggingIndex}"]`).remove();
 
 		GLOBAL.mappings.splice(GLOBAL.draggingIndex, 1);
 
