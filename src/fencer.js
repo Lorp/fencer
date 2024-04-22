@@ -180,12 +180,8 @@ function loadFontFromArrayBuffer (arrayBuffer, options={}) {
 
 		// init the mappings xml
 		updateMappingsXML();
-
-
 	});
 
-
-	// axis-controls-select
 
 	mappingsSelectorPopulate();
 
@@ -212,7 +208,7 @@ function loadFontFromArrayBuffer (arrayBuffer, options={}) {
 	key[7].textContent = "X";
 	key[8].textContent = "Y";
 	key[6].style.fontFamily = "Material Symbols Outlined";
-	key[6].title = "reset all";
+	key[6].title = "Reset all input axes\n(shift-click to reset all output axes)";
 	key[6].onclick = axisReset;
 	keyEl.append(...key);
 	Q("#axes").append(keyEl);
@@ -274,7 +270,7 @@ function loadFontFromArrayBuffer (arrayBuffer, options={}) {
 		row[6].style.fontFamily = "Material Symbols Outlined";
 		row[6].textContent = "refresh";
 		row[6].onclick = axisReset;
-		row[6].title = "reset";
+		row[6].title = "Reset input axis\n(shift-click to reset output axis)";
 
 		row[7].type = "radio";
 		row[7].name = "x-axis";
@@ -374,8 +370,10 @@ function loadFontFromArrayBuffer (arrayBuffer, options={}) {
 	}
 
 	function axisReset (e) {
+		console.log("axisReset");
 		const el = e.target;
 		const parentEl = el.closest(".axis,.key");
+		const inputOrOutput = e.shiftKey ? 1 : 0;
 
 		// is the reset button in the key row?
 		if (parentEl.classList.contains("key")) {
@@ -383,15 +381,36 @@ function loadFontFromArrayBuffer (arrayBuffer, options={}) {
 				const axis = GLOBAL.font.fvar.axes[parseInt(axisEl.dataset.axisId)];
 				axisEl.querySelectorAll("input.input, input.output").forEach( el => el.value = axis.defaultValue );
 			});
+
+			if (GLOBAL.draggingIndex === -1) {
+				GLOBAL.font.fvar.axes.forEach((axis, a) => GLOBAL.current[0][a] = GLOBAL.current[1][a] = axis.defaultValue);
+			}
+			else {
+				const mapping = GLOBAL.mappings[GLOBAL.draggingIndex];
+				GLOBAL.font.fvar.axes.forEach((axis, a) => mapping[inputOrOutput][a] = axis.defaultValue );
+			}
 		}
 
 		// is the reset button in an axis row?
 		else {
 			const axisEl = parentEl;
-			const axis = GLOBAL.font.fvar.axes[parseInt(axisEl.dataset.axisId)];
-			axisEl.querySelectorAll("input.input, input.output").forEach( el => el.value = axis.defaultValue );
+			console.log(axisEl);
+			const axisId = parseInt(axisEl.dataset.axisId);
+			const axis = GLOBAL.font.fvar.axes[axisId];
+
+			if (GLOBAL.draggingIndex === -1) {
+				GLOBAL.current[0][axisId] = GLOBAL.current[1][axisId] = axis.defaultValue;
+			}
+			else {
+				const mapping = GLOBAL.mappings[GLOBAL.draggingIndex];
+				mapping[inputOrOutput][axisId] = axis.defaultValue;
+			}
 		}
 
+		// updates
+		updateMappingsSliders(GLOBAL.draggingIndex);
+		updateMappingsSVG();
+		updateMappingsXML();
 		updateRenders();
 	}
 
