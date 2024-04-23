@@ -197,19 +197,21 @@ function loadFontFromArrayBuffer (arrayBuffer, options={}) {
 
 	const keyEl = EL("div");
 	keyEl.classList.add("key");
-	const key = [ EL("div"), EL("div"), EL("div"), EL("div"), EL("div"), EL("div"), EL("div"), EL("div"), EL("div") ];
+		
+	const key = [ EL("div"), EL("div"), EL("div"), EL("div"), EL("div"), EL("div"), EL("div") ];
 	key[0].textContent = "TAG";
-	key[1].textContent = "IN";
-	key[2].textContent = "IN";
-	key[3].textContent = "→";
-	key[4].textContent = "OUT";
-	key[5].textContent = "OUT";
-	key[6].textContent = "refresh";
-	key[7].textContent = "X";
-	key[8].textContent = "Y";
-	key[6].style.fontFamily = "Material Symbols Outlined";
-	key[6].title = "Reset all input axes\n(shift-click to reset all output axes)";
-	key[6].onclick = axisReset;
+	key[1].textContent = "INPUT";
+	key[2].textContent = "→";
+	key[3].textContent = "OUTPUT";
+	key[4].textContent = "refresh";
+	key[5].textContent = "X";
+	key[6].textContent = "Y";
+	key[4].style.fontFamily = "Material Symbols Outlined";
+	key[4].title = "Reset all input axes\n(shift-click to reset all output axes)";
+	key[4].onclick = axisReset;
+	key[1].style.gridColumn = "2 / 4";
+	key[3].style.gridColumn = "5 / 7";
+
 	keyEl.append(...key);
 	Q("#axes").append(keyEl);
 	
