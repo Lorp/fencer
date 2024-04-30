@@ -111,6 +111,8 @@ function mappingSimpleNormalize(axes, mapping) {
 
 window.onkeydown = function (e) {
 
+	console.log(GLOBAL.font.fvar.axes);
+
 	let delta = 0;
 	switch (e.key) {
 		case "ArrowUp":
@@ -1004,7 +1006,7 @@ function updateMappingsXML() {
 			mapping[i].forEach((x, a) => {
 				const axis = GLOBAL.font.fvar.axes[a];
 				if (x !== undefined && axis.defaultValue !== x)
-					str += `      <dimension tag="${GLOBAL.font.fvar.axes[a].axisTag}" xvalue="${x}">\n`;
+					str += `      <dimension tag="${GLOBAL.font.fvar.axes[a].axisTag}" xvalue="${x}"/>\n`;
 			});
 			str += `    </${io}>\n`;
 		});
