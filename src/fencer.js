@@ -1,16 +1,27 @@
 "use strict"
 
 // import samsa-core and fontTools.varLib models
-import { SamsaFont, SamsaInstance, SamsaBuffer, SAMSAGLOBAL } from "https://lorp.github.io/samsa-core/src/samsa-core.js";
-import { normalizeValue, piecewiseLinearMap } from "./models.js";
+//import { SamsaFont, SamsaInstance, SamsaBuffer, SAMSAGLOBAL } from "https://lorp.github.io/samsa-core/src/samsa-core.js";
+import { SamsaFont, SamsaInstance, SamsaBuffer, SAMSAGLOBAL } from "./samsa-core/samsa-core.js";
+//import { normalizeValue, piecewiseLinearMap, VariationModel } from "./models.js";
+import { VariationModel } from "./models.js";
 
+import { VariationModel as VM} from "./fontra-src-client-core/var-model.js";
+
+
+
+console.log(VariationModel);
+console.log(VariationModel.getMasterLocationsSortKeyFunc);
+
+
+console.log("VarationModel (Fontra)");
+console.log(VM);
 
 
 //console.log(piecewiseLinearMap)
 
 
 let mappingsSVG;
-const mappingsView = [];
 // const svgPre = `<svg width="100%" height="100%" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">`;
 // const svgPost = `</svg>`;
 const svgArrowHandleRadius = 15;
@@ -26,6 +37,8 @@ const GLOBAL = {
 	mappings: [],
 	current: [[],[]],
 	draggingIndex: -1, // starts current location, not a mapping
+	mappingsView: [],
+	axisTouched: -1,
 };
 
 function Q (selector) {
@@ -48,6 +61,10 @@ function SVG (tag, attrs) {
 	return el
 }
 
+function clamp(value, min, max) {
+	return Math.max(min, Math.min(max, value));
+}
+
 Element.prototype.attr = function (attrs) {
 	for (const prop in attrs) {
 		this.setAttributeNS(null, prop, attrs[prop])
@@ -56,6 +73,97 @@ Element.prototype.attr = function (attrs) {
 
 Element.prototype.setPosition = function (position) {
 	this.setAttribute("transform", `translate(${position[0]}, ${position[1]})`)
+}
+
+function simpleNormalize(axis, value) {
+	if (value === axis.defaultValue) {
+		return 0;
+	}
+	else if (value <= axis.minValue) {
+		return -1;
+	}
+	else if (value >= axis.maxValue) {
+		return 1;
+	}
+	else if (value < axis.defaultValue) {
+		return (value - axis.defaultValue) / (axis.defaultValue - axis.minValue);
+	}
+	else if (value > axis.defaultValue) {
+		return (value - axis.defaultValue) / (axis.maxValue - axis.defaultValue);
+	}
+	return undefined; // never gets here
+}
+
+// takes a mapping and makes all its values normalized to the range [-1, 1], represented in f2.14, so actually as integers in the range [-16384, 16384]
+function mappingSimpleNormalize(axes, mapping) {
+
+	const normalizedMapping = [[],[]];
+
+	axes.forEach((axis, a) => {
+		// normalizedMapping[0][a] = Math.round(0x4000 * simpleNormalize(axis, mapping[0][a]));
+		// normalizedMapping[1][a] = Math.round(0x4000 * simpleNormalize(axis, mapping[1][a]));
+		normalizedMapping[0][a] = simpleNormalize(axis, mapping[0][a]);
+		normalizedMapping[1][a] = simpleNormalize(axis, mapping[1][a]);
+	});
+
+	return normalizedMapping;
+}
+
+window.onkeydown = function (e) {
+
+	let delta = 0;
+	switch (e.key) {
+		case "ArrowUp":
+			if (GLOBAL.draggingIndex !== -1) delta = 1; break;
+		case "ArrowRight":
+			delta = 1; break;
+		case "ArrowDown":
+			if (GLOBAL.draggingIndex !== -1) delta = -1; break; 
+		case "ArrowLeft":
+			delta = -1; break;
+		default:
+			return; break;
+	
+	}
+
+	e.stopPropagation();
+	e.preventDefault();
+
+	// modify output of current location? do nothing
+	if (GLOBAL.draggingIndex === -1 && e.shiftKey) {
+		return;
+	}
+
+	// if delta is 0, do nothing
+	if (delta === 0) return;
+
+
+	console.log("Want to move: ");
+	console.log("Mapping", GLOBAL.draggingIndex);
+	console.log("Axes", getVisibleAxisIds());
+	console.log("I/O", e.shiftKey);
+
+	const inputOrOutput = +e.shiftKey; // 0 for input, 1 for output
+	const xOrY = +["ArrowUp","ArrowDown"].includes(e.key); // 0 for x, 1 for y
+	//const visibleAxisIds = getVisibleAxisIds();
+	//const axisId = getVisibleAxisIds()[inputOrOutput];
+	const axisId = getVisibleAxisIds()[xOrY];
+	const axis = GLOBAL.font.fvar.axes[axisId];
+
+	let value = GLOBAL.draggingIndex === -1 ? GLOBAL.current[inputOrOutput][axisId] : GLOBAL.mappings[GLOBAL.draggingIndex][inputOrOutput][axisId];
+	value = clamp(value + delta, axis.minValue, axis.maxValue);
+	if (GLOBAL.draggingIndex === -1) {
+		GLOBAL.current[inputOrOutput][axisId] = value;
+	}
+	else {
+		GLOBAL.mappings[GLOBAL.draggingIndex][inputOrOutput][axisId] = value;
+	}
+
+	updateMappingsSliders(GLOBAL.draggingIndex);
+	updateMappingsSVG();
+	updateMappingsXML();
+	updateRenders();
+
 }
 
 
@@ -136,11 +244,11 @@ function svgCoordFromAxisCoord (a, val) {
 
 function svgCoordsFromAxisCoords (coords) {
 
-	const a0 = coords[mappingsView[0]];
-	const a1 = coords[mappingsView[1]];
+	const a0 = coords[GLOBAL.mappingsView[0]];
+	const a1 = coords[GLOBAL.mappingsView[1]];
 
-	const s0 = svgCoordFromAxisCoord(mappingsView[0], a0);
-	const s1 = svgCoordFromAxisCoord(mappingsView[1], a1);
+	const s0 = svgCoordFromAxisCoord(GLOBAL.mappingsView[0], a0);
+	const s1 = svgCoordFromAxisCoord(GLOBAL.mappingsView[1], a1);
 
 	return [s0, s1];
 }
@@ -308,7 +416,7 @@ function loadFontFromArrayBuffer (arrayBuffer, options={}) {
 		const el = e.target;
 		const axisEl = el.closest(".axis");
 		const axisId = parseInt(axisEl.dataset.axisId);
-		const otherInputEl = el.classList.contains("slider") ? axisEl.querySelector(".input.numeric") : axisEl.querySelector(".input.slider");
+		const otherInputEl = el.classList.contains("slider") ? axisEl.querySelector(`.${inputOrOutput}.numeric`) : axisEl.querySelector(`.${inputOrOutput}.slider`);
 		otherInputEl.value = el.value;
 
 		// move the marker
@@ -339,61 +447,31 @@ function loadFontFromArrayBuffer (arrayBuffer, options={}) {
 			}
 		}
 
-		/*
-		if (GLOBAL.draggingIndex === -1) {
-
-			// hack (set output = input)
-			// FIX THIS WHEN avar2 COMPILATION WORKING
-			axisEl.querySelectorAll("input.output").forEach(outputEl => outputEl.value = parseFloat(el.value));
-
-		}
-
-		// move the arrow
-		if (GLOBAL.draggingIndex !== -1) {
-
-			const mapping = GLOBAL.mappings[GLOBAL.draggingIndex];
-			const [svgX, svgY] = svgCoordsFromAxisCoords(mapping[inputOrOutputId]);
-			
-			// update the arrow
-			const arrowEl = Q(`.arrow[data-index="${GLOBAL.draggingIndex}"]`);
-			if (arrowEl) { // sanity
-
-				updateArrow(arrowEl, inputOrOutputId, svgX, svgY);
-
-			}
-
-		}
-		*/
-
-
-	
+		GLOBAL.axisTouched = axisId;
 
 		updateRenders();
+		updateMappingsXML();
 	}
 
 	function axisReset (e) {
 		console.log("axisReset");
 		const el = e.target;
 		const parentEl = el.closest(".axis,.key");
-		const inputOrOutput = e.shiftKey ? 1 : 0;
+		const inputOrOutput = +e.shiftKey; // 0 for input, 1 for output
 
-		// is the reset button in the key row?
+		// is this the reset button of the key row?
 		if (parentEl.classList.contains("key")) {
-			Qall("#axes .axis").forEach(axisEl => {
-				const axis = GLOBAL.font.fvar.axes[parseInt(axisEl.dataset.axisId)];
-				axisEl.querySelectorAll("input.input, input.output").forEach( el => el.value = axis.defaultValue );
-			});
 
 			if (GLOBAL.draggingIndex === -1) {
-				GLOBAL.font.fvar.axes.forEach((axis, a) => GLOBAL.current[0][a] = GLOBAL.current[1][a] = axis.defaultValue);
+				GLOBAL.current[0] = getDefaultAxisCoords();
+				GLOBAL.current[1] = [...GLOBAL.current[0]]; // this is safe, as default is never transformed (this MUST be a separate array)
 			}
 			else {
-				const mapping = GLOBAL.mappings[GLOBAL.draggingIndex];
-				GLOBAL.font.fvar.axes.forEach((axis, a) => mapping[inputOrOutput][a] = axis.defaultValue );
+				GLOBAL.mappings[GLOBAL.draggingIndex][inputOrOutput] = getDefaultAxisCoords();
 			}
 		}
 
-		// is the reset button in an axis row?
+		// is this the reset button of an axis row?
 		else {
 			const axisEl = parentEl;
 			console.log(axisEl);
@@ -401,11 +479,11 @@ function loadFontFromArrayBuffer (arrayBuffer, options={}) {
 			const axis = GLOBAL.font.fvar.axes[axisId];
 
 			if (GLOBAL.draggingIndex === -1) {
-				GLOBAL.current[0][axisId] = GLOBAL.current[1][axisId] = axis.defaultValue;
+				GLOBAL.current[0][axisId] = axis.defaultValue;
+				GLOBAL.current[1][axisId] = axis.defaultValue;
 			}
 			else {
-				const mapping = GLOBAL.mappings[GLOBAL.draggingIndex];
-				mapping[inputOrOutput][axisId] = axis.defaultValue;
+				GLOBAL.mappings[GLOBAL.draggingIndex][inputOrOutput][axisId] = axis.defaultValue;
 			}
 		}
 
@@ -445,10 +523,10 @@ function loadFontFromArrayBuffer (arrayBuffer, options={}) {
 		// update the mappingsView array
 		Qall("#axes .axis").forEach((axisEl, a) => {
 			if (axisEl.querySelector("input[name=x-axis]").checked)
-				mappingsView[0] = a;
+				GLOBAL.mappingsView[0] = a;
 
 			if (axisEl.querySelector("input[name=y-axis]").checked)
-				mappingsView[1] = a;
+				GLOBAL.mappingsView[1] = a;
 		});
 
 
@@ -459,19 +537,23 @@ function loadFontFromArrayBuffer (arrayBuffer, options={}) {
 	
 	
 	// init mappings SVG based on first two axes
-	mappingsView.length = 0;
+	GLOBAL.mappingsView.length = 0;
 	if (GLOBAL.font.fvar.axes.length > 0) {
-		mappingsView.push(0); // set x axis to the first axis
+		GLOBAL.mappingsView.push(0); // set x axis to the first axis
 		if (GLOBAL.font.fvar.axes.length > 1) {
-			mappingsView.push(1); // set y axis to the second axis
+			GLOBAL.mappingsView.push(1); // set y axis to the second axis
 		}
 	}
+
+	// init axisTouched
+	if (GLOBAL.font.fvar.axes.length > 0)
+		GLOBAL.axisTouched = 0;
 
 	// draw mappings SVG
 	updateMappingsSVG();
 	updateRenders();
 
-	// disable all the initial outputs
+	// if these axes represent the current location, disable all the initial input elements with class "output"
 	if (GLOBAL.draggingIndex === -1) {
 		Qall("#axes .axis input.output").forEach(el => el.disabled = true);
 	}
@@ -494,9 +576,7 @@ function onDropFont (e) {
 
 function getDefaultAxisCoords() {
 
-	return GLOBAL.font.fvar.axes.map((axis, a) => {
-		return axis.defaultValue;
-	});
+	return GLOBAL.font.fvar.axes.map((axis, a) => axis.defaultValue );
 }
 
 function addRender() {
@@ -638,6 +718,15 @@ function deleteMapping() {
 	updateMappingsXML();
 }
 
+function getVisibleAxisIds() {
+	const xAxisEl = Q("input[name=x-axis]:checked").closest(".axis");
+	const yAxisEl = Q("input[name=y-axis]:checked").closest(".axis");
+	const xAxisIndex = parseInt(xAxisEl.dataset.axisId);
+	const yAxisIndex = parseInt(yAxisEl.dataset.axisId);
+
+	return [xAxisIndex, yAxisIndex];
+}
+
 function svgArrow(i, x1, y1, x2, y2) {
 
 	const arrowSvg = SVG("g");
@@ -660,12 +749,13 @@ function svgMouseMove(e) {
 
 	e.stopPropagation();
 
-
 	// which axes are we using?
-	const xAxisEl = Q("input[name=x-axis]:checked").closest(".axis");
-	const yAxisEl = Q("input[name=y-axis]:checked").closest(".axis");
-	const xAxisIndex = parseInt(xAxisEl.dataset.axisId);
-	const yAxisIndex = parseInt(yAxisEl.dataset.axisId);
+	// const xAxisEl = Q("input[name=x-axis]:checked").closest(".axis");
+	// const yAxisEl = Q("input[name=y-axis]:checked").closest(".axis");
+	// const xAxisIndex = parseInt(xAxisEl.dataset.axisId);
+	// const yAxisIndex = parseInt(yAxisEl.dataset.axisId);
+
+	const visibleAxisIds = getVisibleAxisIds();
 
 	const el = GLOBAL.dragging;
 	const index = parseInt(el.dataset.index);
@@ -680,7 +770,7 @@ function svgMouseMove(e) {
 
 	// move the location marker
 	el.setAttribute("transform", `translate(${svgX}, ${svgY})`);
-	const [xCoord, yCoord] = [axisCoordFromSvgCoord(xAxisIndex, svgX), axisCoordFromSvgCoord(yAxisIndex, svgY)];
+	const [xCoord, yCoord] = [axisCoordFromSvgCoord(visibleAxisIds[0], svgX), axisCoordFromSvgCoord(visibleAxisIds[1], svgY)];
 
 
 
@@ -688,12 +778,12 @@ function svgMouseMove(e) {
 		// it’s the current location marker
 
 		// input
-		GLOBAL.current[0][xAxisIndex] = xCoord;
-		GLOBAL.current[0][yAxisIndex] = yCoord;
+		GLOBAL.current[0][visibleAxisIds[0]] = xCoord;
+		GLOBAL.current[0][visibleAxisIds[1]] = yCoord;
 
 		// output
-		GLOBAL.current[1][xAxisIndex] = xCoord;
-		GLOBAL.current[1][yAxisIndex] = yCoord;
+		GLOBAL.current[1][visibleAxisIds[0]] = xCoord;
+		GLOBAL.current[1][visibleAxisIds[1]] = yCoord;
 
 		updateMappingsSliders(index);
 	}
@@ -730,15 +820,15 @@ function svgMouseMove(e) {
 				// x1 = svgX;
 				// y1 = svgY;
 				// lineEl.attr({x1: x1, y1: y1});
-				mapping[0][xAxisIndex] = xCoord;
-				mapping[0][yAxisIndex] = yCoord;
+				mapping[0][visibleAxisIds[0]] = xCoord;
+				mapping[0][visibleAxisIds[1]] = yCoord;
 			}
 			else if (el.classList.contains("output")) {
 				// x2 = svgX;
 				// y2 = svgY;
 				// lineEl.attr({x2: x2, y2: y2});
-				mapping[1][xAxisIndex] = xCoord;
-				mapping[1][yAxisIndex] = yCoord;
+				mapping[1][visibleAxisIds[0]] = xCoord;
+				mapping[1][visibleAxisIds[1]] = yCoord;
 			}
 			
 			updateMappingsSliders(index);
@@ -889,9 +979,18 @@ function updateMappingsSVG() {
 }
 
 
+function deltaSetScale (deltaSet, scale=0x4000, round=true) {
+	const scaledDeltaSet = [];
+	deltaSet.forEach((delta, d) => scaledDeltaSet[d] = round ? Math.round(delta * scale) : delta * scale );
+	return scaledDeltaSet;
+}
+
+
 
 
 function updateMappingsXML() {
+
+	const axisCount = GLOBAL.font.fvar.axisCount;
 
 	// update XML
 	let str = "<mappings>\n";
@@ -931,6 +1030,176 @@ function updateMappingsXML() {
 		details.innerHTML = mappingStr
 		Q(".mappings .html").append(details);
 	});
+
+
+	// let’s make an Item Variation Store!
+	// - we create the list of IVS regions from the input mappings
+	// - we create the delta sets from the output mappings
+	// - we create a single ItemVariationData to store all the delta sets, ignoring the possibility to split them into multiple IVDs
+	// - we create the IVS from the regions and the IVD
+	// - we create the DeltaSetIndexMap object (note that all entries will have "outer" index = 0, since we only have one IVD)
+	// - we create an avar table from the compiled IVS and DeltaSetIndexMap
+	// - we insert the avar table into the font
+
+
+	// set up the ivs and ivd
+	const ivs = {
+		format: 1,
+		axisCount: axisCount,
+		regions: [],
+		ivds: [],
+	};
+
+	const ivd = {
+		regionIds: [],
+		deltaSets: [],
+	}
+	ivs.ivds.push(ivd);
+
+	// create the regions
+	// - create a fonttools-style VariationModel by calling models.js
+	const axisOrder = Array.from({ length: GLOBAL.font.fvar.axes.length }, (_, i) => String.fromCharCode(65 + i)); // fake axis names, guaranteed unique
+
+
+	// report error if any mappings start at default location
+	//console.log("Error: we have a mappings whose input is all 0");
+
+	const locs = [ new Array(axisCount).fill(0) ]; // initilize locs with its first element having all zeros
+	const normalizedMappings = [];
+	GLOBAL.mappings.forEach(mapping => normalizedMappings.push(mappingSimpleNormalize (GLOBAL.font.fvar.axes, mapping)) );
+	normalizedMappings.forEach(mapping => {	
+		if (mapping[0].some(coord => coord !== 0)) { // ignore a mapping whose input is the default location
+			const loc = {};
+			mapping[0].forEach((coord, a) => loc[axisOrder[a]] = coord);
+			locs.push(loc);	
+		}
+	});
+
+	// log normalized mappings
+	console.log("Normalized Mappings:");
+	console.log(normalizedMappings);
+
+	// are there any mappings? (locs.length==1 means no mappings)
+	if (locs.length > 1) {
+		const model = new VariationModel(locs);
+		console.log("Supports:");
+		console.log(model.supports); // I think these are the regions
+
+		// translate supports into regions
+		model.supports
+			.filter(support => Object.keys(support).length > 0)
+			.forEach(support => ivs.regions.push(GLOBAL.font.fvar.axes.map((axis, a) => support.hasOwnProperty(axisOrder[a]) ? support[axisOrder[a]] : [0,0,0])));
+
+		// set up the IVD
+		// - initialize the single IVD to include all the regions (we can optimize it later)
+		ivd.regionIds = ivs.regions.map((region, r) => r);
+
+		// set up the wordDataCount
+		ivd.wordDataCount = ivd.regionIds.length; // this is safe, if not the most efficient
+
+		// - create the IVD deltas
+		// ivd.deltaSets.push(...);
+
+
+		console.log(model);
+
+		let masterValues = [];
+		masterValues.push(new Array(axisCount).fill(0));
+		normalizedMappings.forEach((mapping, m) => {
+		//locs.forEach((loc, m) => {
+			let deltas;
+			// if (m === 0) {
+			// 	deltas = new Array(axisCount).fill(0);
+			// }
+			// else {
+			// 	//deltas = loc[1].map((coord, a) => Math.round((coord - loc[0][a]) * 0x4000));
+			// 	deltas = mapping[1].map((coord, a) => Math.round((coord - mapping[0][a]) * 0x4000));
+			// }
+
+			deltas = mapping[1].map((coord, a) => Math.round((coord - mapping[0][a]) * 0x4000));
+
+			masterValues.push(deltas);
+
+			console.log("adding delta set ", m)
+			console.log(deltas);
+
+		});
+
+
+		// Fontra method
+		const fLocations = [{}];
+		masterValues = [];
+		masterValues.push(new Array(axisCount).fill(0));
+		//const deltas = [{}];
+		normalizedMappings.forEach(mapping => {
+		//GLOBAL.mappings.forEach(mapping => {
+			const fLoc = {};
+			mapping[0].forEach((coord, a) => fLoc[axisOrder[a]] = coord); // we only care about input locations
+			fLocations.push(fLoc);
+			
+
+			const delta = {};
+			const deltaMap = new Map();
+			let length = 0;
+			//mapping[1].forEach((coord, a) => {if (1) delta[axisOrder[a]] = coord}); // we only care if output != default
+			//mapping[1].forEach((coord, a) => {if (coord !== axis.defaultValue) delta[axisOrder[a]] = coord}); // we only care if output != default
+
+			// use a map
+			//mapping[1].forEach((coord, a) => { const axis = GLOBAL.font.fvar.axes[a]; if (coord !== axis.defaultValue) deltaMap.set(axisOrder[a], coord); });
+
+			// use an object
+			const deltaObj = {};
+			mapping[1].forEach((coord, a) => { const axis = GLOBAL.font.fvar.axes[a]; if (coord !== axis.defaultValue) deltaObj[axisOrder[a]] = coord; length++ });
+
+			// use an array
+			const deltaArr = [];
+			mapping[1].forEach((coord, a) => { deltaArr[a] = coord; });
+
+			//if (Object.keys(delta).length > 0) 
+			//deltas.push(delta);
+			//deltaObj.length = length;
+			masterValues.push(deltaArr);
+
+		});
+
+		const fModel = new VM(fLocations, axisOrder);
+		console.log("fModel");
+		console.log(fModel);
+
+		// console.log("fModel.getSourceContributions(deltas[1])");
+		// console.log(fModel.getSourceContributions(deltas[1]));
+		
+		console.log("fModel.deltaWeights")
+		console.log(fModel.deltaWeights)
+
+
+		console.log("masterValues")
+		console.log(masterValues);
+		console.log("fModel.getDeltas(masterValues[1])");
+		console.log(fModel.getDeltas(masterValues));
+
+		const deltaSets = fModel.getDeltas(masterValues);
+		deltaSets.forEach((deltaSet, ds) => {
+			if (ds > 0)
+				ivd.deltaSets.push(deltaSetScale(deltaSet));
+		});
+
+		// finalize IVS
+		console.log("ivs");
+		console.log(ivs);
+
+
+		// write avar table
+		const avarBuf = new SamsaBuffer(new ArrayBuffer(10000));
+		avarBuf.encodeItemVariationStore(ivs);
+
+		// make avarBuf a slice of itself
+		const avarBufSliced = new SamsaBuffer(avarBuf.buffer, 0, avarBuf.tell());
+		console.log(avarBufSliced);
+
+
+	}
+
 
 }
 

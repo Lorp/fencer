@@ -33,6 +33,7 @@ a:hover, a:visited {
 	grid-template-rows: auto 400px 3rem;
 	width: 400px;
 	background-color: lightblue;
+	user-select: none;
 }
 
 .fontinfo textarea {
@@ -273,10 +274,10 @@ input.numeric {
 		<h3>Mappings XML <button id="toggle-xml">Toggle XML</button></h3>
 
 		<div>
-			<div class="html">
+			<div class="html hidden">
 			</div>
 
-			<textarea class="xml hidden" placeholder=".designspace XML goes here"></textarea>
+			<textarea class="xml" placeholder=".designspace XML goes here"></textarea>
 			
 		</div>
 
