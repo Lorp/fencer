@@ -1,0 +1,475 @@
+{
+  "Font": {
+    "unitsPerEm": {
+      "type": "int"
+    },
+    "fontInfo": {
+      "type": "FontInfo"
+    },
+    "glyphs": {
+      "type": "dict",
+      "subtype": "VariableGlyph"
+    },
+    "glyphMap": {
+      "type": "dict",
+      "subtype": "list"
+    },
+    "axes": {
+      "type": "Axes"
+    },
+    "sources": {
+      "type": "dict",
+      "subtype": "FontSource"
+    },
+    "customData": {
+      "type": "dict",
+      "subtype": "Any"
+    }
+  },
+  "FontInfo": {
+    "familyName": {
+      "type": "str",
+      "optional": true
+    },
+    "versionMajor": {
+      "type": "int",
+      "optional": true
+    },
+    "versionMinor": {
+      "type": "int",
+      "optional": true
+    },
+    "copyright": {
+      "type": "str",
+      "optional": true
+    },
+    "trademark": {
+      "type": "str",
+      "optional": true
+    },
+    "description": {
+      "type": "str",
+      "optional": true
+    },
+    "sampleText": {
+      "type": "str",
+      "optional": true
+    },
+    "designer": {
+      "type": "str",
+      "optional": true
+    },
+    "designerURL": {
+      "type": "str",
+      "optional": true
+    },
+    "manufacturer": {
+      "type": "str",
+      "optional": true
+    },
+    "manufacturerURL": {
+      "type": "str",
+      "optional": true
+    },
+    "licenseDescription": {
+      "type": "str",
+      "optional": true
+    },
+    "licenseInfoURL": {
+      "type": "str",
+      "optional": true
+    },
+    "vendorID": {
+      "type": "str",
+      "optional": true
+    },
+    "customData": {
+      "type": "dict",
+      "subtype": "Any"
+    }
+  },
+  "VariableGlyph": {
+    "name": {
+      "type": "str"
+    },
+    "axes": {
+      "type": "list",
+      "subtype": "GlyphAxis"
+    },
+    "sources": {
+      "type": "list",
+      "subtype": "GlyphSource"
+    },
+    "layers": {
+      "type": "dict",
+      "subtype": "Layer"
+    },
+    "customData": {
+      "type": "dict",
+      "subtype": "Any"
+    }
+  },
+  "GlyphAxis": {
+    "name": {
+      "type": "str"
+    },
+    "minValue": {
+      "type": "float"
+    },
+    "defaultValue": {
+      "type": "float"
+    },
+    "maxValue": {
+      "type": "float"
+    },
+    "customData": {
+      "type": "dict",
+      "subtype": "Any"
+    }
+  },
+  "GlyphSource": {
+    "name": {
+      "type": "str"
+    },
+    "layerName": {
+      "type": "str"
+    },
+    "location": {
+      "type": "dict",
+      "subtype": "float"
+    },
+    "locationBase": {
+      "type": "str",
+      "optional": true
+    },
+    "inactive": {
+      "type": "bool"
+    },
+    "customData": {
+      "type": "dict",
+      "subtype": "Any"
+    }
+  },
+  "Layer": {
+    "glyph": {
+      "type": "StaticGlyph"
+    },
+    "customData": {
+      "type": "dict",
+      "subtype": "Any"
+    }
+  },
+  "StaticGlyph": {
+    "path": {
+      "type": "PackedPath"
+    },
+    "components": {
+      "type": "list",
+      "subtype": "Component"
+    },
+    "xAdvance": {
+      "type": "float",
+      "optional": true
+    },
+    "yAdvance": {
+      "type": "float",
+      "optional": true
+    },
+    "verticalOrigin": {
+      "type": "float",
+      "optional": true
+    },
+    "anchors": {
+      "type": "list",
+      "subtype": "Anchor"
+    },
+    "guidelines": {
+      "type": "list",
+      "subtype": "Guideline"
+    }
+  },
+  "PackedPath": {
+    "coordinates": {
+      "type": "list",
+      "subtype": "float"
+    },
+    "pointTypes": {
+      "type": "list",
+      "subtype": "PointType"
+    },
+    "contourInfo": {
+      "type": "list",
+      "subtype": "ContourInfo"
+    }
+  },
+  "ContourInfo": {
+    "endPoint": {
+      "type": "int"
+    },
+    "isClosed": {
+      "type": "bool"
+    }
+  },
+  "Component": {
+    "name": {
+      "type": "str"
+    },
+    "transformation": {
+      "type": "DecomposedTransform"
+    },
+    "location": {
+      "type": "dict",
+      "subtype": "float"
+    }
+  },
+  "DecomposedTransform": {
+    "translateX": {
+      "type": "float"
+    },
+    "translateY": {
+      "type": "float"
+    },
+    "rotation": {
+      "type": "float"
+    },
+    "scaleX": {
+      "type": "float"
+    },
+    "scaleY": {
+      "type": "float"
+    },
+    "skewX": {
+      "type": "float"
+    },
+    "skewY": {
+      "type": "float"
+    },
+    "tCenterX": {
+      "type": "float"
+    },
+    "tCenterY": {
+      "type": "float"
+    }
+  },
+  "Anchor": {
+    "name": {
+      "type": "str",
+      "optional": true
+    },
+    "x": {
+      "type": "float"
+    },
+    "y": {
+      "type": "float"
+    },
+    "customData": {
+      "type": "dict",
+      "subtype": "Any"
+    }
+  },
+  "Guideline": {
+    "name": {
+      "type": "str",
+      "optional": true
+    },
+    "x": {
+      "type": "float"
+    },
+    "y": {
+      "type": "float"
+    },
+    "angle": {
+      "type": "float"
+    },
+    "customData": {
+      "type": "dict",
+      "subtype": "Any"
+    }
+  },
+  "HorizontalGuideline": {
+    "name": {
+      "type": "str",
+      "optional": true
+    },
+    "y": {
+      "type": "float"
+    },
+    "customData": {
+      "type": "dict",
+      "subtype": "Any"
+    }
+  },
+  "VerticalGuideline": {
+    "name": {
+      "type": "str",
+      "optional": true
+    },
+    "x": {
+      "type": "float"
+    },
+    "customData": {
+      "type": "dict",
+      "subtype": "Any"
+    }
+  },
+  "Axes": {
+    "axes": {
+      "type": "list",
+      "subtype": "FontAxis"
+    },
+    "mappings": {
+      "type": "list",
+      "subtype": "MultipleAxisMapping"
+    },
+    "elidedFallBackname": {
+      "type": "str",
+      "optional": true
+    },
+    "customData": {
+      "type": "dict",
+      "subtype": "Any"
+    }
+  },
+  "FontAxis": {
+    "name": {
+      "type": "str"
+    },
+    "label": {
+      "type": "str"
+    },
+    "tag": {
+      "type": "str"
+    },
+    "minValue": {
+      "type": "float"
+    },
+    "defaultValue": {
+      "type": "float"
+    },
+    "maxValue": {
+      "type": "float"
+    },
+    "mapping": {
+      "type": "list",
+      "subtype": "list"
+    },
+    "valueLabels": {
+      "type": "list",
+      "subtype": "AxisValueLabel"
+    },
+    "hidden": {
+      "type": "bool"
+    },
+    "customData": {
+      "type": "dict",
+      "subtype": "Any"
+    }
+  },
+  "AxisValueLabel": {
+    "name": {
+      "type": "str"
+    },
+    "value": {
+      "type": "float"
+    },
+    "minValue": {
+      "type": "float",
+      "optional": true
+    },
+    "maxValue": {
+      "type": "float",
+      "optional": true
+    },
+    "linkedValue": {
+      "type": "float",
+      "optional": true
+    },
+    "elidable": {
+      "type": "bool"
+    },
+    "olderSibling": {
+      "type": "bool"
+    }
+  },
+  "DiscreteFontAxis": {
+    "name": {
+      "type": "str"
+    },
+    "label": {
+      "type": "str"
+    },
+    "tag": {
+      "type": "str"
+    },
+    "values": {
+      "type": "list",
+      "subtype": "float"
+    },
+    "defaultValue": {
+      "type": "float"
+    },
+    "mapping": {
+      "type": "list",
+      "subtype": "list"
+    },
+    "valueLabels": {
+      "type": "list",
+      "subtype": "AxisValueLabel"
+    },
+    "hidden": {
+      "type": "bool"
+    },
+    "customData": {
+      "type": "dict",
+      "subtype": "Any"
+    }
+  },
+  "MultipleAxisMapping": {
+    "description": {
+      "type": "str",
+      "optional": true
+    },
+    "groupDescription": {
+      "type": "str",
+      "optional": true
+    },
+    "inputLocation": {
+      "type": "dict",
+      "subtype": "float"
+    },
+    "outputLocation": {
+      "type": "dict",
+      "subtype": "float"
+    }
+  },
+  "FontSource": {
+    "name": {
+      "type": "str"
+    },
+    "location": {
+      "type": "dict",
+      "subtype": "float"
+    },
+    "verticalMetrics": {
+      "type": "dict",
+      "subtype": "FontMetric"
+    },
+    "guidelines": {
+      "type": "list",
+      "subtype": "Guideline"
+    },
+    "customData": {
+      "type": "dict",
+      "subtype": "Any"
+    }
+  },
+  "FontMetric": {
+    "value": {
+      "type": "float"
+    },
+    "customData": {
+      "type": "dict",
+      "subtype": "Any"
+    }
+  }
+}
