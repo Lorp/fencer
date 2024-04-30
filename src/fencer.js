@@ -565,6 +565,9 @@ function onDropFont (e) {
 
 	e.preventDefault();
 
+	// delete contents of the axes container
+	Q("#axes").innerHTML = "";
+
 	// get arrayBuffer from dropped object
 	const file = e.dataTransfer.files[0];
 	file.arrayBuffer().then(arrayBuffer => {
