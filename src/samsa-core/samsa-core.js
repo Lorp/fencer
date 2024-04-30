@@ -792,7 +792,9 @@ const TABLE_DECODERS = {
 		fvar.axes = [];
 		buf.seek(fvar.axesArrayOffset);
 		for (let a=0; a<fvar.axisCount; a++) {
-			fvar.axes.push(buf.decode(FORMATS.VariationAxisRecord));
+			const axis = buf.decode(FORMATS.VariationAxisRecord);
+			axis.name = font.names[axis.axisNameID];
+			fvar.axes.push(axis);
 		}
 		fvar.instances = [];
 		const includePostScriptNameID = fvar.instanceSize == fvar.axisCount * 4 + 6; // instanceSize determins whether postScriptNameID is included
