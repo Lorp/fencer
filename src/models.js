@@ -1,3 +1,4 @@
+"use strict";
 // This is Behdad’s untested translation of the VariationModel class from fontTools.varLib.models
 // "Just a ChatGPT translation. Untested"
 // https://gist.github.com/behdad/3c5e6bd015b1a44f5f3b50774902eb52
@@ -157,11 +158,14 @@ class VariationModel {
             Object.fromEntries(Object.entries(loc).filter(([_, v]) => v !== 0))
         );
 
-        let keyFunc = this.getMasterLocationsSortKeyFunc(nonZeroLocations, this.axisOrder);
+        let keyFunc = VariationModel.getMasterLocationsSortKeyFunc(nonZeroLocations, this.axisOrder);
         this.locations = nonZeroLocations.sort((a, b) => keyFunc(a) - keyFunc(b));
 
         this.mapping = this.locations.map(l => nonZeroLocations.indexOf(l));
         this.reverseMapping = nonZeroLocations.map(l => this.locations.indexOf(l));
+
+        console.log("this.reverseMapping");
+        console.log(this.reverseMapping);
 
         this._computeMasterSupports();
         this._subModels = {};
@@ -285,7 +289,7 @@ class VariationModel {
 
             for (let j = 0; j < i; j++) {
                 let prevRegion = regions[j];
-                if (new Set(Object.keys(prevRegion)).size !== locAxes.size) {
+                if (new Set(Object.keys(prevRegion)) !== locAxes) {
                     continue;
                 }
 
@@ -371,7 +375,7 @@ class VariationModel {
             let deltaWeight = {};
             for (let j = 0; j < i; j++) {
                 let support = this.supports[j];
-                let scalar = this.supportScalar(loc, support); // Ensure supportScalar function is defined
+                let scalar = supportScalar(loc, support);
                 if (scalar) {
                     deltaWeight[j] = scalar;
                 }
@@ -490,6 +494,7 @@ function piecewiseLinearMap(v, mapping) {
 }
 
 
+
 /*
 const process = require('process');
 
@@ -527,7 +532,7 @@ function main(args) {
         const axes = Array.from({ length: 26 }, (_, i) => String.fromCharCode(65 + i));
         const locs = locations.map(s => Object.fromEntries(axes.map((a, i) => [a, parseFloat(s.split(',')[i] || "0")])));
 
-        const model = new VariationModel(locs); // Assuming VariationModel is defined
+        const model = new VariationModel(locs); // VariationModel is imported from models.js
         console.log("Sorted locations:");
         console.log(model.locations);
         console.log("Supports:");
@@ -541,4 +546,5 @@ if (require.main === module) {
 
 */
 
-export { normalizeValue, piecewiseLinearMap };
+//export { normalizeValue, piecewiseLinearMap, VariationModel };
+export { VariationModel };
