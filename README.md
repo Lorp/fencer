@@ -1,9 +1,7 @@
 # Fencer
 Fencer is a GUI app that allows users to create avar (v2) tables inside their variable fonts.
 
-Drag your variable font onto the app to get started.
-
-Live version on GitHub pages is [here](https://lorp.github.io/fencer/src/fencer.html)
+[**Launch Fencer**](https://lorp.github.io/fencer/src/fencer.html)
 
 ## UI Basics
 
@@ -55,6 +53,12 @@ As you drag the Green output handle, a new avar table is compiled, inserted into
 
 It is important to note that, despite the renderings changing in appearance, the axis locations remain constant as you adjust the mappings.
 
-## Testing fonts outside of Fencer
+## Trying your own fonts in Fencer
+
+Drop your TTF onto the blue area around Use the blue area around the “Controls” text.
+
+For best results, use a font without an avar table, since Fencer will overwrite any existing avar table.
+
+## Testing fonts with mappings made by Fencer
 
 Use the button “Temp download link” to download a copy of the most recent build of the font.
