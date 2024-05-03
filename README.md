@@ -8,11 +8,16 @@ Fencer is a GUI app that allows users to create avar (v2) tables inside their va
 The UI is structured as follows:
 * **Upper section**, where the user adds & edits Mappings:
   * **Controls panel**, with:
-    * a bank of sliders;
-	* a dropdown selector to choose whether one is editing the Current location or one of the Mappings;
-	* reset-to-default buttons (click resets input locations, shift-click resets output locations);
+    * a bank of sliders
+	* a dropdown selector to choose whether one is editing the Current location or one of the Mappings
+	* reset-to-default buttons (click resets input locations, shift-click resets output locations)
 	* radio buttons to select X and Y axes in the Visial window.
-  * **Visual panel**, where the Mappings are displayed as arrows in a 2D space, the dimensions of that 2D space being controlled by the radio buttons in the Controls panel.
+  * **Visual panel**, where:
+    * the Mappings are displayed as arrows in 2D space
+	* the dimensions of that 2D space are controlled by the radio buttons in the Controls panel
+	* the Current location is displayed as a blue dot
+	* you can drag the Current location around
+	* you can add and delete Mappings, and drag them around
   * **XML panel**, where designspace-compatible XML is generated. This may be pasted into the \<axes\> element of a designspace file — in fact this method is recommended when the user intends to build final files rather than test files.
 * **Lower section**, where the current instance is rendered, and the user can add more instances. All instances are updated whenever mappings are changed.
 
