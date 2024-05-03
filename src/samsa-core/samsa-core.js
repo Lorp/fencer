@@ -3735,9 +3735,6 @@ function SamsaFont(buf, options = {}) {
 		table.buffer = this.bufferFromTable(table.tag);
 	});
 
-	console.log("this.tables");
-	console.log(this.tables);
-
 	if (!valid) {
 		return null;
 	}
