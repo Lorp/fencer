@@ -39,6 +39,7 @@ const GLOBAL = {
 	draggingIndex: -1, // starts current location, not a mapping
 	mappingsView: [],
 	axisTouched: -1,
+	fontFace: undefined,
 };
 
 function Q (selector) {
@@ -258,6 +259,8 @@ function loadFontFromArrayBuffer (arrayBuffer, options={}) {
 	//RobotoA2-avar1-VF.ttf
 
 	GLOBAL.font = new SamsaFont(new SamsaBuffer(arrayBuffer));
+	GLOBAL.familyName = GLOBAL.font.names[6];
+
 	let str = "";
 
 	// filename, font name
@@ -266,8 +269,10 @@ function loadFontFromArrayBuffer (arrayBuffer, options={}) {
 	str += "---\n";
 
 	// set the font face to the arraybuffer
-	const fontFace = new FontFace(GLOBAL.font.names[6], arrayBuffer);
-	fontFace.load().then(loadedFace => {
+	if (GLOBAL.fontFace)
+		document.fonts.delete(GLOBAL.fontFace);
+	GLOBAL.fontFace = new FontFace(GLOBAL.font.names[6], arrayBuffer);
+	GLOBAL.fontFace.load().then(loadedFace => {
 
 		document.fonts.add(loadedFace);
 		const renderEls = Qall(".render");
@@ -337,7 +342,7 @@ function loadFontFromArrayBuffer (arrayBuffer, options={}) {
 		row[0].value = axis.axisTag;
 		row[0].classList.add("monospace");
 		row[0].disabled = true;
-		row[0].title = `${axis.axisTag} (${GLOBAL.font.names[axis.axisNameID]})\nmin: ${axis.minValue}\ndefault: ${axis.defaultValue}\nmax: ${axis.maxValue}`;
+		row[0].title = `${axis.axisTag} (${axis.name})\nmin: ${axis.minValue}\ndefault: ${axis.defaultValue}\nmax: ${axis.maxValue}`;
 
 		// right-arrow unicode is 
 		row[3].textContent = "→";
@@ -409,7 +414,7 @@ function loadFontFromArrayBuffer (arrayBuffer, options={}) {
 	function axisChange (e) {
 
 		const inputOrOutput = e.target.classList.contains("input") ? "input" : "output";
-		console.log(inputOrOutput);
+		// console.log(inputOrOutput);
 		const inputOrOutputId = (inputOrOutput === "input") ? 0 : 1;
 
 		const elMarker = (GLOBAL.draggingIndex === -1) ? Q("g.current") : Q(`g.location.${inputOrOutput}[data-index="${GLOBAL.draggingIndex}"]`);
@@ -629,7 +634,7 @@ function addRender() {
 	const renderEl = EL("div");
 	renderEl.classList.add("render");
 	renderEl.innerText = Q("#sample-text").value;
-	renderEl.style.fontFamily = GLOBAL.font.names[6];
+	renderEl.style.fontFamily = GLOBAL.familyName;
 	
 	renderItemEl.append(renderEl, controlsEl, controlsButtonEl);
 
@@ -752,17 +757,9 @@ function svgMouseMove(e) {
 
 	e.stopPropagation();
 
-	// which axes are we using?
-	// const xAxisEl = Q("input[name=x-axis]:checked").closest(".axis");
-	// const yAxisEl = Q("input[name=y-axis]:checked").closest(".axis");
-	// const xAxisIndex = parseInt(xAxisEl.dataset.axisId);
-	// const yAxisIndex = parseInt(yAxisEl.dataset.axisId);
-
-	const visibleAxisIds = getVisibleAxisIds();
-
+	const visibleAxisIds = getVisibleAxisIds(); // which axes are we using?
 	const el = GLOBAL.dragging;
 	const index = parseInt(el.dataset.index);
-
 	const rect = GLOBAL.svgEl.getBoundingClientRect();
 	const mousex = e.clientX;
 	const mousey = rect.height - e.clientY;
@@ -775,29 +772,17 @@ function svgMouseMove(e) {
 	el.setAttribute("transform", `translate(${svgX}, ${svgY})`);
 	const [xCoord, yCoord] = [axisCoordFromSvgCoord(visibleAxisIds[0], svgX), axisCoordFromSvgCoord(visibleAxisIds[1], svgY)];
 
-
-
 	if (index === -1) { // current location
 		// it’s the current location marker
-
-		// input
-		GLOBAL.current[0][visibleAxisIds[0]] = xCoord;
-		GLOBAL.current[0][visibleAxisIds[1]] = yCoord;
-
-		// output
-		GLOBAL.current[1][visibleAxisIds[0]] = xCoord;
-		GLOBAL.current[1][visibleAxisIds[1]] = yCoord;
-
+		GLOBAL.current[0][visibleAxisIds[0]] = xCoord; // input
+		GLOBAL.current[0][visibleAxisIds[1]] = yCoord; // input
+		GLOBAL.current[1][visibleAxisIds[0]] = xCoord; // output
+		GLOBAL.current[1][visibleAxisIds[1]] = yCoord; // output
 		updateMappingsSliders(index);
 	}
-
 	else {
-		// it’s a mapping location marker
-
+		// it’s a mapping location marker, so get the arrow with this index
 		const mapping = GLOBAL.mappings[index];
-
-		// look for the line with this index
-		//const arrowEl = [...Qall(".arrow")].find(arrowEl => parseInt(arrowEl.dataset.index) === index);
 		const arrowEl = Q(`.arrow[data-index="${index}"]`);
 		if (arrowEl) { // sanity
 
@@ -807,29 +792,15 @@ function svgMouseMove(e) {
 			else if (el.classList.contains("output"))
 				inputOrOutputId = 1;
 
+			console.assert(inputOrOutputId !== undefined, "We should be moving an input or an output, but this is neither");
+
 			updateArrow(arrowEl, inputOrOutputId, svgX, svgY);
-
-			// const lineEl = arrowEl.querySelector("line");
-			// const pathEl = arrowEl.querySelector("path");
-			// let x1 = parseFloat(lineEl.getAttribute("x1"));
-			// let y1 = parseFloat(lineEl.getAttribute("y1"));
-			// let x2 = parseFloat(lineEl.getAttribute("x2"));
-			// let y2 = parseFloat(lineEl.getAttribute("y2"));
-			// const pathStr = getArrowPath({x1: x1, x2: x2, y1: y1, y2: y2, tipLen: 20, tipWid: 15});
-			// pathEl.attr({d: pathStr});
-
-
-			if (el.classList.contains("input")) {
-				// x1 = svgX;
-				// y1 = svgY;
-				// lineEl.attr({x1: x1, y1: y1});
+				
+			if (inputOrOutputId === 0) {
 				mapping[0][visibleAxisIds[0]] = xCoord;
 				mapping[0][visibleAxisIds[1]] = yCoord;
 			}
-			else if (el.classList.contains("output")) {
-				// x2 = svgX;
-				// y2 = svgY;
-				// lineEl.attr({x2: x2, y2: y2});
+			else {
 				mapping[1][visibleAxisIds[0]] = xCoord;
 				mapping[1][visibleAxisIds[1]] = yCoord;
 			}
@@ -839,7 +810,6 @@ function svgMouseMove(e) {
 		}
 	}
 
-	// 
 	updateRenders();
 }
 
@@ -989,9 +959,11 @@ function deltaSetScale (deltaSet, scale=0x4000, round=true) {
 }
 
 
-
-
 function updateMappingsXML() {
+
+	function uint8ArrayToBase64(uint8) {
+		return btoa(uint8.reduce((acc, ch) => acc + String.fromCharCode(ch), ""));
+	}
 
 	const axisCount = GLOBAL.font.fvar.axisCount;
 
@@ -1044,29 +1016,30 @@ function updateMappingsXML() {
 	// - we create an avar table from the compiled IVS and DeltaSetIndexMap
 	// - we insert the avar table into the font
 
+	// set up the avar table that will contain the IVS
+	const avar = {
+		axisCount: axisCount,
+		axisSegmentMaps: undefined, // new Array(axisCount).fill([[-1,-1],[0,0],[1,1]]), // we don’t need to speciy identity mappings
+		axisIndexMap: undefined,
+		ivsBuffer: undefined,
+	};
 
-	// set up the ivs and ivd
+	// set up the ivs, with a single ivd (later we encode it and assign it to avar.ivsBuffer)
 	const ivs = {
 		format: 1,
 		axisCount: axisCount,
 		regions: [],
-		ivds: [],
+		ivds: [ { regionIds: [], deltaSets: [] } ],
 	};
-
-	const ivd = {
-		regionIds: [],
-		deltaSets: [],
-	}
-	ivs.ivds.push(ivd);
 
 	// create the regions
 	// - create a fonttools-style VariationModel by calling models.js
 	const axisOrder = Array.from({ length: GLOBAL.font.fvar.axes.length }, (_, i) => String.fromCharCode(65 + i)); // fake axis names, guaranteed unique
 
 
-	// report error if any mappings start at default location
-	//console.log("Error: we have a mappings whose input is all 0");
-
+	// TODO: report error if any mappings start at default location
+	
+	// set up the locations
 	const locs = [ new Array(axisCount).fill(0) ]; // initilize locs with its first element having all zeros
 	const normalizedMappings = [];
 	GLOBAL.mappings.forEach(mapping => normalizedMappings.push(mappingSimpleNormalize (GLOBAL.font.fvar.axes, mapping)) );
@@ -1078,132 +1051,145 @@ function updateMappingsXML() {
 		}
 	});
 
-	// log normalized mappings
-	console.log("Normalized Mappings:");
-	console.log(normalizedMappings);
-
 	// are there any mappings? (locs.length==1 means no mappings)
 	if (locs.length > 1) {
-		const model = new VariationModel(locs);
-		console.log("Supports:");
-		console.log(model.supports); // I think these are the regions
 
-		// translate supports into regions
-		model.supports
-			.filter(support => Object.keys(support).length > 0)
-			.forEach(support => ivs.regions.push(GLOBAL.font.fvar.axes.map((axis, a) => support.hasOwnProperty(axisOrder[a]) ? support[axisOrder[a]] : [0,0,0])));
+		if (1) { // this is Behdad’s method
+
+			// translate supports into regions
+			const model = new VariationModel(locs);
+			model.supports
+				.filter(support => Object.keys(support).length > 0)
+				.forEach(support => ivs.regions.push(GLOBAL.font.fvar.axes.map((axis, a) => support.hasOwnProperty(axisOrder[a]) ? support[axisOrder[a]] : [0,0,0])));
+		}
 
 		// set up the IVD
 		// - initialize the single IVD to include all the regions (we can optimize it later)
-		ivd.regionIds = ivs.regions.map((region, r) => r);
-
-		// set up the wordDataCount
-		ivd.wordDataCount = ivd.regionIds.length; // this is safe, if not the most efficient
-
-		// - create the IVD deltas
-		// ivd.deltaSets.push(...);
-
-
-		console.log(model);
-
-		let masterValues = [];
-		masterValues.push(new Array(axisCount).fill(0));
-		normalizedMappings.forEach((mapping, m) => {
-		//locs.forEach((loc, m) => {
-			let deltas;
-			// if (m === 0) {
-			// 	deltas = new Array(axisCount).fill(0);
-			// }
-			// else {
-			// 	//deltas = loc[1].map((coord, a) => Math.round((coord - loc[0][a]) * 0x4000));
-			// 	deltas = mapping[1].map((coord, a) => Math.round((coord - mapping[0][a]) * 0x4000));
-			// }
-
-			deltas = mapping[1].map((coord, a) => Math.round((coord - mapping[0][a]) * 0x4000));
-
-			masterValues.push(deltas);
-
-			console.log("adding delta set ", m)
-			console.log(deltas);
-
-		});
-
+		ivs.ivds[0].regionIds = ivs.regions.map((region, r) => r);
 
 		// Fontra method
-		const fLocations = [{}];
-		masterValues = [];
+		const fLocations = [{}]; // we need a null mapping to help the solver
+		const masterValues = [];
 		masterValues.push(new Array(axisCount).fill(0));
-		//const deltas = [{}];
 		normalizedMappings.forEach(mapping => {
-		//GLOBAL.mappings.forEach(mapping => {
-			const fLoc = {};
-			mapping[0].forEach((coord, a) => fLoc[axisOrder[a]] = coord); // we only care about input locations
-			fLocations.push(fLoc);
-			
 
-			const delta = {};
-			const deltaMap = new Map();
-			let length = 0;
-			//mapping[1].forEach((coord, a) => {if (1) delta[axisOrder[a]] = coord}); // we only care if output != default
-			//mapping[1].forEach((coord, a) => {if (coord !== axis.defaultValue) delta[axisOrder[a]] = coord}); // we only care if output != default
+			// const fLoc = {};
+			// mapping[0].forEach((coord, a) => fLoc[axisOrder[a]] = coord); // we only care about input locations
+			// fLocations.push(fLoc);
 
-			// use a map
-			//mapping[1].forEach((coord, a) => { const axis = GLOBAL.font.fvar.axes[a]; if (coord !== axis.defaultValue) deltaMap.set(axisOrder[a], coord); });
+			// create an array of locations in object form, so we can use the solver
+			fLocations.push(mapping[0].reduce((acc, coord, a) => {
+				if (coord !== 0) acc[axisOrder[a]] = coord; // only assign non-zero values
+				return acc;
+			} , {} ));
 
-			// use an object
-			const deltaObj = {};
-			mapping[1].forEach((coord, a) => { const axis = GLOBAL.font.fvar.axes[a]; if (coord !== axis.defaultValue) deltaObj[axisOrder[a]] = coord; length++ });
-
-			// use an array
-			const deltaArr = [];
-			mapping[1].forEach((coord, a) => { deltaArr[a] = coord; });
-
-			//if (Object.keys(delta).length > 0) 
-			//deltas.push(delta);
-			//deltaObj.length = length;
-			masterValues.push(deltaArr);
-
+			// create an array that is the difference between the input and output locations, and push it to the masterValues array
+			masterValues.push(mapping[1].map((coord, a) => coord - mapping[0][a]));
 		});
 
 		const fModel = new VM(fLocations, axisOrder);
-		console.log("fModel");
-		console.log(fModel);
 
-		// console.log("fModel.getSourceContributions(deltas[1])");
-		// console.log(fModel.getSourceContributions(deltas[1]));
-		
-		console.log("fModel.deltaWeights")
-		console.log(fModel.deltaWeights)
+		// transpose the deltas array (ignoring the first row) and assign to the IVD
+		const deltas = fModel.getDeltas(masterValues);
+		for (let a=0; a<axisCount; a++) {
+			const deltaSet = [];
+			deltas.forEach((deltaRow, d) => {
+				if (d > 0) // skip the first row, which is the default location
+					deltaSet.push(deltaRow[a]);
+			});
+			ivs.ivds[0].deltaSets.push(deltaSetScale(deltaSet));
+		}
 
+		// prepare the axisIndexMap
+		const innerIndexBitCount = 16, entrySize = 2;
+		avar.axisIndexMap = {
+			format: 0,
+			entryFormat: (innerIndexBitCount - 1) | ((entrySize -1) << 4), // resolves to 1 byte with value 31 (0x1F)
+			indices: new Array(GLOBAL.font.fvar.axisCount).fill(0).map((v, i) => i), // create an array [0, 1, 2, 3, ... axisCount-1]
+		};
 
-		console.log("masterValues")
-		console.log(masterValues);
-		console.log("fModel.getDeltas(masterValues[1])");
-		console.log(fModel.getDeltas(masterValues));
+		// prepare the IVS
+		const ivsBufOversize = new SamsaBuffer(new ArrayBuffer(10000));
+		const ivsLength = ivsBufOversize.encodeItemVariationStore(ivs);
+		avar.ivsBuffer = new SamsaBuffer(ivsBufOversize.buffer, 0, ivsLength); // the ivsBuffer we use is a slice of ivsBufOversize
 
-		const deltaSets = fModel.getDeltas(masterValues);
-		deltaSets.forEach((deltaSet, ds) => {
-			if (ds > 0)
-				ivd.deltaSets.push(deltaSetScale(deltaSet));
+		// write new avar table
+		const avarBuf = GLOBAL.font.tableEncoders.avar(GLOBAL.font, avar);
+
+		// create a new font
+		const newFontBuf = exportFontWithTables(GLOBAL.font, { avar: avarBuf }); // we’re inserting an avar table with binary contents avarBuf
+
+		// connect the new font to the UI
+		GLOBAL.familyName = "Fencer-" + Math.random().toString(36).substring(7);
+		if (GLOBAL.fontFace)
+			document.fonts.delete(GLOBAL.fontFace);
+		GLOBAL.fontFace = new FontFace(GLOBAL.familyName, newFontBuf.buffer);
+		document.fonts.add(GLOBAL.fontFace);
+		GLOBAL.fontFace.load().then(() => {
+			Qall(".render").forEach( renderEl => renderEl.style.fontFamily = GLOBAL.familyName );
 		});
 
-		// finalize IVS
-		console.log("ivs");
-		console.log(ivs);
-
-
-		// write avar table
-		const avarBuf = new SamsaBuffer(new ArrayBuffer(10000));
-		avarBuf.encodeItemVariationStore(ivs);
-
-		// make avarBuf a slice of itself
-		const avarBufSliced = new SamsaBuffer(avarBuf.buffer, 0, avarBuf.tell());
-		console.log(avarBufSliced);
-
+		// assign the b64 blob to the download link
+		if (1) {
+			const uint8 = new Uint8Array(newFontBuf.buffer);
+			const downloadLink = Q("#temp-download");
+			downloadLink.download = "fencer.ttf";
+			downloadLink.href = "data:font/ttf;base64," + uint8ArrayToBase64(uint8);
+		}
 
 	}
 
+}
 
+// function to create a new SamsaBuffer containing a binary font from an existing SamsaFont, but where tables can be inserted and deleted
+// - <font> is a SamsaFont object with a tableList property
+// - <inserts> is an object with each key being a table tag, each value being the SamsaBuffer of the binary contents
+// - <deletes> is an object with each key being a table tag (value is ignored)
+function exportFontWithTables(font, inserts={}, deletes={}) {
+
+	//inserts = {};
+	//deletes = {avar: true};
+
+	function paddedLength(length) {
+		return length + (4 - length%4) % 4
+	}
+
+	const newTables = font.tableList
+						.map(table => { return { tag: table.tag, checkSum: 0, offset: 0, length: table.length, buffer: table.buffer } } )
+						.filter(table => !deletes[table.tag] && !inserts[table.tag]);
+
+	Object.keys(inserts).forEach(tag => newTables.push({ tag: tag, checkSum: 0, offset: 0, length: inserts[tag].byteLength, buffer: inserts[tag] }));
+	const newFontSize = 12 + 16 * newTables.length + newTables.reduce((acc, table) => acc + paddedLength(table.length), 0);
+	const newFontBuf = new SamsaBuffer(new ArrayBuffer(newFontSize)); // allocate memory for the new font
+	// console.log("newTables");
+	// console.log(newTables);
+
+	// write first 12 bytes
+	newFontBuf.u32 = font.header.sfntVersion;
+	newFontBuf.u16_array = [newTables.length, ...font.binarySearchParams(newTables.length)]; // 1+3 U16 values
+	newFontBuf.seekr(newTables.length * 16); // skip the table directory
+
+	// write tables
+	//newTables.forEach(table => newFontBuf.memcpy(table.buffer, table.offset = newFontBuf.tell(), 0, -1, 4)); // -1 means use the length of table.buffer, 4 means pad to modulo 4
+
+	newTables.forEach(table => newFontBuf.memcpy(table.buffer, table.offset = newFontBuf.tell(), undefined, undefined, 4));
+
+
+
+		//newFontBuf.memcpy(table.buffer, table.offset = newFontBuf.tell(), 0, table.length);
+		// newFontBuf.memcpy(table.buffer, table.offset = newFontBuf.tell(), 0, -1, 4); // -1 means use the length of table.buffer, 4 means pad to modulo 4
+		// newFontBuf.seekr(table.length);
+		// newFontBuf.padToModulo(4);
+	//});
+	console.assert(newFontBuf.tell() === newFontSize, `The new font size (${newFontBuf.tell()}) and expected size (${newFontSize}) do not match.`);
+
+	// write table directory
+	newFontBuf.seek(12);
+	newTables
+		.sort((a,b) => { if (a.tag < b.tag) return -1; if (a.tag > b.tag) return 1; return 0; }) // sort by tag
+		.forEach(table => newFontBuf.u32_array = newFontBuf.tableDirectoryEntry(table)); // write 4 U32 values for each table
+	newFontBuf.seek(0);
+	return newFontBuf;
 }
 
 
@@ -1255,28 +1241,15 @@ function initFencer() {
 
 	fontinfo.addEventListener("drop", onDropFont);
 
-
-	//document.querySelector("#select-mode").onchange = setMode;
-
-	Q("#mapping-selector").onchange = selectAxisControls;
-
-
 	// init the svg
 	GLOBAL.svgEl = SVG("svg");
 	GLOBAL.svgEl.id = "mappings-visual";
 	GLOBAL.svgEl.setAttribute("transform", "scale(1 -1)");
 	
+	Q("#mapping-selector").onchange = selectAxisControls;
 	Q(".mappings-ui").insertBefore(GLOBAL.svgEl, Q("#mappings-ui-info"));
-	//Q(".mappings-ui").append(GLOBAL.svgEl);
-
-	Q("#sample-text").oninput = sampleTextChange;
-
-	// handle change of mappings selector
-	Q("#mapping-selector").onchange = selectMapping;
-	
-
-	//const svgEl = document.querySelector(".mappings-svg");
-
+	Q("#sample-text").oninput = sampleTextChange; // handle change of sample text
+	Q("#mapping-selector").onchange = selectMapping; // handle change of mappings selector
 	Q("#add-render").onclick = addRender;
 
 	// show/hide XML
@@ -1286,12 +1259,13 @@ function initFencer() {
 	};
 
 	// load initial font
-	const filename = "RobotoA2-avar2-VF.ttf";
+	// const filename = "RobotoA2-avar2-VF.ttf";
+	const filename = "SofiaSans-VF.ttf";
 	const filepath = "../fonts/" + filename;
 	fetch(filepath)
 		.then(response => response.arrayBuffer())
 		.then(arrayBuffer => {
-			loadFontFromArrayBuffer(arrayBuffer, {filename: "RobotoA2-avar1-VF.ttf"});
+			loadFontFromArrayBuffer(arrayBuffer, {filename: filename});
 		});
 }
 
