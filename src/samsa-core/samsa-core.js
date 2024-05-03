@@ -948,6 +948,91 @@ const TABLE_DECODERS = {
 	},
 }
 
+const TABLE_ENCODERS = {
+
+	"avar": (font, avar) => {
+		// encode avar
+		// https://learn.microsoft.com/en-us/typography/opentype/spec/avar
+
+		// avar1 and avar2
+
+		// create avar header
+		const bufAvarHeader = new SamsaBuffer(new ArrayBuffer(10000));
+		const majorVersion = avar.axisIndexMap && avar.ivsBuffer ? 2 : 1;
+		bufAvarHeader.u16_array = [
+			majorVersion,
+			0, // minorVersion
+			0, // reserved
+			font.fvar.axisCount]; // axisCount (avar 1) or axisSegmentMapCount (avar 2), note that 0 is rejected by Apple here: use axisCount and 0 for each positionMapCount
+
+		// avar1 per-axis segment mappings
+		// - create an empty axisSegmentMaps array if none is supplied
+		if (!avar.axisSegmentMaps)
+			avar.axisSegmentMaps = new Array(font.fvar.axisCount).fill([]);
+
+		console.assert(avar.axisSegmentMaps.length === font.fvar.axisCount, "avar.axisSegmentMaps.length must match fvar.axisCount");
+
+		// - write the axisSegmentMaps
+		avar.axisSegmentMaps.forEach(axisSegmentMap => {
+			bufAvarHeader.u16 = axisSegmentMap.length; // write positionMapCount (=0 or >= 3)
+			axisSegmentMap.forEach(segment => bufAvarHeader.f214_array = segment); // for each axis, write an array of F214 pairs [fromCoordinate, toCoordinate]
+		});
+
+		// console.log("bufAvarHeader (before avar2)");
+		// console.log(bufAvarHeader);
+		const avar1Length = bufAvarHeader.tell();
+		let avar2Length;
+		
+		// avar2 only
+		if (majorVersion === 2) {
+			const axisIndexMapOffsetTell = avar1Length;
+			const varStoreOffsetTell = avar1Length + 4;
+
+			// write axisIndexMap
+			// - we are using only a single IVD, so the outer index is always zero
+			// - we keep it simple and always use 2 bytes (U16) for the inner index, even though axisCount is very rarely > 255
+			// - the index is a simple map, as axis index will be equal to inner index
+			bufAvarHeader.seek(avar1Length + 8); // skip to where we can start writing data
+			const axisIndexMapOffset = bufAvarHeader.tell();
+			bufAvarHeader.u8 = avar.axisIndexMap.format;
+			bufAvarHeader.u8 = avar.axisIndexMap.entryFormat;
+			if (avar.axisIndexMap.format === 0)
+				bufAvarHeader.u16 = avar.axisIndexMap.indices.length;
+			else if (avar.axisIndexMap.format === 1) {
+				bufAvarHeader.u32 = avar.axisIndexMap.indices.length;
+			}
+			bufAvarHeader.u16_array = avar.axisIndexMap.indices;
+
+			// write varStore
+			const varStoreOffset = bufAvarHeader.tell();
+			bufAvarHeader.memcpy(avar.ivsBuffer);
+			avar2Length = bufAvarHeader.tell();
+
+			// write the offsets to axisIndexMap and varStore
+			bufAvarHeader.seek(axisIndexMapOffsetTell);
+			bufAvarHeader.u32 = axisIndexMapOffset;
+			bufAvarHeader.seek(varStoreOffsetTell);
+			bufAvarHeader.u32 = varStoreOffset;
+
+		}
+
+		const avarFinalSize = majorVersion === 1 ? avar1Length : avar2Length;
+		// console.log(`bufAvarHeader (final, with size = ${avarFinalSize}`);
+		// console.log(bufAvarHeader);
+
+
+		// attempt to decode
+		bufAvarHeader.seek(0);
+
+
+		font.avar = bufAvarHeader.decode(FORMATS["avar"])
+		TABLE_DECODERS["avar"](font, bufAvarHeader);
+		return new SamsaBuffer(bufAvarHeader.buffer, 0, avarFinalSize);
+
+	},
+
+}
+
 // non-exported functions
 function endianness (str) {
 	const buf = new ArrayBuffer(2);
@@ -1281,6 +1366,19 @@ class SamsaBuffer extends DataView {
 		this.p += p;
 	}
 
+	memcpy(srcSamsaBuffer, dstOffset=this.p, srcOffset=0, len=srcSamsaBuffer.byteLength - srcOffset, padding=0, advanceDest=true) {
+		// if (!srcSamsaBuffer) srcSamsaBuffer = this; // if srcSamsaBuffer is undefined, copy within this buffer
+		// if (dstOffset === -1) dstOffset = this.p;
+		// if (srcOffset === undefined) srcOffset = 0;
+		// if (len === -1) len = srcSamsaBuffer.byteLength - srcOffset;
+		const dstArray = new Uint8Array(this.buffer, this.byteOffset + dstOffset, len);
+		const srcArray = new Uint8Array(srcSamsaBuffer.buffer, srcSamsaBuffer.byteOffset + srcOffset, len);
+		dstArray.set(srcArray);
+		this.p += len; // advance the destination pointer (will be undone later if advanceDest is false)
+		if (padding) this.padToModulo(padding);
+		if (!advanceDest) this.seek(dstOffset);
+	}
+
 	// validate offset
 	seekValid(p) {
 		return p >= 0 && p < this.byteLength;
@@ -1327,6 +1425,10 @@ class SamsaBuffer extends DataView {
 		const ret = this.getUint32(this.p);
 		this.p += 4;
 		return ret;
+	}
+
+	set u32_array(arr) {
+		arr.forEach(num => { this.setUint32(this.p, num), this.p += 4 });
 	}
 
 	set i32(num) {
@@ -1404,6 +1506,10 @@ class SamsaBuffer extends DataView {
 		return ret;
 	}
 
+	set u16_array(arr) {
+		arr.forEach(num => { this.setUint16(this.p, num), this.p += 2 });
+	}
+
 	// u16 for WOFF2: https://www.w3.org/TR/WOFF2/#255UInt16
 	set u16_255(num) {
 		const oneMoreByteCode1    = 255;
@@ -1468,6 +1574,16 @@ class SamsaBuffer extends DataView {
 		this.p += 2;
 	}
 
+	set f214_array(arr) {
+		arr.forEach(num => { this.setInt16(this.p, num * 0x4000), this.p += 2 });
+	}
+
+	set f214_pascalArray(arr) {
+		this.setUint16(this.p, arr.length);
+		this.p += 2;
+		arr.forEach(num => { this.setInt16(this.p, num * 0x4000), this.p += 2 });
+	}
+
 	get f214() {
 		const ret = this.getInt16(this.p) / 0x4000;
 		this.p += 2;
@@ -1518,7 +1634,7 @@ class SamsaBuffer extends DataView {
 
 	// tag
 	set tag(str) {
-		let length = 4;
+		const length = 4;
 		for (let i = 0; i < length; i++) {
 			this.setUint8(this.p++, str.charCodeAt(i));
 		}
@@ -1526,7 +1642,7 @@ class SamsaBuffer extends DataView {
 
 	get tag() {
 		let ret = "";
-		let length = 4;
+		const length = 4;
 		for (let i = 0; i < length; i++) {
 			ret += String.fromCharCode(this.getUint8(this.p++));
 		}
@@ -1649,6 +1765,12 @@ class SamsaBuffer extends DataView {
 		sum >>>= 0; // unnecessary?
 		this.seek(pSaved);
 		return sum;
+	}
+
+	tableDirectoryEntry(table) {
+		let tagU32 = 0;
+		for (let c=0; c<4; c++) tagU32 += table.tag.charCodeAt(c) << (24 - c*8);
+		return [tagU32, table.checkSum, table.offset, table.length];
 	}
 
 	decode(objType, arg0, arg1, arg2) { // TODO: test first for typeof objType[key] == "number" as it’s the most common
@@ -2445,24 +2567,28 @@ class SamsaBuffer extends DataView {
 		ivs.ivds.forEach((ivd, ivdIndex) => {
 			itemVariationDataOffsets[ivdIndex] = this.tell();
 			//let wordDeltaCount = ivd.regionIds.length;
+			const wordDeltaCount = ivd.regionIds.length;
+			const longWords = 0; // if set, value is 0x8000
 
 			this.u16 = ivd.deltaSets.length; // itemCount == ivd.deltaSets.length
-			this.u16 = ivd.wordDeltaCount; // wordDeltaCount: this can safely be set to ivd.regionIds.length (TODO: optimize so we use wordDeltaCount)
+			//this.u16 = ivd.wordDeltaCount; // wordDeltaCount: this can safely be set to ivd.regionIds.length (TODO: optimize so we use wordDeltaCount)
+			this.u16 = wordDeltaCount | longWords; // wordDeltaCount: this can safely be set to ivd.regionIds.length (TODO: optimize so we use wordDeltaCount)
 			this.u16 = ivd.regionIds.length;
 			for (let r=0; r<ivd.regionIds.length; r++) {
 				this.u16 = ivd.regionIds[r];
 			}
 
-			const wordDeltaCount = ivd.wordDeltaCount & 0x7fff;
-			const longWords = ivd.wordDeltaCount & 0x8000;
+			//const wordDeltaCount = ivd.wordDeltaCount & 0x7fff;
+			// const longWords = ivd.wordDeltaCount & 0x8000;
 			ivd.deltaSets.forEach(deltaSet => { // note that ivd.deltaSets.length === ivd.itemCount
 				deltaSet.forEach((delta, d) => {
 					if (d < wordDeltaCount)
-						{ if (longWords) this.i32 = delta; else this.i16 = delta; }
+						{ if (longWords) this.i32 = delta; else this.i16 = delta; /*console.log(",") */ }
 					else
-						{ if (longWords) this.i16 = delta; else this.i8 = delta; }
+						{ if (longWords) this.i16 = delta; else this.i8 = delta; /* console.log(".", d, wordDeltaCount, ivd.regionIds.length */ }
+					//console.log("Write delta", d, delta);
 				});
-			});				
+			});
 		});
 
 		// when we exit this function, we position the pointer at the end of the IVS
@@ -2481,6 +2607,9 @@ class SamsaBuffer extends DataView {
 
 		// position the pointer correctly for the next write
 		this.seek(ivsEnd);
+
+		// return the size of the binary ItemVariationStore
+		return ivsEnd - ivsStart;
 	}
 
 	// parser for variationIndexMap
@@ -2713,7 +2842,6 @@ class SamsaBuffer extends DataView {
 							pc++;
 						}
 					}
-					// after this, we no longer need pointIds, right? so it needn’t stick around as a property of the tvt (except for visualization)
 				}
 			}
 		}
@@ -3433,7 +3561,7 @@ class SamsaBuffer extends DataView {
 		outputBuf.seek(0);
 		outputBuf.u32 = header.flavor;
 		outputBuf.u16 = tables.length;
-		outputBuf.seek(12);
+		outputBuf.seek(12); // skip binary search params
 		tables
 			.sort((a,b) => { if (a.tag < b.tag) return -1; if (a.tag > b.tag) return 1; return 0; }) // sort by tag
 			.forEach(table => {
@@ -3584,6 +3712,7 @@ function SamsaFont(buf, options = {}) {
 	this.glyphs = [];
 	this.ItemVariationStores = {}; // keys will be "avar", "MVAR", "COLR", "CFF2", "HVAR", "VVAR"... they all get recalculated when a new instance is requested
 	this.tableDecoders = TABLE_DECODERS; // we assign it here so we have access to it in code that imports the library
+	this.tableEncoders = TABLE_ENCODERS; // we assign it here so we have access to it in code that imports the library
 
 	// font header
 	this.header = buf.decode(FORMATS.TableDirectory);
@@ -3613,6 +3742,14 @@ function SamsaFont(buf, options = {}) {
 		}
 	}
 
+	// assign the buffer attribute to each table
+	this.tableList.forEach(table => {
+		table.buffer = this.bufferFromTable(table.tag);
+	});
+
+	console.log("this.tables");
+	console.log(this.tables);
+
 	if (!valid) {
 		return null;
 	}
@@ -3628,7 +3765,8 @@ function SamsaFont(buf, options = {}) {
 
 		if (this.tables[tag]) {
 			console.log("Loading table: ", tag);
-			const tbuf = this.bufferFromTable(tag); // wouldn’t it be a good idea to store all these buffers as font.avar.buffer, font.COLR.buffer, etc. ?
+			//const tbuf = this.bufferFromTable(tag);
+			const tbuf = this.tables[tag].buffer;
 
 			// decode first part of table (or create an empty object)
 			this[tag] = FORMATS[tag] ? tbuf.decode(FORMATS[tag]) : {};
@@ -3871,6 +4009,18 @@ SamsaFont.prototype.u32FromHexColor = function (hex, opacity=1) {
 		return 0x000000ff; // back to black
 	}
 }
+
+SamsaFont.prototype.binarySearchParams = function (num) {
+	let sr=1, es=0, rs;
+	while (sr*2 <= num) {
+		sr*=2;
+		es++;
+	}
+	sr *= 16;
+	rs = (16*num)-sr;
+	return [sr, es, rs]; // searchRange, entrySelector, rangeShift
+}
+
 
 
 //////////////////////////////////
