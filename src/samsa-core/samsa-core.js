@@ -2542,56 +2542,34 @@ class SamsaBuffer extends DataView {
 
 		// write the region list
 		this.seek(variationRegionListOffset);
-		this.u16 = ivs.axisCount;
-		this.u16 = ivs.regions.length;
-
-		ivs.regions.forEach(region => {
-			region.forEach(dimension => {
-				this.f214 = dimension[0]; // start
-				this.f214 = dimension[1]; // peak
-				this.f214 = dimension[2]; // end
-			});
-		});
-
-		// for (let r=0; r<ivs.regionCount; r++) {
-		// 	const region = ivs.regions[r];
-		// 	for (let a=0; a<ivs.axisCount; a++) {
-		// 		this.f214 = region[a][0]; // start
-		// 		this.f214 = region[a][1]; // peak
-		// 		this.f214 = region[a][2]; // end
-		// 	}
-		// }
+		this.u16_array = [ivs.axisCount, ivs.regions.length];
+		ivs.regions.forEach(region => region.forEach(dimension => this.f214_array = dimension));
 		
 		// write the itemVariationDatas
 		const itemVariationDataOffsets = [];
 		ivs.ivds.forEach((ivd, ivdIndex) => {
 			itemVariationDataOffsets[ivdIndex] = this.tell();
-			//let wordDeltaCount = ivd.regionIds.length;
 			const wordDeltaCount = ivd.regionIds.length;
 			const longWords = 0; // if set, value is 0x8000
 
-			this.u16 = ivd.deltaSets.length; // itemCount == ivd.deltaSets.length
-			//this.u16 = ivd.wordDeltaCount; // wordDeltaCount: this can safely be set to ivd.regionIds.length (TODO: optimize so we use wordDeltaCount)
-			this.u16 = wordDeltaCount | longWords; // wordDeltaCount: this can safely be set to ivd.regionIds.length (TODO: optimize so we use wordDeltaCount)
-			this.u16 = ivd.regionIds.length;
-			for (let r=0; r<ivd.regionIds.length; r++) {
-				this.u16 = ivd.regionIds[r];
-			}
+			this.u16_array = [
+				ivd.deltaSets.length, // itemCount == ivd.deltaSets.length
+				wordDeltaCount | longWords, // wordDeltaCount: this can safely be set to ivd.regionIds.length (TODO: optimize so we use wordDeltaCount)
+				ivd.regionIds.length,
+				...ivd.regionIds,
+			];
 
-			//const wordDeltaCount = ivd.wordDeltaCount & 0x7fff;
-			// const longWords = ivd.wordDeltaCount & 0x8000;
 			ivd.deltaSets.forEach(deltaSet => { // note that ivd.deltaSets.length === ivd.itemCount
 				deltaSet.forEach((delta, d) => {
 					if (d < wordDeltaCount)
 						{ if (longWords) this.i32 = delta; else this.i16 = delta; /*console.log(",") */ }
 					else
 						{ if (longWords) this.i16 = delta; else this.i8 = delta; /* console.log(".", d, wordDeltaCount, ivd.regionIds.length */ }
-					//console.log("Write delta", d, delta);
 				});
 			});
 		});
 
-		// when we exit this function, we position the pointer at the end of the IVS
+		// when we exit, we’ll position the pointer at the end of the IVS
 		const ivsEnd = this.tell();
 
 		// ItemVariationStoreHeader (write this last)
@@ -2599,11 +2577,7 @@ class SamsaBuffer extends DataView {
 		this.u16 = 1; // format
 		this.u32 = variationRegionListOffset;
 		this.u16 = ivs.ivds.length; // itemVariationDataCount
-
-		// write the ivd offsets
-		for (let ivdIndex=0; ivdIndex<ivs.ivds.length; ivdIndex++) {
-			this.u32 = itemVariationDataOffsets[ivdIndex];
-		}
+		this.u32_array = itemVariationDataOffsets; // write ivd offsets
 
 		// position the pointer correctly for the next write
 		this.seek(ivsEnd);
