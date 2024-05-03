@@ -62,7 +62,7 @@ It is important to note that, despite the renderings changing in appearance, the
 
 ## Trying your own fonts in Fencer
 
-Drop your TTF onto the blue area around Use the blue area around the “Controls” text.
+Drop your TTF onto the blue area around the “Controls” text.
 
 For best results, use a font without an avar table, since Fencer will overwrite any existing avar table.
 
