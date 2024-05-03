@@ -18,7 +18,7 @@ The UI is structured as follows:
 	* the Current location is displayed as a blue dot
 	* you can drag the Current location around
 	* you can add and delete Mappings, and drag them around
-  * **XML panel**, where designspace-compatible XML is generated. This may be pasted into the \<axes\> element of a designspace file — in fact this method is recommended when the user intends to build final files rather than test files.
+  * **XML panel**, where designspace-compatible XML is generated. This may be pasted into the \<axes\> element of a designspace file, that can be built using fontmake.
 * **Lower section**, where the current instance is rendered, and the user can add more instances. All instances are updated whenever mappings are changed.
 
 ## First steps
@@ -64,6 +64,8 @@ Drop your TTF onto the blue area around Use the blue area around the “Controls
 
 For best results, use a font without an avar table, since Fencer will overwrite any existing avar table.
 
-## Testing fonts with mappings made by Fencer
+## Testing fonts made by Fencer
 
-Use the button “Temp download link” to download a copy of the most recent build of the font.
+Click “Download font” to get a copy of the latest font build.
+
+When you are happy with the results, then instead of using the font made by Fencer directly, it is recommended to copy the XML from the XML panel into the \<axes\> element of a designspace file, and compile using fontmake.
