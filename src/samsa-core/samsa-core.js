@@ -1436,6 +1436,10 @@ class SamsaBuffer extends DataView {
 		this.p += 4;
 	}
 
+	set i32_array(arr) {
+		arr.forEach(num => { this.setInt32(this.p, num), this.p += 4 });
+	}
+
 	get i32() {
 		const ret = this.getInt32(this.p);
 		this.p += 4;
@@ -1569,6 +1573,10 @@ class SamsaBuffer extends DataView {
 		return ret;
 	}
 
+	set i16_array(arr) {
+		arr.forEach(num => { this.setInt16(this.p, num), this.p += 2 });
+	}
+
 	set f214(num) {
 		this.setInt16(this.p, num * 0x4000);
 		this.p += 2;
@@ -1599,8 +1607,16 @@ class SamsaBuffer extends DataView {
 		return this.getUint8(this.p++);
 	}
 
+	set u8_array(arr) {
+		arr.forEach(num => this.setUint8(this.p++, num));
+	}
+
 	set i8(num) {
 		this.setInt8(this.p++, num);
+	}
+
+	set i8_array(arr) {
+		arr.forEach(num => this.setInt8(this.p++, num));
 	}
 
 	get i8() {
@@ -2560,12 +2576,14 @@ class SamsaBuffer extends DataView {
 			];
 
 			ivd.deltaSets.forEach(deltaSet => { // note that ivd.deltaSets.length === ivd.itemCount
-				deltaSet.forEach((delta, d) => {
-					if (d < wordDeltaCount)
-						{ if (longWords) this.i32 = delta; else this.i16 = delta; /*console.log(",") */ }
-					else
-						{ if (longWords) this.i16 = delta; else this.i8 = delta; /* console.log(".", d, wordDeltaCount, ivd.regionIds.length */ }
-				});
+				const wordDeltas = deltaSet.slice(0, wordDeltaCount);
+				const otherDeltas = deltaSet.slice(wordDeltaCount);
+				if (longWords) {
+					this.i32_array = wordDeltas; this.i16_array = otherDeltas;
+				}
+				else {
+					this.i16_array = wordDeltas; this.i8_array = otherDeltas
+				}
 			});
 		});
 
