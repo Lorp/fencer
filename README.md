@@ -30,7 +30,7 @@ Try Fencer on the font that is preloaded, a custom build of [Sofia Sans](https:/
 | wdth=100  | 100,100 | **400,100**  | 900,100 |
 | wdth=62.5 | 100,62.5 | 400,62.5 | 900,62.5 |
 
-_Note: The current shipping version of Sofia Sans uses a more complex master structure, since – without avar2 – the design space requires additional masters to represent the designer’s intentions. The avar2 mappings allow us to avoid the additional masters, and thus reduce font size and simplify maintenance._
+_Note: The current shipping version of Sofia Sans uses a more complex master structure, since – without avar2 – the design space requires additional “synthetic” masters to represent the designer’s intentions. The avar2 mappings allow us to avoid the additional masters, and thus reduce font size and simplify maintenance._
 
 Now let’s say you find the Black ExtraCondensed (900,62.5) instance to be too heavy. We can add avar2 mappings to help.
 
