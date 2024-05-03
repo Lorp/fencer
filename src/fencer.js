@@ -1109,7 +1109,7 @@ function updateMappingsXML() {
 		};
 
 		// prepare the IVS
-		const ivsBufOversize = new SamsaBuffer(new ArrayBuffer(10000));
+		const ivsBufOversize = new SamsaBuffer(new ArrayBuffer(10000)); // TODO: find a better way to allocate memory
 		const ivsLength = ivsBufOversize.encodeItemVariationStore(ivs);
 		avar.ivsBuffer = new SamsaBuffer(ivsBufOversize.buffer, 0, ivsLength); // the ivsBuffer we use is a slice of ivsBufOversize
 
@@ -1147,9 +1147,6 @@ function updateMappingsXML() {
 // - <deletes> is an object with each key being a table tag (value is ignored)
 function exportFontWithTables(font, inserts={}, deletes={}) {
 
-	//inserts = {};
-	//deletes = {avar: true};
-
 	function paddedLength(length) {
 		return length + (4 - length%4) % 4
 	}
@@ -1161,30 +1158,16 @@ function exportFontWithTables(font, inserts={}, deletes={}) {
 	Object.keys(inserts).forEach(tag => newTables.push({ tag: tag, checkSum: 0, offset: 0, length: inserts[tag].byteLength, buffer: inserts[tag] }));
 	const newFontSize = 12 + 16 * newTables.length + newTables.reduce((acc, table) => acc + paddedLength(table.length), 0);
 	const newFontBuf = new SamsaBuffer(new ArrayBuffer(newFontSize)); // allocate memory for the new font
-	// console.log("newTables");
-	// console.log(newTables);
-
-	// write first 12 bytes
-	newFontBuf.u32 = font.header.sfntVersion;
-	newFontBuf.u16_array = [newTables.length, ...font.binarySearchParams(newTables.length)]; // 1+3 U16 values
-	newFontBuf.seekr(newTables.length * 16); // skip the table directory
 
 	// write tables
-	//newTables.forEach(table => newFontBuf.memcpy(table.buffer, table.offset = newFontBuf.tell(), 0, -1, 4)); // -1 means use the length of table.buffer, 4 means pad to modulo 4
-
+	newFontBuf.seek(12 + newTables.length * 16); // skip the table directory
 	newTables.forEach(table => newFontBuf.memcpy(table.buffer, table.offset = newFontBuf.tell(), undefined, undefined, 4));
-
-
-
-		//newFontBuf.memcpy(table.buffer, table.offset = newFontBuf.tell(), 0, table.length);
-		// newFontBuf.memcpy(table.buffer, table.offset = newFontBuf.tell(), 0, -1, 4); // -1 means use the length of table.buffer, 4 means pad to modulo 4
-		// newFontBuf.seekr(table.length);
-		// newFontBuf.padToModulo(4);
-	//});
 	console.assert(newFontBuf.tell() === newFontSize, `The new font size (${newFontBuf.tell()}) and expected size (${newFontSize}) do not match.`);
 
-	// write table directory
-	newFontBuf.seek(12);
+	// write first 12 bytes and table directory
+	newFontBuf.seek(0);
+	newFontBuf.u32 = font.header.sfntVersion;
+	newFontBuf.u16_array = [newTables.length, ...font.binarySearchParams(newTables.length)]; // 1+3 U16 values
 	newTables
 		.sort((a,b) => { if (a.tag < b.tag) return -1; if (a.tag > b.tag) return 1; return 0; }) // sort by tag
 		.forEach(table => newFontBuf.u32_array = newFontBuf.tableDirectoryEntry(table)); // write 4 U32 values for each table
