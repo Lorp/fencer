@@ -1366,11 +1366,7 @@ class SamsaBuffer extends DataView {
 		this.p += p;
 	}
 
-	memcpy(srcSamsaBuffer, dstOffset=this.p, srcOffset=0, len=srcSamsaBuffer.byteLength - srcOffset, padding=0, advanceDest=true) {
-		// if (!srcSamsaBuffer) srcSamsaBuffer = this; // if srcSamsaBuffer is undefined, copy within this buffer
-		// if (dstOffset === -1) dstOffset = this.p;
-		// if (srcOffset === undefined) srcOffset = 0;
-		// if (len === -1) len = srcSamsaBuffer.byteLength - srcOffset;
+	memcpy(srcSamsaBuffer=this, dstOffset=this.p, srcOffset=0, len=srcSamsaBuffer.byteLength - srcOffset, padding=0, advanceDest=true) {
 		const dstArray = new Uint8Array(this.buffer, this.byteOffset + dstOffset, len);
 		const srcArray = new Uint8Array(srcSamsaBuffer.buffer, srcSamsaBuffer.byteOffset + srcOffset, len);
 		dstArray.set(srcArray);
@@ -1511,6 +1507,12 @@ class SamsaBuffer extends DataView {
 	}
 
 	set u16_array(arr) {
+		arr.forEach(num => { this.setUint16(this.p, num), this.p += 2 });
+	}
+
+	set u16_pascalArray(arr) {
+		this.setUint16(this.p, arr.length);
+		this.p += 2;
 		arr.forEach(num => { this.setUint16(this.p, num), this.p += 2 });
 	}
 
@@ -2565,43 +2567,37 @@ class SamsaBuffer extends DataView {
 		const itemVariationDataOffsets = [];
 		ivs.ivds.forEach((ivd, ivdIndex) => {
 			itemVariationDataOffsets[ivdIndex] = this.tell();
-			const wordDeltaCount = ivd.regionIds.length;
+			const wordDeltaCount = ivd.regionIds.length; // let’s do this for now
 			const longWords = 0; // if set, value is 0x8000
 
 			this.u16_array = [
 				ivd.deltaSets.length, // itemCount == ivd.deltaSets.length
-				wordDeltaCount | longWords, // wordDeltaCount: this can safely be set to ivd.regionIds.length (TODO: optimize so we use wordDeltaCount)
+				wordDeltaCount | longWords, // wordDeltaCount: this can safely be set to ivd.regionIds.length (TODO: optimize to save bytes)
 				ivd.regionIds.length,
 				...ivd.regionIds,
 			];
 
-			ivd.deltaSets.forEach(deltaSet => { // note that ivd.deltaSets.length === ivd.itemCount
+			ivd.deltaSets.forEach(deltaSet => {
 				const wordDeltas = deltaSet.slice(0, wordDeltaCount);
 				const otherDeltas = deltaSet.slice(wordDeltaCount);
 				if (longWords) {
 					this.i32_array = wordDeltas; this.i16_array = otherDeltas;
 				}
 				else {
-					this.i16_array = wordDeltas; this.i8_array = otherDeltas
+					this.i16_array = wordDeltas; this.i8_array = otherDeltas;
 				}
 			});
 		});
 
-		// when we exit, we’ll position the pointer at the end of the IVS
-		const ivsEnd = this.tell();
-
-		// ItemVariationStoreHeader (write this last)
+		// write the header, set the pointer to the end of the buffer, then return
+		const ivsEnd = this.tell(); // when we exit, we position the pointer at the end of the IVS
 		this.seek(ivsStart);
 		this.u16 = 1; // format
 		this.u32 = variationRegionListOffset;
 		this.u16 = ivs.ivds.length; // itemVariationDataCount
-		this.u32_array = itemVariationDataOffsets; // write ivd offsets
-
-		// position the pointer correctly for the next write
-		this.seek(ivsEnd);
-
-		// return the size of the binary ItemVariationStore
-		return ivsEnd - ivsStart;
+		this.u32_array = itemVariationDataOffsets; // multiple ivd offsets
+		this.seek(ivsEnd); // position the pointer correctly for the next write
+		return ivsEnd - ivsStart; // return the size of the binary ItemVariationStore
 	}
 
 	// parser for variationIndexMap
