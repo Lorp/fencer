@@ -9,21 +9,6 @@ import { VariationModel } from "./models.js";
 import { VariationModel as VM} from "./fontra-src-client-core/var-model.js";
 
 
-
-console.log(VariationModel);
-console.log(VariationModel.getMasterLocationsSortKeyFunc);
-
-
-console.log("VarationModel (Fontra)");
-console.log(VM);
-
-
-//console.log(piecewiseLinearMap)
-
-
-let mappingsSVG;
-// const svgPre = `<svg width="100%" height="100%" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">`;
-// const svgPost = `</svg>`;
 const svgArrowHandleRadius = 15;
 const svgArrowHandleRadiusRoot2 = svgArrowHandleRadius * 1/Math.sqrt(2);
 const svgCurrentLocationRadius = 10;
@@ -256,9 +241,8 @@ function svgCoordsFromAxisCoords (coords) {
 
 function loadFontFromArrayBuffer (arrayBuffer, options={}) {
 
-	//RobotoA2-avar1-VF.ttf
-
 	GLOBAL.font = new SamsaFont(new SamsaBuffer(arrayBuffer));
+	//console.log(GLOBAL.font);
 	GLOBAL.familyName = GLOBAL.font.names[6];
 
 	let str = "";
@@ -958,12 +942,11 @@ function deltaSetScale (deltaSet, scale=0x4000, round=true) {
 	return scaledDeltaSet;
 }
 
+function uint8ArrayToBase64(uint8) {
+	return btoa(uint8.reduce((acc, ch) => acc + String.fromCharCode(ch), ""));
+}
 
 function updateMappingsXML() {
-
-	function uint8ArrayToBase64(uint8) {
-		return btoa(uint8.reduce((acc, ch) => acc + String.fromCharCode(ch), ""));
-	}
 
 	const axisCount = GLOBAL.font.fvar.axisCount;
 
@@ -1118,6 +1101,7 @@ function updateMappingsXML() {
 
 		// create a new font
 		const newFontBuf = exportFontWithTables(GLOBAL.font, { avar: avarBuf }); // we’re inserting an avar table with binary contents avarBuf
+		GLOBAL.fontBuffer = newFontBuf;
 
 		// connect the new font to the UI
 		GLOBAL.familyName = "Fencer-" + Math.random().toString(36).substring(7);
@@ -1128,17 +1112,7 @@ function updateMappingsXML() {
 		GLOBAL.fontFace.load().then(() => {
 			Qall(".render").forEach( renderEl => renderEl.style.fontFamily = GLOBAL.familyName );
 		});
-
-		// assign the b64 blob to the download link
-		if (1) {
-			const uint8 = new Uint8Array(newFontBuf.buffer);
-			const downloadLink = Q("#temp-download");
-			downloadLink.download = "fencer.ttf";
-			downloadLink.href = "data:font/ttf;base64," + uint8ArrayToBase64(uint8);
-		}
-
 	}
-
 }
 
 // function to create a new SamsaBuffer containing a binary font from an existing SamsaFont, but where tables can be inserted and deleted
@@ -1214,8 +1188,6 @@ function selectAxisControls(e) {
 
 function initFencer() {
 
-	console.log("GLOBAL")
-
 	const fontinfo = Q(".fontinfo");
 	fontinfo.addEventListener("dragover", (event) => {
 		// prevent default to allow drop
@@ -1234,6 +1206,7 @@ function initFencer() {
 	Q("#sample-text").oninput = sampleTextChange; // handle change of sample text
 	Q("#mapping-selector").onchange = selectMapping; // handle change of mappings selector
 	Q("#add-render").onclick = addRender;
+	Q("#download-font").onclick = downloadFont;
 
 	// show/hide XML
 	Q("button#toggle-xml").onclick = e => {
@@ -1242,14 +1215,28 @@ function initFencer() {
 	};
 
 	// load initial font
-	// const filename = "RobotoA2-avar2-VF.ttf";
-	const filename = "SofiaSans-VF.ttf";
+	const filename = "SofiaSans-VF.ttf"; // or "RobotoA2-avar2-VF.ttf";
 	const filepath = "../fonts/" + filename;
 	fetch(filepath)
 		.then(response => response.arrayBuffer())
 		.then(arrayBuffer => {
 			loadFontFromArrayBuffer(arrayBuffer, {filename: filename});
 		});
+}
+
+function downloadFont() {
+
+	if (!GLOBAL.fontBuffer) {
+		return;
+	}
+
+	const uint8 = new Uint8Array(GLOBAL.fontBuffer.buffer);
+	const fauxLink = EL("a");
+	fauxLink.download = "fencer.ttf";
+	fauxLink.href = "data:font/ttf;base64," + uint8ArrayToBase64(uint8);
+	document.body.append(fauxLink); // needed for Firefox, not Chrome or Safari
+	fauxLink.click();
+	fauxLink.remove();
 }
 
 function updateRenders() {
