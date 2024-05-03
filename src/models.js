@@ -164,9 +164,6 @@ class VariationModel {
         this.mapping = this.locations.map(l => nonZeroLocations.indexOf(l));
         this.reverseMapping = nonZeroLocations.map(l => this.locations.indexOf(l));
 
-        console.log("this.reverseMapping");
-        console.log(this.reverseMapping);
-
         this._computeMasterSupports();
         this._subModels = {};
     }
