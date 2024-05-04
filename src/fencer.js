@@ -1,8 +1,6 @@
 "use strict"
 
-// import samsa-core and fontTools.varLib models
 import { SamsaFont, SamsaInstance, SamsaBuffer } from "./samsa-core/samsa-core.js"; // import samsa-core https://github.com/Lorp/samsa-core
-import { VariationModel } from "./models.js"; // import fontTools.varLib model (converted to JS by Behdad) https://github.com/behdad/models.js
 import { VariationModel as VM} from "./fontra-src-client-core/var-model.js"; // import Fontra var-model https://github.com/googlefonts/fontra
 
 const svgArrowHandleRadius = 15;
@@ -1029,11 +1027,9 @@ function updateMappingsXML() {
 		const deltas = fModel.getDeltas(masterValues);
 		for (let a=0; a<axisCount; a++) {
 			const deltaSet = [];
-			deltas.forEach((deltaRow, d) => {
-				if (d > 0) // skip the first row, which is the default location
-					deltaSet.push(deltaRow[a]);
-			});
-			ivs.ivds[0].deltaSets.push(deltaSetScale(deltaSet));
+			for (let d=1; d<deltas.length; d++) // skip the first row, which is the default location
+				deltaSet.push(deltas[d][a]);
+			ivs.ivds[0].deltaSets.push(deltaSetScale(deltaSet)); // convert [-1,1] to [-0x4000,0x4000]
 		}
 
 		// prepare the axisIndexMap
