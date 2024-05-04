@@ -973,10 +973,8 @@ function updateMappingsXML() {
 		ivds: [ { regionIds: [], deltaSets: [] } ],
 	};
 
-	// create the regions
-	// - create a fonttools-style VariationModel by calling models.js
-	const axisOrder = Array.from({ length: axisCount }, (_, i) => String.fromCharCode(65 + i)); // fake axis names, guaranteed unique
-
+	// create axisOrder array, of the form ["A", "B", "C", ...], these are fake axis names, guaranteed unique
+	const axisOrder = Array.from({ length: axisCount }, (_, i) => String.fromCharCode(65 + i));
 
 	// TODO: report error if any mappings start at default location
 	
@@ -1015,7 +1013,7 @@ function updateMappingsXML() {
 			masterValues.push(mapping[1].map((coord, a) => coord - mapping[0][a])); // this evaluates mapping[1][a] - mapping[0][a] for each axis a
 		});
 
-		// create the fontra-style model
+		// create the Fontra-style variation model
 		const fModel = new VariationModel(fLocations, axisOrder);
 
 		// create the IVS regions from fModel.supports (a region is an array of tents, one tent per axis)
