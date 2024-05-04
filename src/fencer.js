@@ -1,13 +1,9 @@
 "use strict"
 
 // import samsa-core and fontTools.varLib models
-//import { SamsaFont, SamsaInstance, SamsaBuffer, SAMSAGLOBAL } from "https://lorp.github.io/samsa-core/src/samsa-core.js";
-import { SamsaFont, SamsaInstance, SamsaBuffer, SAMSAGLOBAL } from "./samsa-core/samsa-core.js";
-//import { normalizeValue, piecewiseLinearMap, VariationModel } from "./models.js";
-import { VariationModel } from "./models.js";
-
-import { VariationModel as VM} from "./fontra-src-client-core/var-model.js";
-
+import { SamsaFont, SamsaInstance, SamsaBuffer } from "./samsa-core/samsa-core.js"; // import samsa-core https://github.com/Lorp/samsa-core
+import { VariationModel } from "./models.js"; // import fontTools.varLib model (converted to JS by Behdad) https://github.com/behdad/models.js
+import { VariationModel as VM} from "./fontra-src-client-core/var-model.js"; // import Fontra var-model https://github.com/googlefonts/fontra
 
 const svgArrowHandleRadius = 15;
 const svgArrowHandleRadiusRoot2 = svgArrowHandleRadius * 1/Math.sqrt(2);
@@ -25,6 +21,7 @@ const GLOBAL = {
 	mappingsView: [],
 	axisTouched: -1,
 	fontFace: undefined,
+	fontBuffer: undefined,
 };
 
 function Q (selector) {
@@ -84,14 +81,10 @@ function simpleNormalize(axis, value) {
 function mappingSimpleNormalize(axes, mapping) {
 
 	const normalizedMapping = [[],[]];
-
 	axes.forEach((axis, a) => {
-		// normalizedMapping[0][a] = Math.round(0x4000 * simpleNormalize(axis, mapping[0][a]));
-		// normalizedMapping[1][a] = Math.round(0x4000 * simpleNormalize(axis, mapping[1][a]));
 		normalizedMapping[0][a] = simpleNormalize(axis, mapping[0][a]);
 		normalizedMapping[1][a] = simpleNormalize(axis, mapping[1][a]);
 	});
-
 	return normalizedMapping;
 }
 
@@ -242,15 +235,7 @@ function svgCoordsFromAxisCoords (coords) {
 function loadFontFromArrayBuffer (arrayBuffer, options={}) {
 
 	GLOBAL.font = new SamsaFont(new SamsaBuffer(arrayBuffer));
-	//console.log(GLOBAL.font);
 	GLOBAL.familyName = GLOBAL.font.names[6];
-
-	let str = "";
-
-	// filename, font name
-	str += options.filename ?? "" + "\n";
-	str += GLOBAL.font.names[6] + "\n";
-	str += "---\n";
 
 	// set the font face to the arraybuffer
 	if (GLOBAL.fontFace)
@@ -283,15 +268,8 @@ function loadFontFromArrayBuffer (arrayBuffer, options={}) {
 	mappingsSelectorPopulate();
 
 	// build axis controls
-	str += "AXES: \n";
-	GLOBAL.font.fvar.axes.forEach(axis => {
-		str += `${axis.axisTag} ${axis.minValue} ${axis.defaultValue} ${axis.maxValue}\n`;
-	});
-	// document.querySelector(".fontinfo textarea").value = str; // set the textarea content to the string
 
-
-	// add key
-
+	// 1. add a row for the key
 	const keyEl = EL("div");
 	keyEl.classList.add("key");
 		
@@ -306,21 +284,19 @@ function loadFontFromArrayBuffer (arrayBuffer, options={}) {
 	key[4].style.fontFamily = "Material Symbols Outlined";
 	key[4].title = "Reset all input axes\n(shift-click to reset all output axes)";
 	key[4].onclick = axisReset;
-	key[1].style.gridColumn = "2 / 4";
-	key[3].style.gridColumn = "5 / 7";
+	key[1].style.gridColumn = "2 / 4"; // occupy 2 cells
+	key[3].style.gridColumn = "5 / 7"; // occupy 2 cells
 
 	keyEl.append(...key);
 	Q("#axes").append(keyEl);
 	
-	// tag value slider reset check check
+	// 2. add a row for each axis
 	GLOBAL.font.fvar.axes.forEach((axis, a) => {
 		const axisEl = EL("div");
 		axisEl.classList.add("axis");
 		axisEl.dataset.axisId = a;
 
-		// grid-template-columns: 40px 40px 1fr auto 40px 1fr auto 16px 16px;
-
-		//const row = [ EL("input"), EL("div"), EL("div"), EL("div"), EL("input"), EL("input") ];
+		// we are populating this grid definition: grid-template-columns: 40px 40px 1fr auto 40px 1fr auto 16px 16px;
 		const row = [ EL("input"), EL("input"), EL("input"), EL("div"), EL("input"), EL("input"), EL("div"), EL("input"), EL("input")];
 
 		row[0].value = axis.axisTag;
@@ -328,7 +304,7 @@ function loadFontFromArrayBuffer (arrayBuffer, options={}) {
 		row[0].disabled = true;
 		row[0].title = `${axis.axisTag} (${axis.name})\nmin: ${axis.minValue}\ndefault: ${axis.defaultValue}\nmax: ${axis.maxValue}`;
 
-		// right-arrow unicode is 
+		// right-arrow
 		row[3].textContent = "→";
 
 		// input/output numerics
@@ -392,13 +368,11 @@ function loadFontFromArrayBuffer (arrayBuffer, options={}) {
 	});
 
 	// set initial mode to "axes", make the output axes disabled
-	//setMode();
 	selectAxisControls();
 
 	function axisChange (e) {
 
 		const inputOrOutput = e.target.classList.contains("input") ? "input" : "output";
-		// console.log(inputOrOutput);
 		const inputOrOutputId = (inputOrOutput === "input") ? 0 : 1;
 
 		const elMarker = (GLOBAL.draggingIndex === -1) ? Q("g.current") : Q(`g.location.${inputOrOutput}[data-index="${GLOBAL.draggingIndex}"]`);
@@ -463,7 +437,6 @@ function loadFontFromArrayBuffer (arrayBuffer, options={}) {
 		// is this the reset button of an axis row?
 		else {
 			const axisEl = parentEl;
-			console.log(axisEl);
 			const axisId = parseInt(axisEl.dataset.axisId);
 			const axis = GLOBAL.font.fvar.axes[axisId];
 
@@ -680,30 +653,15 @@ function deleteMapping() {
 
 	if (GLOBAL.draggingIndex >= 0) {
 
-		console.log(`document.querySelector('.arrow[data-index="${GLOBAL.draggingIndex}"]')`);
-		console.log(`document.querySelector('.input.location[data-index="${GLOBAL.draggingIndex}"]')`);
-		console.log(`document.querySelector('.output.location[data-index="${GLOBAL.draggingIndex}"]')`);
-
-		// we don’t actually have to remove the elements, because we immediately redraw the SVG
-		// Q(`.arrow[data-index="${GLOBAL.draggingIndex}"]`).remove();
-		// Q(`.input.location[data-index="${GLOBAL.draggingIndex}"]`).remove();
-		// Q(`.output.location[data-index="${GLOBAL.draggingIndex}"]`).remove();
-
+		// we redraw from the updated mappings array, rather than actually removing the SVG elements
 		GLOBAL.mappings.splice(GLOBAL.draggingIndex, 1);
-
 		GLOBAL.dragging = undefined;
 		GLOBAL.draggingIndex = 0;
-
 		mappingsSelectorPopulate();
 	}
 
 	Q("#mapping-selector").value = -1;
 	Q("#mapping-selector").dispatchEvent(new Event("change"));
-
-	// repopulate the mapping selector
-
-	// renumber the existing mappings
-
 
 	// update stuff
 	updateMappingsSVG();
@@ -715,7 +673,6 @@ function getVisibleAxisIds() {
 	const yAxisEl = Q("input[name=y-axis]:checked").closest(".axis");
 	const xAxisIndex = parseInt(xAxisEl.dataset.axisId);
 	const yAxisIndex = parseInt(yAxisEl.dataset.axisId);
-
 	return [xAxisIndex, yAxisIndex];
 }
 
@@ -830,7 +787,7 @@ function svgMouseUp(e) {
 
 	GLOBAL.svgEl.removeEventListener("mousemove", svgMouseMove); // = undefined;
 	GLOBAL.svgEl.removeEventListener("mouseup", svgMouseUp); // = undefined;
-	//GLOBAL.dragging = undefined;
+	GLOBAL.dragging = undefined;
 	GLOBAL.dragOffset = undefined;
 
 }
@@ -878,7 +835,6 @@ function mappingMouseDown (e) {
 
 function updateMappingsSVG() {
 
-//	console.log(GLOBAL);
 	GLOBAL.svgEl.innerHTML = "";
 
 	// draw x-axis and y-axis
@@ -1017,7 +973,7 @@ function updateMappingsXML() {
 
 	// create the regions
 	// - create a fonttools-style VariationModel by calling models.js
-	const axisOrder = Array.from({ length: GLOBAL.font.fvar.axes.length }, (_, i) => String.fromCharCode(65 + i)); // fake axis names, guaranteed unique
+	const axisOrder = Array.from({ length: axisCount }, (_, i) => String.fromCharCode(65 + i)); // fake axis names, guaranteed unique
 
 
 	// TODO: report error if any mappings start at default location
@@ -1056,20 +1012,21 @@ function updateMappingsXML() {
 		masterValues.push(new Array(axisCount).fill(0));
 		normalizedMappings.forEach(mapping => {
 
-			// const fLoc = {};
-			// mapping[0].forEach((coord, a) => fLoc[axisOrder[a]] = coord); // we only care about input locations
-			// fLocations.push(fLoc);
-
-			// create an array of locations in object form, so we can use the solver
+			// for each mapping, create an array of locations in object form, so we can use the solver
 			fLocations.push(mapping[0].reduce((acc, coord, a) => {
 				if (coord !== 0) acc[axisOrder[a]] = coord; // only assign non-zero values
 				return acc;
 			} , {} ));
 
-			// create an array that is the difference between the input and output locations, and push it to the masterValues array
-			masterValues.push(mapping[1].map((coord, a) => coord - mapping[0][a]));
+			// fLocations is now an array of objects, where each objects has entries for any non-zero axis values
+			// - the first object is empty, as it is the default location
+			// - subsequent objects are of the form { A: 0.5, B: 0.5, E: 1, G: -0.75 ...}
+
+			// for each mapping, create an array that is the difference between the input and output locations, and push it to the masterValues array
+			masterValues.push(mapping[1].map((coord, a) => coord - mapping[0][a])); // this evaluates mapping[1][a] - mapping[0][a] for each axis a
 		});
 
+		// create the fontra-style model
 		const fModel = new VM(fLocations, axisOrder);
 
 		// transpose the deltas array (ignoring the first row) and assign to the IVD
@@ -1112,6 +1069,20 @@ function updateMappingsXML() {
 		GLOBAL.fontFace.load().then(() => {
 			Qall(".render").forEach( renderEl => renderEl.style.fontFamily = GLOBAL.familyName );
 		});
+
+		// make a temporary SamsaFont
+		const sf = new SamsaFont(newFontBuf);
+
+		// make a temporary SamsaInstance at the Current location
+		const axisSettings = {};
+		GLOBAL.font.fvar.axes.forEach((axis, a) => axisSettings[axis.axisTag] = GLOBAL.current[0][a]);
+		const si = new SamsaInstance(sf, axisSettings);
+		console.log(si.tuple);
+
+		// denormalize the tuple into axis values for the current[1] array
+		// TODO
+
+		// also do the same for all the instances
 	}
 }
 
@@ -1177,23 +1148,13 @@ function updateMappingsSliders(m) {
 
 function selectAxisControls(e) {
 
-	//alert ("selectAxisControls");
-
-	// const selectEl = Q("#select-axis-controls");
-	// selectEl.value = GLOBAL.draggingIndex;
-
 	mappingsSelectorPopulate();
-
 }
 
 function initFencer() {
 
 	const fontinfo = Q(".fontinfo");
-	fontinfo.addEventListener("dragover", (event) => {
-		// prevent default to allow drop
-		event.preventDefault();
-	});
-
+	fontinfo.addEventListener("dragover", e => e.preventDefault() ); // prevent default to allow drop
 	fontinfo.addEventListener("drop", onDropFont);
 
 	// init the svg
