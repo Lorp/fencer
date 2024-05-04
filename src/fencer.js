@@ -1,7 +1,7 @@
 "use strict"
 
 import { SamsaFont, SamsaInstance, SamsaBuffer } from "./samsa-core/samsa-core.js"; // import samsa-core https://github.com/Lorp/samsa-core
-import { VariationModel as VM} from "./fontra-src-client-core/var-model.js"; // import Fontra var-model https://github.com/googlefonts/fontra
+import { VariationModel } from "./fontra-src-client-core/var-model.js"; // import Fontra var-model https://github.com/googlefonts/fontra
 
 const svgArrowHandleRadius = 15;
 const svgArrowHandleRadiusRoot2 = svgArrowHandleRadius * 1/Math.sqrt(2);
@@ -1016,7 +1016,7 @@ function updateMappingsXML() {
 		});
 
 		// create the fontra-style model
-		const fModel = new VM(fLocations, axisOrder);
+		const fModel = new VariationModel(fLocations, axisOrder);
 
 		// create the IVS regions from fModel.supports (a region is an array of tents, one tent per axis)
 		fModel.supports
