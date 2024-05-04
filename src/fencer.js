@@ -88,6 +88,10 @@ function mappingSimpleNormalize(axes, mapping) {
 
 window.onkeydown = function (e) {
 
+	// disable for input elements!
+	if (e.target.tagName === "INPUT")
+		return;
+
 	let delta = 0;
 	switch (e.key) {
 		case "ArrowUp":
