@@ -993,19 +993,6 @@ function updateMappingsXML() {
 	// are there any mappings? (locs.length==1 means no mappings)
 	if (locs.length > 1) {
 
-		if (1) { // this is Behdad’s method
-
-			// translate supports into regions
-			const model = new VariationModel(locs);
-			model.supports
-				.filter(support => Object.keys(support).length > 0)
-				.forEach(support => ivs.regions.push(GLOBAL.font.fvar.axes.map((axis, a) => support.hasOwnProperty(axisOrder[a]) ? support[axisOrder[a]] : [0,0,0])));
-		}
-
-		// set up the IVD
-		// - initialize the single IVD to include all the regions (we can optimize it later)
-		ivs.ivds[0].regionIds = ivs.regions.map((region, r) => r);
-
 		// Fontra method
 		const fLocations = [{}]; // we need a null mapping to help the solver
 		const masterValues = [];
@@ -1028,6 +1015,15 @@ function updateMappingsXML() {
 
 		// create the fontra-style model
 		const fModel = new VM(fLocations, axisOrder);
+
+		// create the IVS regions from fModel.supports (a region is an array of tents, one tent per axis)
+		fModel.supports
+			.filter(support => Object.keys(support).length > 0)
+			.forEach(support => ivs.regions.push(GLOBAL.font.fvar.axes.map((axis, a) => support.hasOwnProperty(axisOrder[a]) ? support[axisOrder[a]] : [0,0,0])));
+
+		// set up the IVD
+		// - initialize the single IVD to include all the regions (we can optimize it later)
+		ivs.ivds[0].regionIds = ivs.regions.map((region, r) => r); // if there are 5 regions, regionIds = [0, 1, 2, 3, 4]
 
 		// transpose the deltas array (ignoring the first row) and assign to the IVD
 		const deltas = fModel.getDeltas(masterValues);
