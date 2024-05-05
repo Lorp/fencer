@@ -71,3 +71,8 @@ For best results, use a font without an avar table, since Fencer will overwrite 
 Click “Download font” to get a copy of the latest font build.
 
 When you are happy with the results, then instead of using the font made by Fencer directly, it is recommended to copy the XML from the XML panel into the \<axes\> element of a designspace file, and compile using fontmake.
+
+## References
+
+* [avar v2 specification](https://github.com/harfbuzz/boring-expansion-spec/blob/main/avar2.md)
+* [avar v2 intro video](https://www.youtube.com/watch?v=j7unMVZOcaw) and [slides](https://docs.google.com/presentation/d/1i8CEqHkVR4oAZKjU_BqtzzrOx2lAfDDjwkAgzlEGjuo/) (October 2022) by Laurence Penney & Dave Crossland
