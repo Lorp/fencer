@@ -76,3 +76,4 @@ When you are happy with the results, then instead of using the font made by Fenc
 
 * [avar v2 specification](https://github.com/harfbuzz/boring-expansion-spec/blob/main/avar2.md)
 * [avar v2 intro video](https://www.youtube.com/watch?v=j7unMVZOcaw) and [slides](https://docs.google.com/presentation/d/1i8CEqHkVR4oAZKjU_BqtzzrOx2lAfDDjwkAgzlEGjuo/) (October 2022) by Laurence Penney & Dave Crossland
+* [designspaceLib: Document XML structure: 2.2.3 \<mappings\> element](https://fonttools.readthedocs.io/en/latest/designspaceLib/xml.html#mappings-element)
