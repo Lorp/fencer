@@ -513,6 +513,9 @@ function loadFontFromArrayBuffer (arrayBuffer, options={}) {
 	if (GLOBAL.font.fvar.axes.length > 0)
 		GLOBAL.axisTouched = 0;
 
+	// add renders for each named instance
+	GLOBAL.font.fvar.instances.forEach(instance => addRender(null, instance.coordinates));	
+
 	// draw mappings SVG
 	updateMappingsSVG();
 	updateRenders();
@@ -546,10 +549,8 @@ function getDefaultAxisCoords() {
 	return GLOBAL.font.fvar.axes.map((axis, a) => axis.defaultValue );
 }
 
-function addRender() {
+function addRender(e, coords = GLOBAL.current[0]) {
 
-	const currentAxisCoords = GLOBAL.current[0];
-	
 	// the controls icon
 	const controlsButtonEl = EL("div");
 	controlsButtonEl.classList.add("render-controls-button");
@@ -574,7 +575,7 @@ function addRender() {
 		const valueEl = EL("input");
 		valueEl.classList.add("value");
 		valueEl.disabled = true;
-		valueEl.value = currentAxisCoords[a];
+		valueEl.value = coords[a];
 
 		// lock/unlock
 		const lockEl = EL("div");
