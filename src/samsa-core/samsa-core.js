@@ -3679,7 +3679,6 @@ class SamsaBuffer extends DataView {
 		return coverage;
 	}
 
-
 }
 
 
@@ -3692,8 +3691,6 @@ class SamsaBuffer extends DataView {
 function SamsaFont(buf, options = {}) {
 
 	let valid = true;
-	console.log("SamsaFont!")
-
 	this.buf = buf; // SamsaBuffer
 	this.tables = {};
 	this.tableList = [];
@@ -3718,7 +3715,7 @@ function SamsaFont(buf, options = {}) {
 			// validate the table record
 			if (!validateTag(table.tag)) {
 				valid = false;
-				console.error("ERROR: Table tag is not valid.");
+				console.error(`ERROR: Table tag is not valid: (${table.tag}).`);
 			}
 			else if (table.offset < 12 + this.header.numTables * 16 || table.offset + table.length > buf.length) {
 				valid = false;
@@ -3749,11 +3746,9 @@ function SamsaFont(buf, options = {}) {
 		}
 
 		if (this.tables[tag]) {
-			console.log("Loading table: ", tag);
-			//const tbuf = this.bufferFromTable(tag);
-			const tbuf = this.tables[tag].buffer;
 
 			// decode first part of table (or create an empty object)
+			const tbuf = this.tables[tag].buffer;
 			this[tag] = FORMATS[tag] ? tbuf.decode(FORMATS[tag]) : {};
 			this[tag].buffer = tbuf;
 
@@ -3774,7 +3769,7 @@ function SamsaFont(buf, options = {}) {
 		}
 	});
 
-	// options.allGlyphs: load all glyphs
+	// options.allGlyphs: load all glyphs?
 	if (options.allGlyphs) {
 		let offset = 0;
 		// we should do this differently if the font is only lightly loaded, e.g. from a big file that we don’t want to load in full
