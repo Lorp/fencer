@@ -9,7 +9,7 @@ const svgCurrentLocationRadius = 10;
 const svgArrowLineWidth = 2;
 const svgArrowHead = `<circle cx="0" cy="0" r="${svgArrowHandleRadius}" fill="#0003" stroke="currentColor" stroke-width="${svgArrowLineWidth}"/><circle cx="0" cy="0" r="5" fill="currentColor" stroke="none"/>`;
 const svgArrowTail = `<circle cx="0" cy="0" r="${svgArrowHandleRadius}" fill="#0003" stroke="currentColor" stroke-width="${svgArrowLineWidth}"/><line x1="${-svgArrowHandleRadiusRoot2}" y1="${-svgArrowHandleRadiusRoot2}" x2="${svgArrowHandleRadiusRoot2}" y2="${svgArrowHandleRadiusRoot2}" stroke="currentColor" stroke-width="${svgArrowLineWidth}"/><line x1="${-svgArrowHandleRadiusRoot2}" y1="${svgArrowHandleRadiusRoot2}" x2="${svgArrowHandleRadiusRoot2}" y2="${-svgArrowHandleRadiusRoot2}" stroke="currentColor" stroke-width="${svgArrowLineWidth}"/>`;
-const svgCurrentLocation = `<circle cx="0" cy="0" r="${svgCurrentLocationRadius+svgArrowLineWidth}" fill="white" stroke="none"/><circle cx="0" cy="0" r="${svgCurrentLocationRadius}" fill="#077bf6" stroke="none"/>`;
+const svgCurrentLocation = `<circle cx="0" cy="0" r="${svgCurrentLocationRadius+svgArrowLineWidth}" fill="white" stroke="none"/><circle cx="0" cy="0" r="${svgCurrentLocationRadius}" fill="currentColor" stroke="none"/>`;
 
 const GLOBAL = {
 	svgElWidth: 400,
@@ -20,6 +20,7 @@ const GLOBAL = {
 	axisTouched: -1,
 	fontFace: undefined,
 	fontBuffer: undefined,
+	instances: [],
 };
 
 function Q (selector) {
@@ -141,7 +142,7 @@ window.onkeydown = function (e) {
 	}
 
 	updateMappingsSliders(GLOBAL.draggingIndex);
-	updateMappingsSVG();
+	//updateMappingsSVG();
 	updateMappingsXML();
 	updateRenders();
 
@@ -170,36 +171,44 @@ function mappingsSelectorPopulate() {
 
 }
 
-function getArrowPath (arrow) {
 
-	// call with getArrowParams({x1: x1, x2: x2, y1: y1, y2: y2, tipLen: tipLen, tipWid: tipWid})
+// returns a string ready to be assigned as the "d" attribute of an SVG <path> element
+// - color is assigned later, on the element itself
+// - call with getArrowPath({x1: x1, x2: x2, y1: y1, y2: y2, tipLen: tipLen, tipWid: tipWid, strokeWidth: strokeWidth})
+function getArrowPath(arrow) {
 
 	const x1 = arrow.x1, y1 = arrow.y1, x2 = arrow.x2, y2 = arrow.y2;
 	const tipLen = arrow.tipLen, tipWid = arrow.tipWid;
-	const points = [];
+	const strokeWidth = arrow.strokeWidth ?? 2;
+	let pathStr = "";
 
 	if (x2!=x1 || y2!=y1) {
 		const len = Math.sqrt((x2-x1)*(x2-x1)+(y2-y1)*(y2-y1));
-		const arrowBackX = (y2-y1) * tipWid/2/len, arrowBackY = (x2-x1) * tipWid/2/len;
+		const arrowBackX = (y2-y1)/len;
+		const arrowBackY = (x2-x1)/len;
 
 		arrow.arrowX1 = arrow.arrowX2 = arrow.newX2 = x1 + (x2-x1) * (len-tipLen)/len;
 		arrow.arrowY1 = arrow.arrowY2 = arrow.newY2 = y1 + (y2-y1) * (len-tipLen)/len;
-		arrow.arrowX1 += arrowBackX;
-		arrow.arrowY1 -= arrowBackY;
-		arrow.arrowX2 -= arrowBackX;
-		arrow.arrowY2 += arrowBackY;
+		arrow.arrowX1 += arrowBackX * tipWid/2;
+		arrow.arrowY1 -= arrowBackY * tipWid/2;
+		arrow.arrowX2 -= arrowBackX * tipWid/2;
+		arrow.arrowY2 += arrowBackY * tipWid/2;
 
-		points.push([arrow.arrowX1, arrow.arrowY1], [arrow.arrowX2, arrow.arrowY2], [arrow.x2, arrow.y2]);
+		// arrow head (a triangle)
+		pathStr += `M${arrow.arrowX1} ${arrow.arrowY1}`; // "left" base of the arrow head
+		pathStr += `L${arrow.arrowX2} ${arrow.arrowY2}`; // "right" base of the arrow head
+		pathStr += `L${arrow.x2} ${arrow.y2}`; // tip of the arrow head
+		pathStr += "Z";
 
+		// arrow line (a thin rectangle)
+		const newX2 = x1 + (x2-x1) * (len-tipLen)/len; // in order to preserve the arrow tip, we don’t draw this rectangle all the way to the tip
+		const newY2 = y1 + (y2-y1) * (len-tipLen)/len;
+		pathStr += `M${x1 + arrowBackX * strokeWidth/2} ${y1 - arrowBackY * strokeWidth/2}`;
+		pathStr += `L${newX2 + arrowBackX * strokeWidth/2} ${newY2 - arrowBackY * strokeWidth/2}`;
+		pathStr += `L${newX2 - arrowBackX * strokeWidth/2} ${newY2 + arrowBackY * strokeWidth/2}`;
+		pathStr += `L${x1 - arrowBackX * strokeWidth/2} ${y1 + arrowBackY * strokeWidth/2}`;
+		pathStr += "Z";
 	}
-
-	let pathStr = "";
-	points.forEach((point, p) => {
-		pathStr += (p===0 ? "M" : "L") + point[0] + " " + point[1];
-		if (p===points.length-1) {
-			pathStr += "Z";
-		}
-	});
 
 	return pathStr;
 }
@@ -238,6 +247,12 @@ function loadFontFromArrayBuffer (arrayBuffer, options={}) {
 
 	GLOBAL.font = new SamsaFont(new SamsaBuffer(arrayBuffer));
 	GLOBAL.familyName = GLOBAL.font.names[6];
+	GLOBAL.fontBuffer = GLOBAL.font.buf;
+
+	console.log("GLOBAL.font");
+	console.log(GLOBAL.font);
+	console.log("GLOBAL.font.buf");
+	console.log(GLOBAL.font.buf);
 
 	// set the font face to the arraybuffer
 	if (GLOBAL.fontFace)
@@ -265,7 +280,6 @@ function loadFontFromArrayBuffer (arrayBuffer, options={}) {
 		// init the mappings xml
 		updateMappingsXML();
 	});
-
 
 	mappingsSelectorPopulate();
 
@@ -343,6 +357,7 @@ function loadFontFromArrayBuffer (arrayBuffer, options={}) {
 
 		// set change event for all input elements
 		inNumEl.oninput = outNumEl.oninput = inEl.oninput = outEl.oninput = axisChange;
+		inNumEl.onchange = outNumEl.onchange = inEl.onchange = outEl.onchange = axisChange;
 
 		row[6].style.fontFamily = "Material Symbols Outlined";
 		row[6].textContent = "refresh";
@@ -377,7 +392,7 @@ function loadFontFromArrayBuffer (arrayBuffer, options={}) {
 		const inputOrOutput = e.target.classList.contains("input") ? "input" : "output";
 		const inputOrOutputId = (inputOrOutput === "input") ? 0 : 1;
 
-		const elMarker = (GLOBAL.draggingIndex === -1) ? Q("g.current") : Q(`g.location.${inputOrOutput}[data-index="${GLOBAL.draggingIndex}"]`);
+		//const elMarker = (GLOBAL.draggingIndex === -1) ? Q("g.current") : Q(`g.location.${inputOrOutput}[data-index="${GLOBAL.draggingIndex}"]`);
 		const el = e.target;
 		const axisEl = el.closest(".axis");
 		const axisId = parseInt(axisEl.dataset.axisId);
@@ -386,34 +401,16 @@ function loadFontFromArrayBuffer (arrayBuffer, options={}) {
 
 		// move the marker
 		if (GLOBAL.draggingIndex === -1) {
-			GLOBAL.current[inputOrOutputId][axisId] = parseFloat(el.value);
-			elMarker.setPosition(svgCoordsFromAxisCoords(GLOBAL.current[0]));
-
-			// hack (set output = input)
-			// FIX THIS WHEN avar2 COMPILATION WORKING
-			axisEl.querySelectorAll("input.output").forEach(outputEl => outputEl.value = parseFloat(el.value));
-
+			GLOBAL.current[0][axisId] = parseFloat(el.value);
 		}
 		else {
-			// const mapping = GLOBAL.mappings[GLOBAL.draggingIndex];
-			// mapping[inputOrOutputId][axisId] = parseFloat(el.value);
-
 			const mapping = GLOBAL.mappings[GLOBAL.draggingIndex];
 			mapping[inputOrOutputId][axisId] = parseFloat(el.value);
-			const [svgX, svgY] = svgCoordsFromAxisCoords(mapping[inputOrOutputId]);
-			elMarker.setPosition([svgX, svgY]);
-			
-			// update the arrow
-			const arrowEl = Q(`.arrow[data-index="${GLOBAL.draggingIndex}"]`);
-			if (arrowEl) { // sanity
-
-				updateArrow(arrowEl, inputOrOutputId, svgX, svgY);
-
-			}
 		}
 
 		GLOBAL.axisTouched = axisId;
 
+		mappingsChanged();
 		updateRenders();
 		updateMappingsXML();
 	}
@@ -453,7 +450,8 @@ function loadFontFromArrayBuffer (arrayBuffer, options={}) {
 
 		// updates
 		updateMappingsSliders(GLOBAL.draggingIndex);
-		updateMappingsSVG();
+		mappingsChanged();
+		//updateMappingsSVG();
 		updateMappingsXML();
 		updateRenders();
 	}
@@ -496,7 +494,8 @@ function loadFontFromArrayBuffer (arrayBuffer, options={}) {
 
 		// redraw the mappings SVG
 		// - TODO: decide if we need to update the mappingsView array
-		updateMappingsSVG();
+		mappingsChanged();
+		//updateMappingsSVG();
 	}
 	
 	
@@ -513,18 +512,22 @@ function loadFontFromArrayBuffer (arrayBuffer, options={}) {
 	if (GLOBAL.font.fvar.axes.length > 0)
 		GLOBAL.axisTouched = 0;
 
-	// add renders for each named instance
-	GLOBAL.font.fvar.instances.forEach(instance => addRender(null, instance.coordinates));	
+	// add render for the current location
+	addRender();
 
-	// draw mappings SVG
-	updateMappingsSVG();
-	updateRenders();
+	// add renders for each named instance
+	GLOBAL.font.fvar.instances.forEach(instance => addRender(null, instance.coordinates, instance.name));	
 
 	// if these axes represent the current location, disable all the initial input elements with class "output"
 	if (GLOBAL.draggingIndex === -1) {
 		Qall("#axes .axis input.output").forEach(el => el.disabled = true);
 	}
 
+	// draw mappings SVG
+	mappingsChanged(0);
+	//updateMappingsSVG();
+	updateRenders();
+	
 }
 
 function onDropFont (e) {
@@ -549,13 +552,15 @@ function getDefaultAxisCoords() {
 	return GLOBAL.font.fvar.axes.map((axis, a) => axis.defaultValue );
 }
 
-function addRender(e, coords = GLOBAL.current[0]) {
+function addRender(e, coords = GLOBAL.current[0], name="Current", color) {
 
 	// the controls icon
 	const controlsButtonEl = EL("div");
 	controlsButtonEl.classList.add("render-controls-button");
 	controlsButtonEl.innerText = "tune";
 	controlsButtonEl.onclick = clickControls;
+
+	console.log("*")
 
 	// the controls
 	const controlsEl = EL("div");
@@ -584,6 +589,7 @@ function addRender(e, coords = GLOBAL.current[0]) {
 	
 		axisEl.append(tagEl, valueEl, lockEl);
 		controlsEl.append(axisEl);
+
 	});
 
 	// the render item
@@ -595,12 +601,29 @@ function addRender(e, coords = GLOBAL.current[0]) {
 	renderEl.classList.add("render");
 	renderEl.innerText = Q("#sample-text").value;
 	renderEl.style.fontFamily = GLOBAL.familyName;
+
+	// label
+	const labelEl = EL("label");
+	labelEl.textContent = name;
+	labelEl.style.backgroundColor = color ? color : "var(--currentLocationColor)";
+	//renderEl.append(labelEl);
+
+	console.log(renderItemEl);
+	console.log(renderEl)
+	console.log(controlsEl)
+	console.log(controlsButtonEl)
+	console.log(labelEl)
 	
-	renderItemEl.append(renderEl, controlsEl, controlsButtonEl);
+	renderItemEl.append(renderEl, controlsEl, controlsButtonEl, labelEl);
 
 	Q(".render-container").append(renderItemEl);
 
 	updateRenders();
+
+	GLOBAL.instances.push([
+		[...coords],
+		[...coords], // fix this
+	])
 	
 }
 
@@ -648,7 +671,7 @@ function addMapping() {
 	mappingsSelectorPopulate();
 
 	// update stuff
-	updateMappingsSVG();
+	mappingsChanged();
 	updateMappingsXML();
 }
 
@@ -663,11 +686,11 @@ function deleteMapping() {
 		mappingsSelectorPopulate();
 	}
 
-	Q("#mapping-selector").value = -1;
+	Q("#mapping-selector").value = -1; // select "current" location sliders
 	Q("#mapping-selector").dispatchEvent(new Event("change"));
 
 	// update stuff
-	updateMappingsSVG();
+	mappingsChanged();
 	updateMappingsXML();
 }
 
@@ -679,30 +702,46 @@ function getVisibleAxisIds() {
 	return [xAxisIndex, yAxisIndex];
 }
 
-function svgArrow(i, x1, y1, x2, y2) {
+// return an SVG element that represents an arrow
+// - options is an object with the following properties:
+// - x1, y1, x2, y2 (required): the start and end points of the arrow
+// - index (optional): value to be assigned to dataset.index of the returned element
+// - color (optional): color of the arrow (default = currentColor)
+// - tipLen (optional): length of the arrowhead (default = 20)
+// - tipWid (optional): width of the arrowhead (default = 15)
+function svgArrow(options) {
 
+	console.assert (typeof options.x1 === 'number' && typeof options.y1 === 'number' && typeof options.x2 === 'number' && typeof options.y2 === 'number', "Error: All arrow coordinate values must be numbers");
+
+	// defaults
+	options.color ??= "currentColor";
+	options.strokeWidth ??= 2;
+	options.tipLen ??= 20;
+	options.tipWid ??= 15;
+	
 	const arrowSvg = SVG("g");
 	arrowSvg.classList.add("arrow");
-	arrowSvg.dataset.index = i;
-
-	const lineEl = SVG("line");
-	lineEl.attr({x1: x1, y1: y1, x2: x2, y2: y2, stroke: "black", "stroke-width": 2});
-	arrowSvg.appendChild(lineEl);
+	if (options.index !== undefined)
+		arrowSvg.dataset.index = options.index;
 
 	const pathEl = SVG("path");
-	const pathStr = getArrowPath({x1: x1, y1: y1, x2: x2, y2: y2, tipLen: 20, tipWid: 15});
+	const pathStr = getArrowPath(options); // arrow geometry is calculated here
 	pathEl.attr({d: pathStr, stroke: "none" });
-	arrowSvg.appendChild(pathEl);
+	pathEl.style.fill = options.color;
 
+	arrowSvg.append(pathEl);
 	return arrowSvg;
 }
 
 function svgMouseMove(e) {
 
 	e.stopPropagation();
+	if (!GLOBAL.dragging)
+		return;
+
 
 	const visibleAxisIds = getVisibleAxisIds(); // which axes are we using?
-	const el = GLOBAL.dragging;
+	const el = GLOBAL.dragging; // not e.target, 
 	const index = parseInt(el.dataset.index);
 	const rect = GLOBAL.svgEl.getBoundingClientRect();
 	const mousex = e.clientX;
@@ -720,9 +759,6 @@ function svgMouseMove(e) {
 		// it’s the current location marker
 		GLOBAL.current[0][visibleAxisIds[0]] = xCoord; // input
 		GLOBAL.current[0][visibleAxisIds[1]] = yCoord; // input
-		GLOBAL.current[1][visibleAxisIds[0]] = xCoord; // output
-		GLOBAL.current[1][visibleAxisIds[1]] = yCoord; // output
-		updateMappingsSliders(index);
 	}
 	else {
 		// it’s a mapping location marker, so get the arrow with this index
@@ -736,218 +772,18 @@ function svgMouseMove(e) {
 			else if (el.classList.contains("output"))
 				inputOrOutputId = 1;
 
-			console.assert(inputOrOutputId !== undefined, "We should be moving an input or an output, but this is neither");
-
-			updateArrow(arrowEl, inputOrOutputId, svgX, svgY);
-				
-			if (inputOrOutputId === 0) {
-				mapping[0][visibleAxisIds[0]] = xCoord;
-				mapping[0][visibleAxisIds[1]] = yCoord;
-			}
-			else {
-				mapping[1][visibleAxisIds[0]] = xCoord;
-				mapping[1][visibleAxisIds[1]] = yCoord;
-			}
-			
-			updateMappingsSliders(index);
-			updateMappingsXML();
+			mapping[inputOrOutputId][visibleAxisIds[0]] = xCoord;
+			mapping[inputOrOutputId][visibleAxisIds[1]] = yCoord;
 		}
 	}
 
+	mappingsChanged();
+	updateMappingsSliders(index);
+	updateMappingsXML();
 	updateRenders();
 }
 
-function updateArrow(arrowEl, inputOrOutputId, svgX, svgY) {
-
-	const lineEl = arrowEl.querySelector("line");
-	let x1 = parseFloat(lineEl.getAttribute("x1"));
-	let y1 = parseFloat(lineEl.getAttribute("y1"));
-	let x2 = parseFloat(lineEl.getAttribute("x2"));
-	let y2 = parseFloat(lineEl.getAttribute("y2"));
-	if (inputOrOutputId === 0) {
-		x1 = svgX;
-		y1 = svgY;
-		lineEl.attr({x1: x1, y1: y1});
-	}
-	else if (inputOrOutputId === 1) {
-		x2 = svgX;
-		y2 = svgY;
-		lineEl.attr({x2: x2, y2: y2});
-	}
-
-	const pathEl = arrowEl.querySelector("path");
-	const pathStr = getArrowPath({x1: x1, x2: x2, y1: y1, y2: y2, tipLen: 20, tipWid: 15});
-	pathEl.attr({d: pathStr});
-
-}
-
-function svgMouseUp(e) {
-	e.stopPropagation();
-
-	const rect = GLOBAL.svgEl.getBoundingClientRect();
-	const x = e.clientX;
-	const y = e.clientY;
-
-	GLOBAL.svgEl.removeEventListener("mousemove", svgMouseMove); // = undefined;
-	GLOBAL.svgEl.removeEventListener("mouseup", svgMouseUp); // = undefined;
-	GLOBAL.dragging = undefined;
-	GLOBAL.dragOffset = undefined;
-
-}
-
-function mappingMouseDown (e) {
-
-	// if we hit the line, propagate the event
-	// - this works for icons for mapping location and current location
-	const el = e.target.closest("g.location");
-	if (!el) {
-		return false;
-	}
-
-	// we hit a location
-	e.stopPropagation();
-
-	const rect = GLOBAL.svgEl.getBoundingClientRect();
-	GLOBAL.draggingIndex = parseInt(el.dataset.index);
-
-
-	const transform = el.getAttribute("transform");
-	const coordsStr = transform.match(/translate\(([^)]+),\s*([^)]+)\)/); // parse float in JS, not regex
-	const coords = [parseFloat(coordsStr[1]), parseFloat(coordsStr[2])];
-
-	const mousex = e.clientX;
-	const mousey = rect.height - e.clientY;
-
-	const svgX = mousex - rect.left;
-	const svgY = mousey + rect.top;
-
-	const dx = svgX - coords[0];
-	const dy = svgY - coords[1];
-
-	GLOBAL.dragOffset = [dx, dy];
-	GLOBAL.dragging = el;
-
-	GLOBAL.svgEl.addEventListener("mousemove", svgMouseMove);
-	GLOBAL.svgEl.addEventListener("mouseup", svgMouseUp); // maybe mouseup should be when overflows (outside of min/max) are snapped back to [min,max]
-
-	// refresh sliders with data from the relevant mapping (or current location, which has index == -1)
-	Q("#mapping-selector").value = GLOBAL.draggingIndex;
-	updateMappingsSliders(GLOBAL.draggingIndex);
-
-}
-
-function updateMappingsSVG() {
-
-	GLOBAL.svgEl.innerHTML = "";
-
-	// draw x-axis and y-axis
-	const svgOriginCoords = svgCoordsFromAxisCoords(getDefaultAxisCoords());
-	
-	const xAxisEl = SVG("line", {x1:0, y1:svgOriginCoords[1], x2:400, y2:svgOriginCoords[1], stroke: "grey"});
-	const yAxisEl = SVG("line", {x1:svgOriginCoords[0], y1:0, x2:svgOriginCoords[0], y2:400, stroke: "grey"});
-	GLOBAL.svgEl.appendChild(xAxisEl);
-	GLOBAL.svgEl.appendChild(yAxisEl);
-
-
-	GLOBAL.mappings.forEach((mapping, m) => {
-
-		const elInput = SVG("g");
-		const elOutput = SVG("g");
-	
-		elInput.classList.add("input", "location");
-		elOutput.classList.add("output", "location");
-	
-		elInput.innerHTML = svgArrowTail;
-		elOutput.innerHTML = svgArrowHead;
-	
-		elInput.onmousedown = mappingMouseDown;
-		elOutput.onmousedown = mappingMouseDown;
-
-		elInput.dataset.index = m;
-		elOutput.dataset.index = m;
-	
-		const svgCoordsFrom = svgCoordsFromAxisCoords(mapping[0]);
-		const svgCoordsTo = svgCoordsFromAxisCoords(mapping[1]);
-
-		elInput.setPosition(svgCoordsFrom);
-		elOutput.setPosition(svgCoordsTo);
-	
-		GLOBAL.svgEl.appendChild(elInput);
-		GLOBAL.svgEl.appendChild(elOutput);
-
-		// draw the arrow
-		const arrowSvg = svgArrow(m, svgCoordsFrom[0], svgCoordsFrom[1], svgCoordsTo[0], svgCoordsTo[1]);
-		GLOBAL.svgEl.appendChild(arrowSvg);
-	
-	});
-
-
-	// create the current location icon
-	const elCurrent = SVG("g");
-	elCurrent.classList.add("current", "location");
-	elCurrent.dataset.index = -1;
-	elCurrent.innerHTML = svgCurrentLocation;
-	elCurrent.setPosition(svgCoordsFromAxisCoords(GLOBAL.current[0]));
-	GLOBAL.svgEl.appendChild(elCurrent);
-	elCurrent.onmousedown = mappingMouseDown;
-	elCurrent.onmousedown = mappingMouseDown;
-	
-}
-
-
-function deltaSetScale (deltaSet, scale=0x4000, round=true) {
-	const scaledDeltaSet = [];
-	deltaSet.forEach((delta, d) => scaledDeltaSet[d] = round ? Math.round(delta * scale) : delta * scale );
-	return scaledDeltaSet;
-}
-
-function uint8ArrayToBase64(uint8) {
-	return btoa(uint8.reduce((acc, ch) => acc + String.fromCharCode(ch), ""));
-}
-
-function updateMappingsXML() {
-
-	const axisCount = GLOBAL.font.fvar.axisCount;
-
-	// update XML
-	let str = "<mappings>\n";
-	GLOBAL.mappings.forEach(mapping => {
-		str += `  <mapping>\n`;
-		["input","output"].forEach((io, i) => {
-			str += `    <${io}>\n`;
-			mapping[i].forEach((x, a) => {
-				const axis = GLOBAL.font.fvar.axes[a];
-				if (x !== undefined && axis.defaultValue !== x)
-					str += `      <dimension name="${GLOBAL.font.fvar.axes[a].name}" xvalue="${x}"/>\n`;
-			});
-			str += `    </${io}>\n`;
-		});
-		str += `  </mapping>\n`;
-	});
-
-	str += "</mappings>";
-	Q(".mappings .xml").value = str;
-
-	// update HTML
-	Q(".mappings .html").innerHTML = "";
-	GLOBAL.mappings.forEach((mapping, m) => {
-
-		const details = EL("details");
-		let mappingStr = `<summary>${m}</summary>`;
-
-		["input","output"].forEach((io, i) => {
-			mappingStr += `<span class="material-symbols-outlined" style="font-size: 90%">${io === "input" ? "login" : "logout"}</span>`; // $io decision inserts appropriate icon Material Symbols Outlined (note that the "input" and "output" icons do not match, so are not used)
-			mapping[i].forEach((x, a) => {
-				const axis = GLOBAL.font.fvar.axes[a];
-				if (x !== undefined && axis.defaultValue !== x)
-					mappingStr += ` ${GLOBAL.font.fvar.axes[a].axisTag}=${x}`;
-			});
-			mappingStr += "<br>";
-		});
-		details.innerHTML = mappingStr
-		Q(".mappings .html").append(details);
-	});
-
+function mappingsChanged(mode) {
 
 	// let’s make an Item Variation Store!
 	// - we create the list of IVS regions from the input mappings
@@ -959,6 +795,8 @@ function updateMappingsXML() {
 	// - we insert the avar table into the font
 
 	// set up the avar table that will contain the IVS
+	const axisCount = GLOBAL.font.fvar.axisCount;
+
 	const avar = {
 		axisCount: axisCount,
 		axisSegmentMaps: undefined, // new Array(axisCount).fill([[-1,-1],[0,0],[1,1]]), // we don’t need to speciy identity mappings
@@ -991,6 +829,31 @@ function updateMappingsXML() {
 		}
 	});
 
+	// set up the grid locations
+	const visibleAxes = getVisibleAxisIds().map(a => GLOBAL.font.fvar.axes[a]);
+	const gridLocations = [];
+	const xGraticules = getGraticulesForAxis(visibleAxes[0]);
+	const yGraticules = getGraticulesForAxis(visibleAxes[1]);
+
+	// draw a grid
+	xGraticules.forEach(x => {
+		yGraticules.forEach(y => {
+
+			const gridLocation = [[],[]];
+			GLOBAL.font.fvar.axes.forEach((axis, a) => {
+				let val;
+				if (axis === visibleAxes[0])
+					val = x;
+				else if (axis === visibleAxes[1])
+					val = y;
+				else
+					val = GLOBAL.current[0][a];
+				gridLocation[0][a] = gridLocation[1][a] = val;
+			});
+			gridLocations.push(gridLocation);
+		});	
+	});
+	
 	// are there any mappings? (locs.length==1 means no mappings)
 	if (locs.length > 1) {
 
@@ -1051,34 +914,307 @@ function updateMappingsXML() {
 		// write new avar table
 		const avarBuf = GLOBAL.font.tableEncoders.avar(GLOBAL.font, avar);
 
-		// create a new font
-		const newFontBuf = exportFontWithTables(GLOBAL.font, { avar: avarBuf }); // we’re inserting an avar table with binary contents avarBuf
-		GLOBAL.fontBuffer = newFontBuf;
+		// create a new binary font
+		GLOBAL.fontBuffer = exportFontWithTables(GLOBAL.font, { avar: avarBuf }); // we’re inserting an avar table with binary contents avarBuf
+
+		// create a new SamsaFont from the binary font, so that we can create instances and detemine transformed tuples
+		const sf = new SamsaFont(GLOBAL.fontBuffer);
 
 		// connect the new font to the UI
 		GLOBAL.familyName = "Fencer-" + Math.random().toString(36).substring(7);
 		if (GLOBAL.fontFace)
 			document.fonts.delete(GLOBAL.fontFace);
-		GLOBAL.fontFace = new FontFace(GLOBAL.familyName, newFontBuf.buffer);
+		GLOBAL.fontFace = new FontFace(GLOBAL.familyName, GLOBAL.fontBuffer.buffer);
 		document.fonts.add(GLOBAL.fontFace);
 		GLOBAL.fontFace.load().then(() => {
 			Qall(".render").forEach( renderEl => renderEl.style.fontFamily = GLOBAL.familyName );
 		});
 
-		// make a temporary SamsaFont
-		const sf = new SamsaFont(newFontBuf);
+		// create an instance for each location, in order to gets its normalized tuple
+		const locations = [GLOBAL.current, ...GLOBAL.instances];
+		locations.forEach((location, l) => {
+			const axisSettings = {};
+			GLOBAL.font.fvar.axes.forEach((axis, a) => axisSettings[axis.axisTag] = location[0][a]);
+			const si = new SamsaInstance(sf, axisSettings);
+			location[1] = denormalizeTuple(si.tuple);
+		});
 
-		// make a temporary SamsaInstance at the Current location
-		const axisSettings = {};
-		GLOBAL.font.fvar.axes.forEach((axis, a) => axisSettings[axis.axisTag] = GLOBAL.current[0][a]);
-		const si = new SamsaInstance(sf, axisSettings);
-		console.log(si.tuple);
-
-		// denormalize the tuple into axis values for the current[1] array
-		// TODO
-
-		// also do the same for all the instances
+		// modify the grid locations if there are mappings
+		gridLocations.forEach((location, l) => {
+			const axisSettings = {};
+			GLOBAL.font.fvar.axes.forEach((axis, a) => axisSettings[axis.axisTag] = location[0][a] );
+			const si = new SamsaInstance(sf, axisSettings);
+			const denorm = denormalizeTuple(si.tuple); // denormalize the tuple into axis values for the current[1] array
+			location[1] = [...denorm];
+		});
+	
 	}
+
+	// ok start redrawing the SVG
+	GLOBAL.svgEl.innerHTML = "";
+
+	// draw x-axis and y-axis
+	const svgOriginCoords = svgCoordsFromAxisCoords(getDefaultAxisCoords());
+	
+	const xAxisEl = SVG("line", {x1:0, y1:svgOriginCoords[1], x2:400, y2:svgOriginCoords[1], stroke: "grey"});
+	const yAxisEl = SVG("line", {x1:svgOriginCoords[0], y1:0, x2:svgOriginCoords[0], y2:400, stroke: "grey"});
+	GLOBAL.svgEl.appendChild(xAxisEl);
+	GLOBAL.svgEl.appendChild(yAxisEl);
+
+	// draw the grid locations
+	gridLocations.forEach((location, l) => {
+		const [svgX0, svgY0] = svgCoordsFromAxisCoords(location[0]);
+		const [svgX1, svgY1] = svgCoordsFromAxisCoords(location[1]);
+		if (svgX1 === svgX0 && svgY1 === svgY0)
+			GLOBAL.svgEl.append(SVG("circle", {cx: svgX0, cy: svgY0, r: 5, fill: "grey"})); // draw a dot
+		else {
+			const arrow = svgArrow({x1: svgX0, y1: svgY0, x2: svgX1, y2: svgY1, tipLen: 5, tipWid: 5, strokeWidth: 1, color: "grey"}); // draw an arrow
+			GLOBAL.svgEl.append(arrow);
+		}
+			
+	});
+
+	// draw the instances (including current)
+	// - draw them early so they are underneath the mappings and current location which need to be dragged
+	GLOBAL.instances.forEach(instance => {
+
+		const elInstance0 = SVG("g"), elInstance1 = SVG("g");
+
+		elInstance0.innerHTML = svgCurrentLocation;
+		elInstance0.setPosition(svgCoordsFromAxisCoords(instance[0]));
+		elInstance0.style.color = "red";
+		
+		elInstance1.innerHTML = svgCurrentLocation;
+		elInstance1.setPosition(svgCoordsFromAxisCoords(instance[1]));
+		elInstance1.style.opacity = 0.4;
+		elInstance1.style.color = "red";
+	
+		GLOBAL.svgEl.append(elInstance1, elInstance0);
+
+	});
+
+	// draw the mappings
+	GLOBAL.mappings.forEach((mapping, m) => {
+
+		const elInput = SVG("g");
+		const elOutput = SVG("g");
+	
+		elInput.classList.add("input", "location");
+		elOutput.classList.add("output", "location");
+	
+		elInput.innerHTML = svgArrowTail;
+		elOutput.innerHTML = svgArrowHead;
+	
+		elInput.onmousedown = mappingMouseDown;
+		elOutput.onmousedown = mappingMouseDown;
+
+		elInput.dataset.index = m;
+		elOutput.dataset.index = m;
+	
+		const svgCoordsFrom = svgCoordsFromAxisCoords(mapping[0]);
+		const svgCoordsTo = svgCoordsFromAxisCoords(mapping[1]);
+
+		elInput.setPosition(svgCoordsFrom);
+		elOutput.setPosition(svgCoordsTo);
+
+		// draw the arrow
+		const arrowSvg = svgArrow({index: m, x1: svgCoordsFrom[0], y1: svgCoordsFrom[1], x2: svgCoordsTo[0], y2: svgCoordsTo[1]});
+
+		// add them all to the SVG element
+		GLOBAL.svgEl.append(arrowSvg, elInput, elOutput);
+	
+	});
+
+	// display the current location (B version), the location’s mapping
+	// - render it first since it may be underneath the A version, and it does not need mouse events
+	// - updateInstanceMappings() should have already happened
+	const elCurrent0 = SVG("g"), elCurrent1 = SVG("g");
+
+	elCurrent0.innerHTML = svgCurrentLocation;
+	elCurrent0.setPosition(svgCoordsFromAxisCoords(GLOBAL.current[0]));
+	elCurrent0.classList.add("current", "location");
+	elCurrent0.style.color = "blue";
+	elCurrent0.dataset.index = -1;
+	elCurrent0.onmousedown = mappingMouseDown;
+
+	elCurrent1.innerHTML = svgCurrentLocation;
+	elCurrent1.setPosition(svgCoordsFromAxisCoords(GLOBAL.current[1]));
+	elCurrent1.style.opacity = 0.4;
+	elCurrent1.style.color = "blue";
+
+	GLOBAL.svgEl.append(elCurrent1, elCurrent0); // order is important, since we must be able to click on the [0] version if they overlap
+
+}
+
+function updateArrow(arrowEl, inputOrOutputId, svgX, svgY) {
+
+	const lineEl = arrowEl.querySelector("line");
+	let x1 = parseFloat(lineEl.getAttribute("x1"));
+	let y1 = parseFloat(lineEl.getAttribute("y1"));
+	let x2 = parseFloat(lineEl.getAttribute("x2"));
+	let y2 = parseFloat(lineEl.getAttribute("y2"));
+	if (inputOrOutputId === 0) {
+		x1 = svgX;
+		y1 = svgY;
+		lineEl.attr({x1: x1, y1: y1});
+	}
+	else if (inputOrOutputId === 1) {
+		x2 = svgX;
+		y2 = svgY;
+		lineEl.attr({x2: x2, y2: y2});
+	}
+
+	const pathEl = arrowEl.querySelector("path");
+	const pathStr = getArrowPath({x1: x1, x2: x2, y1: y1, y2: y2, tipLen: 20, tipWid: 15});
+	pathEl.attr({d: pathStr});
+
+}
+
+function svgMouseUp(e) {
+	e.stopPropagation();
+
+	const rect = GLOBAL.svgEl.getBoundingClientRect();
+	const x = e.clientX;
+	const y = e.clientY;
+
+	GLOBAL.svgEl.removeEventListener("mousemove", svgMouseMove); // = undefined;
+	GLOBAL.svgEl.removeEventListener("mouseup", svgMouseUp); // = undefined;
+	GLOBAL.dragging = undefined;
+	GLOBAL.dragOffset = undefined;
+
+	// disable what we put in place when we started dragging
+	document.mousemove = undefined;
+	document.mouseup = undefined;
+}
+
+function mappingMouseDown (e) {
+
+	// if we hit the line, propagate the event
+	// - this works for icons for mapping location and current location
+	const el = e.target.closest("g.location");
+	if (!el) {
+		return false;
+	}
+
+	// we hit a location
+	e.stopPropagation();
+
+	const rect = GLOBAL.svgEl.getBoundingClientRect();
+	GLOBAL.draggingIndex = parseInt(el.dataset.index);
+
+
+	const transform = el.getAttribute("transform");
+	const coordsStr = transform.match(/translate\(([^)]+),\s*([^)]+)\)/); // parse float in JS, not regex
+	const coords = [parseFloat(coordsStr[1]), parseFloat(coordsStr[2])];
+
+	const mousex = e.clientX;
+	const mousey = rect.height - e.clientY;
+
+	const svgX = mousex - rect.left;
+	const svgY = mousey + rect.top;
+
+	const dx = svgX - coords[0];
+	const dy = svgY - coords[1];
+
+	GLOBAL.dragOffset = [dx, dy];
+	GLOBAL.dragging = el;
+
+	// refresh sliders with data from the relevant mapping (or current location, which has index == -1)
+	Q("#mapping-selector").value = GLOBAL.draggingIndex;
+	updateMappingsSliders(GLOBAL.draggingIndex);
+
+	// these need to be on the document, not on the mousedown element
+	document.onmousemove = svgMouseMove;
+	document.onmouseup = svgMouseUp; // maybe mouseup should be when overflows (outside of min/max) are snapped back to [min,max]
+}
+
+// return a sorted array of values that span the axis from min to max, and are base 10 friendly
+function getGraticulesForAxis(axis) {
+
+	if (axis.maxValue - axis.minValue == 0)
+		return [axis.maxValue];
+
+	let inc = Math.pow(10, Math.floor(Math.log10((axis.maxValue - axis.minValue) * 0.3))); // get a value for inc, which is a power of 10 (10 as the inc from 33 to 330, then it goes to 100)
+	const graticules = new Set([axis.minValue, axis.defaultValue, axis.maxValue]); // init the graticules set/array
+	for (let v = axis.minValue; v < axis.maxValue; v+=inc) {
+		const gridVal = Math.floor(v / inc) * inc;
+		if (gridVal > axis.minValue)
+			graticules.add(Math.floor(v / inc) * inc);
+	}
+	return [...graticules].sort((a,b)=>a-b); // return an array of the set (i.e. a unique array)
+}
+
+function deltaSetScale (deltaSet, scale=0x4000, round=true) {
+	const scaledDeltaSet = [];
+	deltaSet.forEach((delta, d) => scaledDeltaSet[d] = round ? Math.round(delta * scale) : delta * scale );
+	return scaledDeltaSet;
+}
+
+function uint8ArrayToBase64(uint8) {
+	return btoa(uint8.reduce((acc, ch) => acc + String.fromCharCode(ch), ""));
+}
+
+function updateMappingsXML() {
+
+	const axisCount = GLOBAL.font.fvar.axisCount;
+
+	// update XML
+	let str = "<mappings>\n";
+	GLOBAL.mappings.forEach(mapping => {
+		str += `  <mapping>\n`;
+		["input","output"].forEach((io, i) => {
+			str += `    <${io}>\n`;
+			mapping[i].forEach((x, a) => {
+				const axis = GLOBAL.font.fvar.axes[a];
+				if (x !== undefined && axis.defaultValue !== x)
+					str += `      <dimension name="${GLOBAL.font.fvar.axes[a].name}" xvalue="${x}"/>\n`;
+			});
+			str += `    </${io}>\n`;
+		});
+		str += `  </mapping>\n`;
+	});
+
+	str += "</mappings>";
+	Q(".mappings .xml").value = str;
+
+	// update HTML
+	Q(".mappings .html").innerHTML = "";
+	GLOBAL.mappings.forEach((mapping, m) => {
+
+		const details = EL("details");
+		let mappingStr = `<summary>${m}</summary>`;
+
+		["input","output"].forEach((io, i) => {
+			mappingStr += `<span class="material-symbols-outlined" style="font-size: 90%">${io === "input" ? "login" : "logout"}</span>`; // $io decision inserts appropriate icon Material Symbols Outlined (note that the "input" and "output" icons do not match, so are not used)
+			mapping[i].forEach((x, a) => {
+				const axis = GLOBAL.font.fvar.axes[a];
+				if (x !== undefined && axis.defaultValue !== x)
+					mappingStr += ` ${GLOBAL.font.fvar.axes[a].axisTag}=${x}`;
+			});
+			mappingStr += "<br>";
+		});
+		details.innerHTML = mappingStr
+		Q(".mappings .html").append(details);
+	});
+
+}
+
+
+// function to take a normalized tuple (n values each the range [-1,1] and return a location (n values each in the range [min,max] of its axis)
+function denormalizeTuple(tuple) {
+	const denorm = [];
+	tuple.forEach((coord, a) => {
+		const axis = GLOBAL.font.fvar.axes[a];
+		const min = axis.minValue, max = axis.maxValue, def = axis.defaultValue;
+		if (coord===0)
+			denorm[a] = def;
+		else if (coord>0)
+			denorm[a] = def + coord * (max - def);
+		else
+			denorm[a] = def + coord * (def - min);
+	});
+
+	return denorm;
 }
 
 // function to create a new SamsaBuffer containing a binary font from an existing SamsaFont, but where tables can be inserted and deleted
