@@ -1,5 +1,8 @@
 # Fencer
-Fencer is a GUI app that allows users to create avar (v2) tables inside their variable fonts.
+Fencer is a GUI app that allows users to create avar (v2) tables inside their variable fonts. These tables allow for more complex and expressive mappings between designspace locations and variable font instances. Use cases include:
+* arbitrary distortion of the designspace, avoiding the need for additional masters and thus reducing font size;
+* compact and practical parametric fonts;
+* higher order interpolation (HOI) without duplicating axis names.
 
 [**Launch Fencer**](https://lorp.github.io/fencer/src/fencer.html)
 
