@@ -793,6 +793,7 @@ const TABLE_DECODERS = {
 		buf.seek(fvar.axesArrayOffset);
 		for (let a=0; a<fvar.axisCount; a++) {
 			const axis = buf.decode(FORMATS.VariationAxisRecord);
+			axis.axisId = a;
 			axis.name = font.names[axis.axisNameID];
 			fvar.axes.push(axis);
 		}
