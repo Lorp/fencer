@@ -87,6 +87,7 @@ function mappingSimpleNormalize(axes, mapping) {
 	return normalizedMapping;
 }
 
+/*
 window.onkeydown = function (e) {
 
 	// disable for input elements!
@@ -147,7 +148,7 @@ window.onkeydown = function (e) {
 	updateRenders();
 
 }
-
+*/
 
 function mappingsSelectorPopulate() {
 
@@ -990,7 +991,6 @@ function mappingsChanged(mode) {
 		elInstance1.style.color = "red";
 	
 		GLOBAL.svgEl.append(elInstance1, elInstance0);
-
 	});
 
 	// draw the mappings
@@ -1025,48 +1025,23 @@ function mappingsChanged(mode) {
 	
 	});
 
-	// display the current location (B version), the location’s mapping
-	// - render it first since it may be underneath the A version, and it does not need mouse events
-	// - updateInstanceMappings() should have already happened
+	// display the current location (untransformed #0 and transformed #1)
+	// - render #1 first since it may be underneath #0 (which needs mouse events)
 	const elCurrent0 = SVG("g"), elCurrent1 = SVG("g");
 
 	elCurrent0.innerHTML = svgCurrentLocation;
 	elCurrent0.setPosition(svgCoordsFromAxisCoords(GLOBAL.current[0]));
 	elCurrent0.classList.add("current", "location");
-	elCurrent0.style.color = "blue";
+	elCurrent0.style.color = "var(--currentLocationColor)";
 	elCurrent0.dataset.index = -1;
 	elCurrent0.onmousedown = mappingMouseDown;
 
 	elCurrent1.innerHTML = svgCurrentLocation;
 	elCurrent1.setPosition(svgCoordsFromAxisCoords(GLOBAL.current[1]));
 	elCurrent1.style.opacity = 0.4;
-	elCurrent1.style.color = "blue";
+	elCurrent1.style.color = "var(--currentLocationColor)";
 
 	GLOBAL.svgEl.append(elCurrent1, elCurrent0); // order is important, since we must be able to click on the [0] version if they overlap
-
-}
-
-function updateArrow(arrowEl, inputOrOutputId, svgX, svgY) {
-
-	const lineEl = arrowEl.querySelector("line");
-	let x1 = parseFloat(lineEl.getAttribute("x1"));
-	let y1 = parseFloat(lineEl.getAttribute("y1"));
-	let x2 = parseFloat(lineEl.getAttribute("x2"));
-	let y2 = parseFloat(lineEl.getAttribute("y2"));
-	if (inputOrOutputId === 0) {
-		x1 = svgX;
-		y1 = svgY;
-		lineEl.attr({x1: x1, y1: y1});
-	}
-	else if (inputOrOutputId === 1) {
-		x2 = svgX;
-		y2 = svgY;
-		lineEl.attr({x2: x2, y2: y2});
-	}
-
-	const pathEl = arrowEl.querySelector("path");
-	const pathStr = getArrowPath({x1: x1, x2: x2, y1: y1, y2: y2, tipLen: 20, tipWid: 15});
-	pathEl.attr({d: pathStr});
 
 }
 
@@ -1152,6 +1127,61 @@ function deltaSetScale (deltaSet, scale=0x4000, round=true) {
 
 function uint8ArrayToBase64(uint8) {
 	return btoa(uint8.reduce((acc, ch) => acc + String.fromCharCode(ch), ""));
+}
+
+function xmlChanged(e) {
+	console.log("XML change")
+	const xmlString = e.target.value;
+	const mappings = [];
+	const parser = new DOMParser();
+	const xmlDoc = parser.parseFromString(xmlString, "text/xml");
+	let fail = false;
+
+	if (!xmlDoc || xmlDoc.querySelector("parsererror")) {
+		fail = true;
+	}
+	else {
+		xmlDoc.querySelectorAll("mappings>mapping").forEach(mappingEl => {
+			const mapping = [[],[]];
+			mappingEl.querySelectorAll("input>dimension").forEach(dimEl => {
+				const axisName = dimEl.getAttribute("name");
+				const axis = GLOBAL.font.fvar.axes.find(axis => axis.name === axisName);
+				if (axisName && axis)
+					mapping[0][axis.axisId] = parseFloat(dimEl.getAttribute("xvalue"));
+				else
+					fail = true;
+			});
+			mappingEl.querySelectorAll("output>dimension").forEach(dimEl => {
+				const axisName = dimEl.getAttribute("name");
+				const axis = GLOBAL.font.fvar.axes.find(axis => axis.name === axisName);
+				if (axisName && axis)
+					mapping[1][axis.axisId] = parseFloat(dimEl.getAttribute("xvalue"));
+				else
+					fail = true;
+			});
+	
+			mappings.push(mapping);
+		});	
+	}
+
+
+	if (fail) {
+		Q(".mappings .container .errors").style.display = "block";
+		Q(".mappings .container .errors").style.backgroundColor = "red";
+		Q(".mappings .container .errors").innerText = "Error!";
+	}
+	else {
+		Q(".mappings .container .errors").style.display = "none";
+
+		GLOBAL.mappings.length = 0;
+		GLOBAL.mappings.push(...mappings);
+		mappingsChanged();
+		updateMappingsSliders(-1);
+		updateRenders();
+		mappingsSelectorPopulate(); // repopulate the Controls dropdown
+	}
+
+	return mappings;
 }
 
 function updateMappingsXML() {
@@ -1299,6 +1329,9 @@ function initFencer() {
 	Q("#mapping-selector").onchange = selectMapping; // handle change of mappings selector
 	Q("#add-render").onclick = addRender;
 	Q("#download-font").onclick = downloadFont;
+
+
+	Q(".mappings textarea.xml").oninput = xmlChanged;
 
 	// show/hide XML
 	Q("button#toggle-xml").onclick = e => {
