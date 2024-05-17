@@ -1172,7 +1172,6 @@ function xmlChanged(e) {
 	}
 	else {
 		Q(".mappings .container .errors").style.display = "none";
-
 		GLOBAL.mappings.length = 0;
 		GLOBAL.mappings.push(...mappings);
 		mappingsChanged();
@@ -1180,8 +1179,6 @@ function xmlChanged(e) {
 		updateRenders();
 		mappingsSelectorPopulate(); // repopulate the Controls dropdown
 	}
-
-	return mappings;
 }
 
 function updateMappingsXML() {
@@ -1226,6 +1223,9 @@ function updateMappingsXML() {
 		details.innerHTML = mappingStr
 		Q(".mappings .html").append(details);
 	});
+
+	// assume there are no XML errors
+	Q(".mappings .container .errors").style.display = "none";
 
 }
 
