@@ -68,10 +68,12 @@ function simpleNormalize(axis, value) {
 		return 1;
 	}
 	else if (value < axis.defaultValue) {
-		return (value - axis.defaultValue) / (axis.defaultValue - axis.minValue);
+		const val = (value - axis.defaultValue) / (axis.defaultValue - axis.minValue);
+		return Math.round(val * 16384) / 16384;
 	}
 	else if (value > axis.defaultValue) {
-		return (value - axis.defaultValue) / (axis.maxValue - axis.defaultValue);
+		const val = (value - axis.defaultValue) / (axis.maxValue - axis.defaultValue);
+		return Math.round(val * 16384) / 16384;
 	}
 	return undefined; // never gets here
 }
@@ -831,7 +833,8 @@ function mappingsChanged(mode) {
 	});
 
 	// set up the grid locations
-	const visibleAxes = getVisibleAxisIds().map(a => GLOBAL.font.fvar.axes[a]);
+	const visibleAxisIds = getVisibleAxisIds();
+	const visibleAxes = visibleAxisIds.map(a => GLOBAL.font.fvar.axes[a]);
 	const gridLocations = [];
 	const xGraticules = getGraticulesForAxis(visibleAxes[0]);
 	const yGraticules = getGraticulesForAxis(visibleAxes[1]);
@@ -966,13 +969,16 @@ function mappingsChanged(mode) {
 	gridLocations.forEach((location, l) => {
 		const [svgX0, svgY0] = svgCoordsFromAxisCoords(location[0]);
 		const [svgX1, svgY1] = svgCoordsFromAxisCoords(location[1]);
-		if (svgX1 === svgX0 && svgY1 === svgY0)
+
+		// are the input and output equal? (need to allow for normalization rounding)
+		if (simpleNormalize(visibleAxes[0], location[0][visibleAxisIds[0]]) === simpleNormalize(visibleAxes[0], location[1][visibleAxisIds[0]]) &&
+		    simpleNormalize(visibleAxes[1], location[0][visibleAxisIds[1]]) === simpleNormalize(visibleAxes[1], location[1][visibleAxisIds[1]])) {
 			GLOBAL.svgEl.append(SVG("circle", {cx: svgX0, cy: svgY0, r: 5, fill: "grey"})); // draw a dot
+		}
 		else {
 			const arrow = svgArrow({x1: svgX0, y1: svgY0, x2: svgX1, y2: svgY1, tipLen: 5, tipWid: 5, strokeWidth: 1, color: "grey"}); // draw an arrow
 			GLOBAL.svgEl.append(arrow);
 		}
-			
 	});
 
 	// draw the instances (including current)
