@@ -1067,7 +1067,7 @@ function mappingsChanged(mode) {
 		elOutput.style.opacity = 0.4;
 
 		// draw the arrow
-		const arrowSvg = svgArrow({index: m, x1: svgCoordsFrom[0], y1: svgCoordsFrom[1], x2: svgCoordsTo[0], y2: svgCoordsTo[1], tipLen: 7, tipWid: 7, strokeWidth: 2});
+		const arrowSvg = svgArrow({index: m, x1: svgCoordsFrom[0], y1: svgCoordsFrom[1], x2: svgCoordsTo[0], y2: svgCoordsTo[1], tipLen: 11, tipWid: 11, strokeWidth: 2});
 		arrowSvg.classList.add("mapping");
 
 		// add them all to the SVG element
