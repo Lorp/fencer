@@ -24,9 +24,20 @@ The UI is structured as follows:
   * **XML panel**, where designspace-compatible XML is generated. This may be pasted into the \<axes\> element of a designspace file, that can be built using fontmake.
 * **Lower section**, where the current instance is rendered, and the user can add more instances. All instances are updated whenever mappings are changed.
 
-## First steps
+## What are Mappings?
 
-Try Fencer on the font that is preloaded, a custom build of [Sofia Sans](https://github.com/lettersoup/Sofia-Sans), a 2-axis font (Weight and Width) with this simple master structure and default at 400,100:
+Creating mappings for a given variable font is the core activity in Fencer. Each mapping consists of an input location and an output location, both of those locations being somewhere within the designspace of the font. In other words, in an _n_-axis font, each mapping has both its input and its output specified as locations on _n_ axes. The effect of a set of mappings is to transform the location of instances in designspace, which is useful for various use cases mentioned above.
+
+Fencer displays each mapping as an arrow rendered in green, with handles so that the input and output locations can be dragged around.
+
+As you edit the mappings, even by dragging a mapping handle a small amount, Fencer creates a new font with a new avar2 table, and renders it in the lower section. In order to help you understand the effect of mappings you are creating, Fencer also shows you live updates for:
+* Each Named Instance, shown in its untransformed and transformed locations, with an arrow between them, all rendered in red.
+* Various other instanaces, untransformed and transformed, rendered in grey.
+* The Current location, untransformed and transformed, rendered in blue.
+
+## Exercise 1: fencing off a 2-D (wght, wdth) corner in Sofia Sans
+
+Let’s try Fencer on the font that is preloaded, a custom build of [Sofia Sans](https://github.com/lettersoup/Sofia-Sans). This is a 2-axis font (Weight, Width) with the following simple 6-master structure and default at 400,100:
 
 |          | wght=100 | wght=400 | wght=900 |
 | ------    | ------   | ------   | -----    |
@@ -35,33 +46,47 @@ Try Fencer on the font that is preloaded, a custom build of [Sofia Sans](https:/
 
 _Note: The current shipping version of Sofia Sans uses a more complex master structure, since – without avar2 – the design space requires additional “synthetic” masters to represent the designer’s intentions. The avar2 mappings allow us to avoid the additional masters, and thus reduce font size and simplify maintenance._
 
-Now let’s say you find the Black ExtraCondensed (900,62.5) instance to be too heavy. We can add avar2 mappings to help.
+As is common in 2-axis wght/wdth fonts, the Bold Extra Condensed instance (900,62.5) is too heavy for the designer’s taste. We will use Fencer to create a rectangular region near max Weight and min Width that is not accessible, effectively “fencing off” the corner.
 
-First, let’s add a few instances to help us visualize what is happening, as follows:
+To do so requires FIVE mappings. Let’s add them one by one:
 
-* Set the location to 400,62.5.
-* Click the “Add Instance” button.
-* Set the location to 500,62.5.
-* Click the “Add Instance” button.
-* Set the location to 600,62.5.
-* Click the “Add Instance” button.
-* Set the location to 700,62.5.
-* Click the “Add Instance” button.
-* Set the location to 800,62.5.
-* Click the “Add Instance” button.
-* Set the location to 900,62.5.
-* Click the “Add Instance” button.
+1. Click the **+** button to add the first mapping:
+   * A mapping is added at the current location.
+   * Set the Input location (the base of the green arrow) to 900,62.5 by dragging the mapping handle to the bottom right corner.
+   * Set the Output location (the tip of the green arrow) to 700,62.5.
+   * (Note that you can also use the sliders, or edit the XML directly to reposition mappings.)
+   * At this stage, notice that various grey and red arrows have appeared, indicating how the designspace is being distorted by this mapping. Also try moving the blue Current location handle to see how the mapping affect it.
+   * Notice that, while this mapping fixes the problem at 900,62.5 by making that instance lighter, it also affects all instances along that Width axes. In practice, we probably want to stop the effect at, say, Weight 700.
 
-Next, let’s add a single avar2 mapping:
+2. Add another mapping:
+   * Set the Input location to 700,62.5.
+   * Set the Output location to 700,62.5.
+   * Notice how the red and grey arrows have changed, and how the instances at Width=62.5 are working well. As a user increases Weight from default=400, at first it will behave as before, but they will come to a point at Weight=700 where the font refuses to become heavier.
+   * Still, notice that the area above Width=62.5 is being distorted.
+   * This kind of mapping, where the Input and Output are identical, we call a Pin, as it’s intended to block the effect of another mapping nearby.
 
-* Click the **+** button in the Mappings Visual section.
-* Drag the Red input handle to the location 900,62.5.
-* Ensure the Red input handle is exactly on 900,62.5 (use the slider controls or text input boxes if dragging is too imprecise).
-* Set the Green output handle to around 650,70, by dragging or by the controls (exact location is not important).
+3. Add another mapping:
+   * Set the Input location to 900,70.
+   * Set the Output location to 700,70.
 
-As you drag the Green output handle, a new avar table is compiled, inserted into the font, and all the instance windows updated to use the new font. This happens multiple times per second, enabling you to test different mappings quickly.
+4. Add another mapping:
+   * Set the Input location to 700,70.
+   * Set the Output location to 700,70.
+   * Notice that this is another Pin mapping.
+   * Now things are looking pretty good! We have set up a rectangle in the bottom right of the designspace, where anything inside it is moved to the left edge. We have successfully “fencing off” this zone. Move the Current location handle around, to see how it works. Notice that the area above Width=70 is still being distorted, however, which probably is not what we want.
 
-It is important to note that, despite the renderings changing in appearance, the axis locations remain constant as you adjust the mappings.
+5. Add one final mapping:
+   * Set the Input location to 900,71 (71 being a value very close to 70).
+   * Set the Output location to 900,71.
+   * Notice that this is another Pin mapping.
+   * What we’ve done here is to block the effect of the 3rd mapping, so that the area above Width=70 is no longer distorted.
+   * Move the Current location handle around, to see how things are. Great, huh?!
+
+_One more thing:_ There is in fact one additional subtlety, which you may have noticed already, which is what happens between Width=70 and Width=71. At maximum Weight, move the Current location handle very slowly up and down, around Width=70, going in and out of the rectangular fenced off zone. You’ll see that the transformed Weight value interpolates between 900 and 700 as the Current location changes from 71 to 70. This “soft fence” may indeed be what we want — but it may not be. If you want a “hard fence” at Width=70, thus a jump from 900 to 700 in transformed Weight as we cross the fence, we need to adjust that “close” value of 71 to be a very small amount above 70, an amount we call epsilon. Epsilon is determined by the axis extents and the underlying granularity of internal variation math. In this case, epsilon is (100 - 62.5) / 16384 = 0.00228881835, so the value we’ll use is 70.00228881835. Update the 5th mapping to use this value, and you’ll see that the fence is now hard.
+
+## Exercise 2: fencing off a 2-D (wght, wdth) corner in Sofia Sans another way
+
+Redo the above exercise with the same rectanuglar zone. But this time, instead of using mappings to reduce Weight to solve the problem at the corner, use mappings to increase Width. In other words, your mappings (speficically, those that are not Pin mappings) should be arrows that point _up_ rather than _left_. Use the same number of mappings. Consider the benefits of this approach compared with the previous one.
 
 ## Trying your own fonts in Fencer
 
