@@ -694,7 +694,10 @@ function deleteMapping() {
 
 	// update stuff
 	mappingsChanged();
+	updateMappingsSliders(index);
 	updateMappingsXML();
+	updateRenders();
+
 }
 
 function getVisibleAxisIds() {
@@ -971,14 +974,12 @@ function mappingsChanged(mode) {
 		const [svgX1, svgY1] = svgCoordsFromAxisCoords(location[1]);
 
 		// are the input and output equal? (need to allow for normalization rounding)
-		if (simpleNormalize(visibleAxes[0], location[0][visibleAxisIds[0]]) === simpleNormalize(visibleAxes[0], location[1][visibleAxisIds[0]]) &&
-		    simpleNormalize(visibleAxes[1], location[0][visibleAxisIds[1]]) === simpleNormalize(visibleAxes[1], location[1][visibleAxisIds[1]])) {
-			GLOBAL.svgEl.append(SVG("circle", {cx: svgX0, cy: svgY0, r: 5, fill: "grey"})); // draw a dot
-		}
-		else {
-			const arrow = svgArrow({x1: svgX0, y1: svgY0, x2: svgX1, y2: svgY1, tipLen: 5, tipWid: 5, strokeWidth: 1, color: "grey"}); // draw an arrow
+		if (simpleNormalize(visibleAxes[0], location[0][visibleAxisIds[0]]) !== simpleNormalize(visibleAxes[0], location[1][visibleAxisIds[0]]) ||
+		    simpleNormalize(visibleAxes[1], location[0][visibleAxisIds[1]]) !== simpleNormalize(visibleAxes[1], location[1][visibleAxisIds[1]])) {
+			const arrow = svgArrow({x1: svgX0, y1: svgY0, x2: svgX1, y2: svgY1, tipLen: 7, tipWid: 7, strokeWidth: 1, color: "grey"}); // draw an arrow
 			GLOBAL.svgEl.append(arrow);
 		}
+		GLOBAL.svgEl.append(SVG("circle", {cx: svgX0, cy: svgY0, r: 2.5, fill: "grey"})); // draw a dot
 	});
 
 	// draw the instances (including current)
