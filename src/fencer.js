@@ -563,8 +563,6 @@ function addRender(e, coords = GLOBAL.current[0], name="Current", color) {
 	controlsButtonEl.innerText = "tune";
 	controlsButtonEl.onclick = clickControls;
 
-	console.log("*")
-
 	// the controls
 	const controlsEl = EL("div");
 	controlsEl.classList.add("render-controls");
@@ -609,14 +607,7 @@ function addRender(e, coords = GLOBAL.current[0], name="Current", color) {
 	const labelEl = EL("label");
 	labelEl.textContent = name;
 	labelEl.style.backgroundColor = color ? color : "var(--currentLocationColor)";
-	//renderEl.append(labelEl);
 
-	console.log(renderItemEl);
-	console.log(renderEl)
-	console.log(controlsEl)
-	console.log(controlsButtonEl)
-	console.log(labelEl)
-	
 	renderItemEl.append(renderEl, controlsEl, controlsButtonEl, labelEl);
 
 	Q(".render-container").append(renderItemEl);
@@ -643,7 +634,6 @@ function clickControls(e) {
 	const controlsEl = renderItemEl.querySelector(".render-controls");
 
 	if (controlsEl.style.display === "none")
-		//controlsEl.style.display = "grid";
 		controlsEl.style.display = "block";
 	else
 		controlsEl.style.display = "none";
@@ -670,12 +660,20 @@ function addMapping() {
 	});
 
 	GLOBAL.mappings.push([from, to]);
-
-	mappingsSelectorPopulate();
+	GLOBAL.draggingIndex = GLOBAL.mappings.length-1;
 
 	// update stuff
+	mappingsSelectorPopulate();
+
+	console.log(GLOBAL.mappings)
+
 	mappingsChanged();
+	updateMappingsSliders(GLOBAL.draggingIndex);
 	updateMappingsXML();
+	updateRenders();
+
+	// mappingsChanged();
+	// updateMappingsXML();
 }
 
 function deleteMapping() {
@@ -686,15 +684,14 @@ function deleteMapping() {
 		GLOBAL.mappings.splice(GLOBAL.draggingIndex, 1);
 		GLOBAL.dragging = undefined;
 		GLOBAL.draggingIndex = 0;
-		mappingsSelectorPopulate();
 	}
-
 	Q("#mapping-selector").value = -1; // select "current" location sliders
 	Q("#mapping-selector").dispatchEvent(new Event("change"));
 
 	// update stuff
+	mappingsSelectorPopulate();
 	mappingsChanged();
-	updateMappingsSliders(index);
+	updateMappingsSliders(GLOBAL.draggingIndex);
 	updateMappingsXML();
 	updateRenders();
 
@@ -745,9 +742,8 @@ function svgMouseMove(e) {
 	if (!GLOBAL.dragging)
 		return;
 
-
 	const visibleAxisIds = getVisibleAxisIds(); // which axes are we using?
-	const el = GLOBAL.dragging; // not e.target, 
+	const el = GLOBAL.dragging; // not e.target
 	const index = parseInt(el.dataset.index);
 	const rect = GLOBAL.svgEl.getBoundingClientRect();
 	const mousex = e.clientX;
@@ -772,15 +768,13 @@ function svgMouseMove(e) {
 	else {
 		// it’s a mapping location marker, so get the arrow with this index
 		const mapping = GLOBAL.mappings[index];
-		const arrowEl = Q(`.arrow[data-index="${index}"]`);
-		if (arrowEl) { // sanity
+		let inputOrOutputId;
+		if (el.classList.contains("input"))
+			inputOrOutputId = 0;
+		else if (el.classList.contains("output"))
+			inputOrOutputId = 1;
 
-			let inputOrOutputId;
-			if (el.classList.contains("input"))
-				inputOrOutputId = 0;
-			else if (el.classList.contains("output"))
-				inputOrOutputId = 1;
-
+		if (inputOrOutputId !== undefined) {
 			mapping[inputOrOutputId][visibleAxisIds[0]] = xCoord;
 			mapping[inputOrOutputId][visibleAxisIds[1]] = yCoord;
 		}
@@ -868,15 +862,25 @@ function mappingsChanged(mode) {
 	if (locs.length > 1) {
 
 		// Fontra method
-		const fLocations = [{}]; // we need a null mapping to help the solver
+		const fLocations = [{}]; // we need a null mapping (origin->origin) to help the solver
 		const masterValues = [];
 		masterValues.push(new Array(axisCount).fill(0));
-		normalizedMappings.forEach(mapping => {
+
+		for (let nm=0; nm<normalizedMappings.length; nm++) {
+			const normMapping = normalizedMappings[nm];
+
+			// ignore mappings that start at the default
+			if (normMapping[0].every(coord => coord === 0))
+				break;
+
+			// check this mapping’s from location was not already added, since solver cannot handle duplicates of from locations
+			if (normalizedMappings.slice(0,nm).some(testmapping => JSON.stringify(normMapping[0]) === JSON.stringify(testmapping[0])))
+				break;
 
 			// for each mapping, create an array of locations in object form, so we can use the solver
-			fLocations.push(mapping[0].reduce((acc, coord, a) => {
-				if (coord !== 0) acc[axisOrder[a]] = coord; // only assign non-zero values
-				return acc;
+			fLocations.push(normMapping[0].reduce((fLocation, coord, a) => {
+				if (coord !== 0) fLocation[axisOrder[a]] = coord; // only assign non-zero values to fLocation
+				return fLocation;
 			} , {} ));
 
 			// fLocations is now an array of objects, where each objects has entries for any non-zero axis values
@@ -884,8 +888,8 @@ function mappingsChanged(mode) {
 			// - subsequent objects are of the form { A: 0.5, B: 0.5, E: 1, G: -0.75 ...}
 
 			// for each mapping, create an array that is the difference between the input and output locations, and push it to the masterValues array
-			masterValues.push(mapping[1].map((coord, a) => coord - mapping[0][a])); // this evaluates mapping[1][a] - mapping[0][a] for each axis a
-		});
+			masterValues.push(normMapping[1].map((coord, a) => coord - normMapping[0][a])); // this evaluates mapping[1][a] - mapping[0][a] for each axis a
+		}
 
 		// create the Fontra-style variation model
 		const fModel = new VariationModel(fLocations, axisOrder);
@@ -1303,6 +1307,9 @@ function updateMappingsSliders(m) {
 		inputSliderEl.value = inputNumericEl.value = (m === -1) ? GLOBAL.current[0][a] : GLOBAL.mappings[m][0][a];
 		outputSliderEl.value = outputNumericEl.value = (m === -1) ? GLOBAL.current[1][a] : GLOBAL.mappings[m][1][a];
 	});
+
+	// select the correct item in the mappings dropdown
+	Q("#mapping-selector").value = m;
 
 	if (GLOBAL.draggingIndex === -1) {
 		// disable all the outputs
