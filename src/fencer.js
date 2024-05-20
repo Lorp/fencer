@@ -857,6 +857,9 @@ function mappingsChanged(mode) {
 			gridLocations.push(gridLocation);
 		});	
 	});
+
+	//
+	let avarBuf; // if this remains undefined, we didn’t create an avar table
 	
 	// are there any mappings? (locs.length==1 means no mappings)
 	if (locs.length > 1) {
@@ -926,44 +929,45 @@ function mappingsChanged(mode) {
 		avar.ivsBuffer = new SamsaBuffer(ivsBufOversize.buffer, 0, ivsLength); // the ivsBuffer we use is a slice of ivsBufOversize
 
 		// write new avar table
-		const avarBuf = GLOBAL.font.tableEncoders.avar(GLOBAL.font, avar);
+		avarBuf = GLOBAL.font.tableEncoders.avar(GLOBAL.font, avar);
 
-		// create a new binary font
-		GLOBAL.fontBuffer = exportFontWithTables(GLOBAL.font, { avar: avarBuf }); // we’re inserting an avar table with binary contents avarBuf
-
-		// create a new SamsaFont from the binary font, so that we can create instances and detemine transformed tuples
-		const sf = new SamsaFont(GLOBAL.fontBuffer);
-
-		// connect the new font to the UI
-		GLOBAL.familyName = "Fencer-" + Math.random().toString(36).substring(7);
-		if (GLOBAL.fontFace)
-			document.fonts.delete(GLOBAL.fontFace);
-		GLOBAL.fontFace = new FontFace(GLOBAL.familyName, GLOBAL.fontBuffer.buffer);
-		document.fonts.add(GLOBAL.fontFace);
-		GLOBAL.fontFace.load().then(() => {
-			Qall(".render").forEach( renderEl => renderEl.style.fontFamily = GLOBAL.familyName );
-		});
-
-		// create an instance for each location, in order to gets its normalized tuple
-		const locations = [GLOBAL.current, ...GLOBAL.instances];
-		locations.forEach((location, l) => {
-			const axisSettings = {};
-			GLOBAL.font.fvar.axes.forEach((axis, a) => axisSettings[axis.axisTag] = location[0][a]);
-			const si = new SamsaInstance(sf, axisSettings);
-			location[1] = denormalizeTuple(si.tuple);
-		});
-
-		// modify the grid locations if there are mappings
-		gridLocations.forEach((location, l) => {
-			const axisSettings = {};
-			GLOBAL.font.fvar.axes.forEach((axis, a) => axisSettings[axis.axisTag] = location[0][a] );
-			const si = new SamsaInstance(sf, axisSettings);
-			const denorm = denormalizeTuple(si.tuple); // denormalize the tuple into axis values for the current[1] array
-			location[1] = [...denorm];
-		});
 	
 	}
 
+	// create a new binary font
+	if (avarBuf)
+		GLOBAL.fontBuffer = exportFontWithTables(GLOBAL.font, { avar: avarBuf }); // we’re inserting an avar table with binary contents avarBuf
+	else
+		GLOBAL.fontBuffer = exportFontWithTables(GLOBAL.font, undefined, { avar: true }); // explicitly delete any avar table
+
+	// create a new SamsaFont from the binary font, so that we can create instances and detemine transformed tuples
+	const sf = new SamsaFont(GLOBAL.fontBuffer);
+
+	// connect the new font to the UI
+	GLOBAL.familyName = "Fencer-" + Math.random().toString(36).substring(7);
+	if (GLOBAL.fontFace)
+		document.fonts.delete(GLOBAL.fontFace);
+	GLOBAL.fontFace = new FontFace(GLOBAL.familyName, GLOBAL.fontBuffer.buffer);
+	document.fonts.add(GLOBAL.fontFace);
+	GLOBAL.fontFace.load().then(() => {
+		Qall(".render").forEach( renderEl => renderEl.style.fontFamily = GLOBAL.familyName );
+	});
+
+	// update the location[1] values for a given array of location[0] values
+	function instantiateLocation(sf, location) {
+		const axisSettings = {};
+		GLOBAL.font.fvar.axes.forEach((axis, a) => axisSettings[axis.axisTag] = location[0][a]); // untransformed
+		const si = new SamsaInstance(sf, axisSettings); // si.tuple is the transformed normalized tuple
+		location[1] = denormalizeTuple(si.tuple); // transformed and denormalized tuple
+	}
+
+	// create an instance for each location, in order to gets its normalized tuple
+	const locations = [GLOBAL.current, ...GLOBAL.instances];
+	[...locations, ...gridLocations].forEach(location => instantiateLocation(sf, location));
+
+
+
+	
 	// ok start redrawing the SVG
 	GLOBAL.svgEl.innerHTML = "";
 
