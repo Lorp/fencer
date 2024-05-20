@@ -757,9 +757,12 @@ function svgMouseMove(e) {
 	const svgX = x - GLOBAL.dragOffset[0];
 	const svgY = y - GLOBAL.dragOffset[1];
 
-	// move the location marker
-	el.setAttribute("transform", `translate(${svgX}, ${svgY})`);
-	const [xCoord, yCoord] = [axisCoordFromSvgCoord(visibleAxisIds[0], svgX), axisCoordFromSvgCoord(visibleAxisIds[1], svgY)];
+	let xCoord = axisCoordFromSvgCoord(visibleAxisIds[0], svgX);
+	let yCoord = axisCoordFromSvgCoord(visibleAxisIds[1], svgY);
+	xCoord = Math.min(xCoord, GLOBAL.font.fvar.axes[visibleAxisIds[0]].maxValue);
+	xCoord = Math.max(xCoord, GLOBAL.font.fvar.axes[visibleAxisIds[0]].minValue);
+	yCoord = Math.min(yCoord, GLOBAL.font.fvar.axes[visibleAxisIds[1]].maxValue);
+	yCoord = Math.max(yCoord, GLOBAL.font.fvar.axes[visibleAxisIds[1]].minValue);
 
 	if (index === -1) { // current location
 		// it’s the current location marker
