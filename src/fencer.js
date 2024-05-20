@@ -3,13 +3,15 @@
 import { SamsaFont, SamsaInstance, SamsaBuffer } from "./samsa-core/samsa-core.js"; // import samsa-core https://github.com/Lorp/samsa-core
 import { VariationModel } from "./fontra-src-client-core/var-model.js"; // import Fontra var-model https://github.com/googlefonts/fontra
 
-const svgArrowHandleRadius = 15;
+const svgArrowHandleRadius = 12;
 const svgArrowHandleRadiusRoot2 = svgArrowHandleRadius * 1/Math.sqrt(2);
-const svgCurrentLocationRadius = 10;
+const svgCurrentLocationRadius = 7;
 const svgArrowLineWidth = 2;
 const svgArrowHead = `<circle cx="0" cy="0" r="${svgArrowHandleRadius}" fill="#0003" stroke="currentColor" stroke-width="${svgArrowLineWidth}"/><circle cx="0" cy="0" r="5" fill="currentColor" stroke="none"/>`;
 const svgArrowTail = `<circle cx="0" cy="0" r="${svgArrowHandleRadius}" fill="#0003" stroke="currentColor" stroke-width="${svgArrowLineWidth}"/><line x1="${-svgArrowHandleRadiusRoot2}" y1="${-svgArrowHandleRadiusRoot2}" x2="${svgArrowHandleRadiusRoot2}" y2="${svgArrowHandleRadiusRoot2}" stroke="currentColor" stroke-width="${svgArrowLineWidth}"/><line x1="${-svgArrowHandleRadiusRoot2}" y1="${svgArrowHandleRadiusRoot2}" x2="${svgArrowHandleRadiusRoot2}" y2="${-svgArrowHandleRadiusRoot2}" stroke="currentColor" stroke-width="${svgArrowLineWidth}"/>`;
+const svgMapping = `<circle cx="0" cy="0" r="${svgArrowHandleRadius}" fill="currentColor" stroke="none"/>`;
 const svgCurrentLocation = `<circle cx="0" cy="0" r="${svgCurrentLocationRadius+svgArrowLineWidth}" fill="white" stroke="none"/><circle cx="0" cy="0" r="${svgCurrentLocationRadius}" fill="currentColor" stroke="none"/>`;
+const instanceColor = "#f00";
 
 const GLOBAL = {
 	svgElWidth: 400,
@@ -454,7 +456,6 @@ function loadFontFromArrayBuffer (arrayBuffer, options={}) {
 		// updates
 		updateMappingsSliders(GLOBAL.draggingIndex);
 		mappingsChanged();
-		//updateMappingsSVG();
 		updateMappingsXML();
 		updateRenders();
 	}
@@ -498,7 +499,6 @@ function loadFontFromArrayBuffer (arrayBuffer, options={}) {
 		// redraw the mappings SVG
 		// - TODO: decide if we need to update the mappingsView array
 		mappingsChanged();
-		//updateMappingsSVG();
 	}
 	
 	
@@ -528,7 +528,6 @@ function loadFontFromArrayBuffer (arrayBuffer, options={}) {
 
 	// draw mappings SVG
 	mappingsChanged(0);
-	//updateMappingsSVG();
 	updateRenders();
 	
 }
@@ -965,9 +964,29 @@ function mappingsChanged(mode) {
 	const locations = [GLOBAL.current, ...GLOBAL.instances];
 	[...locations, ...gridLocations].forEach(location => instantiateLocation(sf, location));
 
+	// returns true or false, depending on whether the two user locations are equal
+	// - true if loc0 and loc1 are equal when simple-normalized
+	// - false if loc0 and loc1 are not equal when simple-normalized
+	// - axisIds is an optional array of axes to check (default is to check all axes)
+	// - loc0 and loc1 are arrays of equal length
+	function locationsAreEqual(loc0, loc1, axisIds) {
+		if (loc0.length !== loc1.length)
+			return false;
 
+		if (!axisIds)
+			axisIds = [...Array(loc0.length).keys()];
 
-	
+		let equal = true;
+		for (let a=0; a<axisIds.length; a++) {
+			const axisId = axisIds[a];
+			if (simpleNormalize(GLOBAL.font.fvar.axes[axisId], loc0[axisId]) !== simpleNormalize(GLOBAL.font.fvar.axes[axisId], loc1[axisId])) {
+				equal = false;
+				break;
+			}
+		}
+		return equal;
+	}
+
 	// ok start redrawing the SVG
 	GLOBAL.svgEl.innerHTML = "";
 
@@ -984,9 +1003,8 @@ function mappingsChanged(mode) {
 		const [svgX0, svgY0] = svgCoordsFromAxisCoords(location[0]);
 		const [svgX1, svgY1] = svgCoordsFromAxisCoords(location[1]);
 
-		// are the input and output equal? (need to allow for normalization rounding)
-		if (simpleNormalize(visibleAxes[0], location[0][visibleAxisIds[0]]) !== simpleNormalize(visibleAxes[0], location[1][visibleAxisIds[0]]) ||
-		    simpleNormalize(visibleAxes[1], location[0][visibleAxisIds[1]]) !== simpleNormalize(visibleAxes[1], location[1][visibleAxisIds[1]])) {
+		// are the input and output equal in this projection? (need to allow for normalization rounding)
+		if (!locationsAreEqual(location[0], location[1], visibleAxisIds)) {
 			const arrow = svgArrow({x1: svgX0, y1: svgY0, x2: svgX1, y2: svgY1, tipLen: 7, tipWid: 7, strokeWidth: 1, color: "grey"}); // draw an arrow
 			GLOBAL.svgEl.append(arrow);
 		}
@@ -995,20 +1013,31 @@ function mappingsChanged(mode) {
 
 	// draw the instances (including current)
 	// - draw them early so they are underneath the mappings and current location which need to be dragged
-	GLOBAL.instances.forEach(instance => {
+	GLOBAL.instances.forEach(location => {
+		const [svgX0, svgY0] = svgCoordsFromAxisCoords(location[0]);
+		const [svgX1, svgY1] = svgCoordsFromAxisCoords(location[1]);
 
 		const elInstance0 = SVG("g"), elInstance1 = SVG("g");
 
 		elInstance0.innerHTML = svgCurrentLocation;
-		elInstance0.setPosition(svgCoordsFromAxisCoords(instance[0]));
-		elInstance0.style.color = "red";
+		elInstance0.setPosition([svgX0, svgY0]);
+		elInstance0.style.opacity = 0.9;
+		elInstance0.style.color = instanceColor;
 		
 		elInstance1.innerHTML = svgCurrentLocation;
-		elInstance1.setPosition(svgCoordsFromAxisCoords(instance[1]));
+		elInstance1.setPosition([svgX1, svgY1]);
 		elInstance1.style.opacity = 0.4;
-		elInstance1.style.color = "red";
-	
+		elInstance1.style.color = instanceColor;
+
 		GLOBAL.svgEl.append(elInstance1, elInstance0);
+
+		// are the input and output equal in this projection? (need to allow for normalization rounding)
+		if (locationsAreEqual(location[0], location[1], visibleAxisIds)) {
+			GLOBAL.svgEl.append(elInstance0);
+		}
+		else {
+			GLOBAL.svgEl.append(elInstance1, elInstance0, svgArrow({x1: svgX0, y1: svgY0, x2: svgX1, y2: svgY1, tipLen: 7, tipWid: 7, strokeWidth: 1, color: instanceColor})); // add an arrow
+		}
 	});
 
 	// draw the mappings
@@ -1020,8 +1049,8 @@ function mappingsChanged(mode) {
 		elInput.classList.add("input", "location");
 		elOutput.classList.add("output", "location");
 	
-		elInput.innerHTML = svgArrowTail;
-		elOutput.innerHTML = svgArrowHead;
+		elInput.innerHTML = svgMapping // svgArrowTail;
+		elOutput.innerHTML = svgMapping // svgArrowHead;
 	
 		elInput.onmousedown = mappingMouseDown;
 		elOutput.onmousedown = mappingMouseDown;
@@ -1033,10 +1062,13 @@ function mappingsChanged(mode) {
 		const svgCoordsTo = svgCoordsFromAxisCoords(mapping[1]);
 
 		elInput.setPosition(svgCoordsFrom);
+		elInput.style.opacity = 0.4;
 		elOutput.setPosition(svgCoordsTo);
+		elOutput.style.opacity = 0.4;
 
 		// draw the arrow
-		const arrowSvg = svgArrow({index: m, x1: svgCoordsFrom[0], y1: svgCoordsFrom[1], x2: svgCoordsTo[0], y2: svgCoordsTo[1]});
+		const arrowSvg = svgArrow({index: m, x1: svgCoordsFrom[0], y1: svgCoordsFrom[1], x2: svgCoordsTo[0], y2: svgCoordsTo[1], tipLen: 7, tipWid: 7, strokeWidth: 2});
+		arrowSvg.classList.add("mapping");
 
 		// add them all to the SVG element
 		GLOBAL.svgEl.append(arrowSvg, elInput, elOutput);
@@ -1047,19 +1079,26 @@ function mappingsChanged(mode) {
 	// - render #1 first since it may be underneath #0 (which needs mouse events)
 	const elCurrent0 = SVG("g"), elCurrent1 = SVG("g");
 
+	const svgCoordsFrom = svgCoordsFromAxisCoords(GLOBAL.current[0]);
+	const svgCoordsTo = svgCoordsFromAxisCoords(GLOBAL.current[1]);
+
 	elCurrent0.innerHTML = svgCurrentLocation;
-	elCurrent0.setPosition(svgCoordsFromAxisCoords(GLOBAL.current[0]));
+	elCurrent0.setPosition(svgCoordsFrom);
+	elCurrent0.style.opacity = 0.9;
 	elCurrent0.classList.add("current", "location");
 	elCurrent0.style.color = "var(--currentLocationColor)";
 	elCurrent0.dataset.index = -1;
 	elCurrent0.onmousedown = mappingMouseDown;
 
 	elCurrent1.innerHTML = svgCurrentLocation;
-	elCurrent1.setPosition(svgCoordsFromAxisCoords(GLOBAL.current[1]));
+	elCurrent1.setPosition(svgCoordsTo);
 	elCurrent1.style.opacity = 0.4;
 	elCurrent1.style.color = "var(--currentLocationColor)";
 
-	GLOBAL.svgEl.append(elCurrent1, elCurrent0); // order is important, since we must be able to click on the [0] version if they overlap
+	// draw the arrow
+	const arrowSvg = svgArrow({index: -1, x1: svgCoordsFrom[0], y1: svgCoordsFrom[1], x2: svgCoordsTo[0], y2: svgCoordsTo[1], tipLen: 7, tipWid: 7, strokeWidth: 1, color: "var(--currentLocationColor)"});
+
+	GLOBAL.svgEl.append(elCurrent1, elCurrent0, arrowSvg); // order is important, since we must be able to click on the [0] version if they overlap
 
 }
 
