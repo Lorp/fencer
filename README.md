@@ -55,25 +55,27 @@ To do so requires FIVE mappings. Let’s add them one by one:
    * Set the Input location (the base of the green arrow) to 900,62.5 by dragging the mapping handle to the bottom right corner.
    * Set the Output location (the tip of the green arrow) to 700,62.5.
    * (Note that you can also use the sliders, or edit the XML directly to reposition mappings.)
+   * This mapping is defining the bottom of the rectangular fenced region.
    * At this stage, notice that various grey and red arrows have appeared, indicating how the designspace is being distorted by this mapping. Also try moving the blue Current location handle to see how the mapping affect it.
    * Notice that, while this mapping fixes the problem at 900,62.5 by making that instance lighter, it also affects all instances along that Width axes. In practice, we probably want to stop the effect at, say, Weight 700.
 
 2. Add another mapping:
    * Set the Input location to 700,62.5.
    * Set the Output location to 700,62.5.
-   * Notice how the red and grey arrows have changed, and how the instances at Width=62.5 are working well. As a user increases Weight from default=400, at first it will behave as before, but they will come to a point at Weight=700 where the font refuses to become heavier.
-   * Still, notice that the area above Width=62.5 is being distorted.
    * This kind of mapping, where the Input and Output are identical, we call a Pin, as it’s intended to block the effect of another mapping nearby.
-
+   * Notice how the red and grey arrows have changed, and how the instances at Width=62.5 are working well. When a user has Width at 62.5, and increases Weight from default=400, at first it will behave as before, but there comes a point, at Weight=700, where the font refuses to become any heavier.
+   * Still, notice that the area above Width=62.5 is being distorted undesirably.
+   
 3. Add another mapping:
    * Set the Input location to 900,70.
    * Set the Output location to 700,70.
+   * This mapping is defining the top of the rectangular fenced region.
 
 4. Add another mapping:
    * Set the Input location to 700,70.
    * Set the Output location to 700,70.
    * Notice that this is another Pin mapping.
-   * Now things are looking pretty good! We have set up a rectangle in the bottom right of the designspace, where anything inside it is moved to the left edge. We have successfully “fencing off” this zone. Move the Current location handle around, to see how it works. Notice that the area above Width=70 is still being distorted, however, which probably is not what we want.
+   * Now things are looking pretty good! We have set up a rectanglar region in the bottom right of the designspace, where anything inside it is moved to the left edge. We have successfully “fenced off” this zone. Move the Current location handle around to see how it works. Notice that the area above Width=70 is still being distorted, however, which is probably not what we want.
 
 5. Add one final mapping:
    * Set the Input location to 900,71 (71 being a value very close to 70).
