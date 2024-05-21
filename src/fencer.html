@@ -48,6 +48,8 @@ a:hover, a:visited {
 	border: 1px solid black;
 	background-color: white;
 	overflow: hidden;
+	display: grid;
+	grid-template-rows: auto 1fr;
 	z-index: 1;
 }
 
@@ -91,9 +93,6 @@ a:hover, a:visited {
 	bottom: 0;
 	width: 20px;
 	height: 20px;
-	/* background-color: white;
-	border: solid black;
-	border-width: 1px 0 0 1px; */
 	font-family: Material Symbols Outlined;
 	cursor: nw-resize;
 	user-select: none;
@@ -113,7 +112,6 @@ a:hover, a:visited {
 }
 
 .window.mappings-ui .content {
-	height: 100%;
 	display: grid;
 	grid-template-columns: 40px 10px 1fr 10px;
 	grid-template-rows: 40px 10px 1fr 10px 80px;
@@ -183,8 +181,6 @@ a:hover, a:visited {
 	display: grid;
 	grid-template-rows: auto auto 1fr;
 	background-color: #eee;
-	width: 1200px;
-	_height: 400px;
 	border: 1px solid #ccc;
 	box-sizing: border-box;
 }

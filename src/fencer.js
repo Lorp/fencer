@@ -1195,6 +1195,10 @@ function xmlChanged(e) {
 	const xmlDoc = parser.parseFromString(xmlString, "text/xml");
 	const errors = [];
 
+	// reset errors
+	Q(".mappings .errors").style.display = "none";
+	Q(".mappings .errors").innerText = "";
+
 	if (!xmlDoc || xmlDoc.querySelector("parsererror")) {
 		errors.push("Could not parse document");
 	}
@@ -1211,9 +1215,10 @@ function xmlChanged(e) {
 
 				// get the xvalue attribute and compare it to the axis min and max
 				const xvalue = parseFloat(dimEl.getAttribute("xvalue"));
-				console.log(xvalue);
-				if (xvalue < axis.minValue || xvalue > axis.maxValue)
+				if (xvalue < axis.minValue || xvalue > axis.maxValue) {
+					console.log(xvalue, axis.minValue, axis.maxValue)
 					errors.push(`Input axis ${axisName} value ${xvalue} is outside the range [${axis.minValue},${axis.maxValue}]`);
+				}
 			});
 			mappingEl.querySelectorAll("output>dimension").forEach(dimEl => {
 				const axisName = dimEl.getAttribute("name");
@@ -1235,14 +1240,11 @@ function xmlChanged(e) {
 	}
 
 	// TODO: we also need to fail if any of the mappings are outside the axis ranges
-
 	if (errors.length) {
 		Q(".mappings .errors").style.display = "block";
 		Q(".mappings .errors").innerText = errors.join("<br>");
 	}
 	else {
-		Q(".mappings .errors").style.display = "none";
-		Q(".mappings .errors").innerText = "";
 		GLOBAL.mappings.length = 0;
 		GLOBAL.mappings.push(...mappings);
 		mappingsChanged();
