@@ -8,30 +8,30 @@ Fencer is a GUI app that allows users to create avar (v2) tables inside their va
 
 ## UI Basics
 
-The UI is structured as follows:
-* **Upper section**, where the user adds & edits Mappings:
-  * **Controls panel**, with:
-    * a bank of sliders
+The UI implements a windowing system, where you can drag and resize windows according to your preference. The windows are:
+* **Settings window**, with:
+	* a bank of sliders
 	* a dropdown selector to choose whether one is editing the Current location or one of the Mappings
 	* reset-to-default buttons (click resets input locations, shift-click resets output locations)
-	* radio buttons to select X and Y axes in the Visial window.
-  * **Visual panel**, where:
-    * the Mappings are displayed as arrows in 2D space
-	* the dimensions of that 2D space are controlled by the radio buttons in the Controls panel
-	* the Current location is displayed as a blue dot
-	* you can drag the Current location around
+	* radio buttons to select X and Y axes in the Mappings window.
+* **Mappings window**, where:
+	* the dimensions of the 2D space are controlled by the radio buttons in the Controls panel (by default, the first axis in the font uses the X dimension of the display, the second axis in the font uses the Y dimension of the display)
+	* the Mappings are displayed as green arrows in 2D space
 	* you can add and delete Mappings, and drag them around
-  * **XML panel**, where designspace-compatible XML is generated. This may be pasted into the \<axes\> element of a designspace file, that can be built using fontmake.
-* **Lower section**, where the current instance is rendered, and the user can add more instances. All instances are updated whenever mappings are changed.
+	* the Current location is displayed as a blue dot, with its mapped location as pale blue dot
+	* you can drag the Current location around
+	* the Instances are displayed as red dots, with their mapped locations as pale red dots
+* **XML window**, where designspace-compatible XML is generated. This may be pasted into the \<axes\> element of a designspace file, that can be built using fontmake.
+* **Renders window**, where the current instance is rendered, and the user can add more instances. All instances are updated whenever mappings are changed.
 
 ## What are Mappings?
 
-Creating mappings for a given variable font is the core activity in Fencer. Each mapping consists of an input location and an output location, both of those locations being somewhere within the designspace of the font. In other words, in an _n_-axis font, each mapping has both its input and its output specified as locations on _n_ axes. The effect of a set of mappings is to transform the location of instances in designspace, which is useful for various use cases mentioned above.
+Creating and previewing designspace mappings for a variable font is the core activity in Fencer. Each mapping consists of an input location and an output location, both of those locations being somewhere within the designspace of the font. In other words, in an _n_-axis font, each mapping has both its input and its output specified as locations on _n_ axes. The effect of a set of mappings is to transform the location of instances in designspace, which is useful for various use cases mentioned above.
 
 Fencer displays each mapping as an arrow rendered in green, with handles so that the input and output locations can be dragged around.
 
-As you edit the mappings, even by dragging a mapping handle a small amount, Fencer creates a new font with a new avar2 table, and renders it in the lower section. In order to help you understand the effect of mappings you are creating, Fencer also shows you live updates for:
-* Each Named Instance, shown in its untransformed and transformed locations, with an arrow between them, all rendered in red.
+As you edit the mappings, even by dragging a mapping handle a small amount, Fencer builds a new font file with a new avar2 table, and renders it in the Renders window. In order to help you understand the effect of mappings you are creating, Fencer also shows you live updates for:
+* Each Named Instance location, shown in its untransformed and transformed locations, with an arrow between them, all rendered in red.
 * Various other instanaces, untransformed and transformed, rendered in grey.
 * The Current location, untransformed and transformed, rendered in blue.
 
@@ -50,7 +50,7 @@ As is common in 2-axis wght/wdth fonts, the Bold Extra Condensed instance (900,6
 
 To do so requires FIVE mappings. Let’s add them one by one:
 
-1. Click the **+** button to add the first mapping:
+1. Click the “Add mapping” button to add the first mapping:
    * A mapping is added at the current location.
    * Set the Input location (the base of the green arrow) to 900,62.5 by dragging the mapping handle to the bottom right corner.
    * Set the Output location (the tip of the green arrow) to 700,62.5.
@@ -92,7 +92,7 @@ Redo the above exercise with the same rectanuglar zone. But this time, instead o
 
 ## Trying your own fonts in Fencer
 
-Drop your TTF onto the blue area around the “Controls” text.
+Drop your TTF onto the blue area in the Settings window.
 
 For best results, use a font without an avar table, since Fencer will overwrite any existing avar table.
 
@@ -100,7 +100,7 @@ For best results, use a font without an avar table, since Fencer will overwrite 
 
 Click “Download font” to get a copy of the latest font build.
 
-When you are happy with the results, then instead of using the font made by Fencer directly, it is recommended to copy the XML from the XML panel into the \<axes\> element of a designspace file, and compile using fontmake.
+When you are happy with the results, then instead of using the font made by Fencer directly, it is recommended to copy the XML from the XML window into the \<axes\> element of a designspace file, and compile using fontmake.
 
 ## References
 
