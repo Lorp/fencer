@@ -219,22 +219,19 @@ function getArrowPath(arrow) {
 }
 
 function axisCoordFromSvgCoord (a, val) {
+	const visibleAxisIds = getVisibleAxisIds();
 	const axis = GLOBAL.font.fvar.axes[a];
-	// console.log(a, "axis");
-	// console.log(axis, val, val / GLOBAL.svgElWidth * (axis.maxValue - axis.minValue) + axis.minValue);
-	// console.log(axis)
-	//return (val - axis.minValue) / (axis.maxValue - axis.minValue) * GLOBAL.svgElWidth;
-
-
-
-	//v = (val - axis.minValue) / (axis.maxValue - axis.minValue) * GLOBAL.svgElWidth
-
-	return val / GLOBAL.svgElWidth * (axis.maxValue - axis.minValue) + axis.minValue;
+	const cs = getComputedStyle(Q(".svg-container"));
+	const length = parseFloat((visibleAxisIds[0] === a) ? cs.width : cs.height);
+	return val / length * (axis.maxValue - axis.minValue) + axis.minValue;
 }
 
 function svgCoordFromAxisCoord (a, val) {
+	const visibleAxisIds = getVisibleAxisIds();
 	const axis = GLOBAL.font.fvar.axes[a];
-	return (val - axis.minValue) / (axis.maxValue - axis.minValue) * GLOBAL.svgElWidth;
+	const cs = getComputedStyle(Q(".svg-container"));
+	const length = parseFloat((visibleAxisIds[0] === a) ? cs.width : cs.height);
+	return (val - axis.minValue) / (axis.maxValue - axis.minValue) * length;
 }
 
 function svgCoordsFromAxisCoords (coords) {
@@ -992,9 +989,13 @@ function mappingsChanged(mode) {
 
 	// draw x-axis and y-axis
 	const svgOriginCoords = svgCoordsFromAxisCoords(getDefaultAxisCoords());
+
+	const cs = getComputedStyle(Q(".svg-container"));
+	const width = parseFloat(cs.width);
+	const height = parseFloat(cs.height);
 	
-	const xAxisEl = SVG("line", {x1:0, y1:svgOriginCoords[1], x2:400, y2:svgOriginCoords[1], stroke: "grey"});
-	const yAxisEl = SVG("line", {x1:svgOriginCoords[0], y1:0, x2:svgOriginCoords[0], y2:400, stroke: "grey"});
+	const xAxisEl = SVG("line", {x1:0, y1:svgOriginCoords[1], x2:width, y2:svgOriginCoords[1], stroke: "grey"});
+	const yAxisEl = SVG("line", {x1:svgOriginCoords[0], y1:0, x2:svgOriginCoords[0], y2:height, stroke: "grey"});
 	GLOBAL.svgEl.appendChild(xAxisEl);
 	GLOBAL.svgEl.appendChild(yAxisEl);
 
@@ -1192,10 +1193,10 @@ function xmlChanged(e) {
 	const mappings = [];
 	const parser = new DOMParser();
 	const xmlDoc = parser.parseFromString(xmlString, "text/xml");
-	let fail = false;
+	const errors = [];
 
 	if (!xmlDoc || xmlDoc.querySelector("parsererror")) {
-		fail = true;
+		errors.push("Could not parse document");
 	}
 	else {
 		xmlDoc.querySelectorAll("mappings>mapping").forEach(mappingEl => {
@@ -1206,7 +1207,13 @@ function xmlChanged(e) {
 				if (axisName && axis)
 					mapping[0][axis.axisId] = parseFloat(dimEl.getAttribute("xvalue"));
 				else
-					fail = true;
+					errors.push(`Input axis ${axisName} not found`);
+
+				// get the xvalue attribute and compare it to the axis min and max
+				const xvalue = parseFloat(dimEl.getAttribute("xvalue"));
+				console.log(xvalue);
+				if (xvalue < axis.minValue || xvalue > axis.maxValue)
+					errors.push(`Input axis ${axisName} value ${xvalue} is outside the range [${axis.minValue},${axis.maxValue}]`);
 			});
 			mappingEl.querySelectorAll("output>dimension").forEach(dimEl => {
 				const axisName = dimEl.getAttribute("name");
@@ -1214,21 +1221,28 @@ function xmlChanged(e) {
 				if (axisName && axis)
 					mapping[1][axis.axisId] = parseFloat(dimEl.getAttribute("xvalue"));
 				else
-					fail = true;
+					errors.push(`Output axis ${axisName} not found`);
+
+				// get the xvalue attribute and compare it to the axis min and max
+				const xvalue = parseFloat(dimEl.getAttribute("xvalue"));
+				if (xvalue < axis.minValue || xvalue > axis.maxValue)
+					errors.push(`Output axis ${axisName} value ${xvalue} is outside the range [${axis.minValue},${axis.maxValue}]`);
+				
 			});
 	
 			mappings.push(mapping);
 		});	
 	}
 
+	// TODO: we also need to fail if any of the mappings are outside the axis ranges
 
-	if (fail) {
-		Q(".mappings .container .errors").style.display = "block";
-		Q(".mappings .container .errors").style.backgroundColor = "red";
-		Q(".mappings .container .errors").innerText = "Error!";
+	if (errors.length) {
+		Q(".mappings .errors").style.display = "block";
+		Q(".mappings .errors").innerText = errors.join("<br>");
 	}
 	else {
-		Q(".mappings .container .errors").style.display = "none";
+		Q(".mappings .errors").style.display = "none";
+		Q(".mappings .errors").innerText = "";
 		GLOBAL.mappings.length = 0;
 		GLOBAL.mappings.push(...mappings);
 		mappingsChanged();
@@ -1282,7 +1296,7 @@ function updateMappingsXML() {
 	});
 
 	// assume there are no XML errors
-	Q(".mappings .container .errors").style.display = "none";
+	Q(".window.mappings .errors").style.display = "none";
 
 }
 
@@ -1384,14 +1398,24 @@ function initFencer() {
 	GLOBAL.svgEl.setAttribute("transform", "scale(1 -1)");
 	
 	Q("#mapping-selector").onchange = selectAxisControls;
-	Q(".mappings-ui").insertBefore(GLOBAL.svgEl, Q("#mappings-ui-info"));
+
+	Q(".window.mappings-ui .svg-container").append(GLOBAL.svgEl);
+
 	Q("#sample-text").oninput = sampleTextChange; // handle change of sample text
 	Q("#mapping-selector").onchange = selectMapping; // handle change of mappings selector
 	Q("#add-render").onclick = addRender;
 	Q("#download-font").onclick = downloadFont;
 
+	Q(".window.mappings .xml").oninput = xmlChanged;
 
-	Q(".mappings textarea.xml").oninput = xmlChanged;
+	// adjust XML font size
+	Qall(".window.mappings .zoom").forEach(zoomEl => {
+		zoomEl.onclick = e => {
+			const scale = e.target.classList.contains("in") ? 6/5 : 5/6;
+			const cs = getComputedStyle(Q(".window.mappings .xml"));
+			Q(".window.mappings .xml").style.fontSize = (parseFloat(cs.fontSize) * scale) + "px";
+		};
+	});
 
 	// show/hide XML
 	Q("button#toggle-xml").onclick = e => {
@@ -1407,6 +1431,86 @@ function initFencer() {
 		.then(arrayBuffer => {
 			loadFontFromArrayBuffer(arrayBuffer, {filename: filename});
 		});
+
+	// set up the windowing system
+	Qall(".window").forEach(windowEl => {
+
+		let isDragging = false;
+		let isResizing = false;
+		let initialMouseX, initialMouseY, initialWindowX, initialWindowY, initialWindowWidth, initialWindowHeight;
+
+		const titleBar = windowEl.querySelector(":scope > h2");
+		if (titleBar) {
+			windowEl.querySelector(":scope > h2").onmousedown = e => {
+				const windowEl = e.target.closest(".window");
+
+				// setup
+				isDragging = true;
+				initialMouseX = e.clientX;
+				initialMouseY = e.clientY;
+				initialWindowX = windowEl.offsetLeft;
+				initialWindowY = windowEl.offsetTop;
+
+				// dragging
+				document.onmousemove = e => {
+					if (!isDragging) return;
+					const dx = e.clientX - initialMouseX;
+					const dy = e.clientY - initialMouseY;
+					windowEl.style.left = initialWindowX + dx + "px";
+					windowEl.style.top = initialWindowY + dy + "px";
+				};
+
+				// ending
+				document.onmouseup = e => {
+					isDragging = false;
+					document.onmousemove = null;
+					document.onmouseup = null;
+
+					// TODO: store new position in cookie or local storage
+				};
+
+				// window title typography and z-index
+				// TODO: preserve order of windows below the selected one
+				Qall(".window").forEach(el => {
+					if (el === windowEl)
+						el.classList.add("selected", "top");
+					else
+						el.classList.remove("selected", "top");
+				});	
+			};
+		}
+
+		const resizeHandle = windowEl.querySelector(":scope > .resize");
+		if (resizeHandle) {
+			resizeHandle.onmousedown = e => {
+				isResizing = true;
+				initialMouseX = e.clientX;
+				initialMouseY = e.clientY;
+				initialWindowWidth = windowEl.offsetWidth;
+				initialWindowHeight = windowEl.offsetHeight;
+
+				// resizing
+				document.onmousemove = e => {
+					if (!isResizing) return;
+					const dx = e.clientX - initialMouseX;
+					const dy = e.clientY - initialMouseY;
+					windowEl.style.width = initialWindowWidth + dx + 'px';
+					windowEl.style.height = initialWindowHeight + dy + 'px';				
+					mappingsChanged(); // update the SVG, yay!
+				};
+
+				// ending resize
+				document.onmouseup = e => {
+					isResizing = false;
+					document.onmousemove = null;
+					document.onmouseup = null;
+					// TODO: store new position in cookie or local storage
+				};
+			};
+		}
+
+		
+	});
 }
 
 function downloadFont() {

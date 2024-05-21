@@ -26,67 +26,139 @@ a:hover, a:visited {
 #title-bar {
 	background-color: black;
 	color: white;
+	height: 2em;
 }
 
-.fontinfo {
-	float: left;
+/* A .window-canvas contains all the windows in the system */
+.window-canvas {
 	position: relative;
-	display: grid;
-	grid-template-rows: auto 400px 3rem;
-	width: 400px;
+	width: 100%;
+	height: calc(100vh - 2em);
+}
+
+/* A .window is a window within a .window-canvas
+   Children:
+   - H2, the window title
+   - DIV.resize, a handle to resize the window
+*/
+.window {
+	position: absolute;
+	left: 0;
+	top: 0;
+	border: 1px solid black;
+	background-color: white;
+	overflow: hidden;
+	z-index: 1;
+}
+
+.window.top {
+	z-index: 2;
+}
+
+.window>h2 {
+	background-color: #ccc;
+	color: #333;
+	margin: 0;
+	padding-left: 0.5em;
+	user-select: none;
+	font-size: 1em;
+	font-weight: normal;
+}
+
+.window.selected>h2 {
+	background-color: black;
+	color: white;
+	font-weight: bold;
+}
+
+.window>.close {
+	position: absolute;
+	right: 0;
+	top: 0;
+	background-color: #ccc;
+	color: #333;
+	padding: 0.5em;
+	cursor: pointer;
+}
+
+.window>.close::before {
+	content: "✖";
+}
+
+.window>.resize {
+	position: absolute;
+	right: 0;
+	bottom: 0;
+	width: 20px;
+	height: 20px;
+	/* background-color: white;
+	border: solid black;
+	border-width: 1px 0 0 1px; */
+	font-family: Material Symbols Outlined;
+	cursor: nw-resize;
+	user-select: none;
+}
+
+.window>.resize::before {
+	content: "aspect_ratio";
+}
+
+.window.fontinfo .content {
 	background-color: lightblue;
 	user-select: none;
 }
 
-.fontinfo textarea {
+.window.fontinfo textarea {
 	font-family: Roboto Mono, monospace;
 }
 
-.mappings-ui {
-	float: left;
-	position: relative;
+.window.mappings-ui .content {
+	height: 100%;
 	display: grid;
-	grid-template-rows: auto 400px 3rem;
-	width: 400px;
-	background-color: yellow;
+	grid-template-columns: 40px 10px 1fr 10px;
+	grid-template-rows: 40px 10px 1fr 10px 80px;
 }
 
-.mappings-ui #mappings-visual {
+.window.mappings-ui #mappings-visual {
 	background-color: #eee;
 	width: 100%;
 	height: 100%;
 }
 
-.mappings {
-	float: left;
-	position: relative;
-	display: grid;
-	grid-template-rows: auto 400px 3rem;
-	background-color: #eee;
-	width: 400px;
-	height: 400px;
+.ruler {
+	background-color: #ccc;
+	color: black;
+	font-size: 0.8em;
 }
 
-.mappings .html {
+.window.mappings .content {
+	position: relative;
+	display: grid;
+	grid-template-rows: auto 1fr;
+}
+
+.window.mappings .xml {
+	width: 100%;
+	height: 100%;
+	font-size: 12px;
+	font-family: Roboto Mono, monospace;
+}
+
+.window.mappings .html {
 	font-size: 0.75em;
 }
 
-.mappings .xml {
-	width: 100%;
-	height: 100%;
-	font-size: 0.5em;
-}
-
-.mappings .container {
-	position: relative;
-}
-
-.mappings .container .errors {
+.window.mappings .errors {
 	display: none;
 	position: absolute;
 	bottom: 0;
-	height: 3em;
 	width: 100%;
+	background-color: red;
+	color: white;
+}
+
+.zoom {
+	font-family: Material Symbols Outlined;
 }
 
 .output {
@@ -102,16 +174,12 @@ a:hover, a:visited {
 	color: var(--mappingcolor);
 }
 
-.mappings textarea.xml {
-	font-family: Roboto Mono, monospace;
-}
-
 .monospace {
 	font-family: Roboto Mono, monospace;
 	font-size: 12px;
 }
 
-#renders {
+.window.renders {
 	display: grid;
 	grid-template-rows: auto auto 1fr;
 	background-color: #eee;
@@ -174,7 +242,6 @@ a:hover, a:visited {
 	position: absolute;
 	left: 0;
 	top: 0;
-	_display: none; /* we toggle between "none" and "grid" */
 	display: none; /* we toggle between "none" and "block" */
 	width: 100%;
 	height: 100%;
@@ -201,7 +268,6 @@ a:hover, a:visited {
 }
 
 #axes {
-	height: 400px;
 	background-color: white;
 	overflow-y: scroll;
 }
@@ -255,13 +321,6 @@ input.numeric {
 	width: calc(100% - 7px);
 }
 
-.xml-errors {
-	position: relative;
-	bottom: 0;
-	width: 100%;
-	height: 2em;
-	background-color: pink;
-}
 
 </style>
 
@@ -281,78 +340,91 @@ input.numeric {
 
 	<div id="title-bar"><span style="font-weight:bold;">FENCER</span> 🤺 avar2 mappings editor <img width="16" src="https://emojis.slackmojis.com/emojis/images/1670280918/63091/garden-fence.png"> <a href="https://github.com/lorp/fencer" target="_blank">https://github.com/lorp/fencer</a></div>
 
-	<div class="fontinfo">
-		<h3>Controls
-			<select id="mapping-selector"></select>
-		</h3>
-		<!-- <textarea placeholder="Drop font here"></textarea> -->
-		<div id="axes"></div>
-		<div></div>	
-	</div>
-
-	<div class="mappings-ui">
-		<h3>Mappings visual
-
-			<button id="add-mapping" disabled>+</button>
-			<button id="delete-mapping" disabled>−</button>
-
-		</h3>
-		<!-- <svg id="mappings-visual">
-
-		</svg> -->
-		<!-- <div id="mappings-visual">
-
-		</div> -->
-
-
-		<!-- <div id="mappings-ui-info">
-			<label for="#x-axis-select">x-axis</label><select id="x-axis-select"></select>
-			<label for="#y-axis-select">y-axis</label><select id="y-axis-select"></select>
-		</div> -->
-
-		<div id="mappings-ui-info">
-			<div id="coords"></div>
+	<div class="window-canvas">
+		
+		<div class="window fontinfo" style="width: 400px; left: 10px; top: 10px;">
+			<h2>Settings</h2>
+			<div class="content">
+				<select id="mapping-selector"></select>
+				<div id="axes"></div>
+			</div>	
 		</div>
-	</div>
 
-	<div class="mappings">
-		<h3>Mappings XML <button id="toggle-xml">Toggle XML</button></h3>
+		<div class="window mappings-ui" style="width: 600px; height: 700px; left: 420px; top: 10px;">
+			<h2>Mappings</h2>
 
-		<div class="container">
-			<div class="html hidden">
+			<div class="content">
+
+				<div></div><div></div><div class="ruler horizontal">Ruler</div><div></div>
+				<div></div><div></div><div></div><div></div>
+				<div class="ruler vertical">R</div><div></div>
+					<div class="svg-container"></div>
+				<div></div>
+				<div></div><div></div><div></div><div></div>
+
+				<div class="extra" style="grid-column: 1/5;">
+
+					<button id="add-mapping" disabled>Add mapping</button>
+					<button id="delete-mapping" disabled>Delete mapping</button>
+		
+					<div id="mappings-ui-info">
+						<div id="coords"></div>
+					</div>
+			
+				</div>
+
+
 			</div>
 
-			<textarea class="xml" placeholder=".designspace XML goes here"><div class="xml-errors"></div></textarea>
-
-			<div class="errors"></div>
+			<div class="resize"></div>
 			
 		</div>
 
-		<div>
+		<div class="window mappings" style="width: 400px; height: 500px; left: 1030px; top: 10px;">
+			<h2>XML</h2>
+			<div class="content" style="height: 100%;">
+				<div class="extra">
+					<button id="toggle-xml">Toggle XML</button>
+					<button class="zoom in">zoom_in</button>
+					<button class="zoom out">zoom_out</button>
+				</div>
+
+				<div class="html hidden">
+				</div>
+
+				<textarea class="xml" placeholder=".designspace XML goes here" style="height: 100%;"></textarea>
+
+				<div class="errors"></div>
+				
+			</div>
+
+			<div class="resize"></div>
+
 		</div>
 
-	</div>
+		<div class="window renders" style="left: 0; top: 730px; width: 1500px;">
+			<h2>Renders</h2>
+			<div>
+				<select disabled>
+					<option value="native">Native</option>
+					<option value="samsa">Samsa</option>
+				</select>
 
-	<br clear="all"/>
-	<div id="renders">
-		<h3>Renders</h3>
-		<div>
-			<select disabled>
-				<option value="native">Native</option>
-				<option value="samsa">Samsa</option>
-			</select>
+				<button id="download-font" disabled>Download font</button>
 
-			<button id="download-font" disabled>Download font</button>
+				<button id="add-render">Add instance</button>
 
-			<button id="add-render">Add instance</button>
+				<input id="sample-text" value="Rag">
+			</div>
+			
+			<div class="render-container">
+			</div>
 
-			<input id="sample-text" value="Rag">
+			<div class="resize"></div>
+
 		</div>
-		
-		<div class="render-container">
-		</div>
 
-	</div>
+	</div><!-- end of window-canvas -->
 		
 </body>
 
