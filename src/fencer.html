@@ -131,7 +131,6 @@ a:hover, a:visited {
 }
 
 .window.fontinfo .content {
-	/* background-color: lightblue; */
 	user-select: none;
 }
 
@@ -168,10 +167,13 @@ a:hover, a:visited {
 	height: 100%;
 	font-size: 12px;
 	font-family: Roboto Mono, monospace;
+	padding: 0; /* disable textarea default */
+	margin: 0; /* disable textarea default */
+	border: none; /* disable textarea default */
 }
 
 .window.mappings .html {
-	font-size: 0.75em;
+	font-size: 12px;
 }
 
 .window.mappings .errors {
@@ -424,7 +426,7 @@ input.numeric.default {
 				<div class="html hidden">
 				</div>
 
-				<textarea class="xml" placeholder=".designspace XML goes here" style="height: 100%;"></textarea>
+				<textarea class="xml" placeholder=".designspace XML goes here"></textarea>
 
 				<div class="errors"></div>
 				
