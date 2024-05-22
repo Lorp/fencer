@@ -369,13 +369,13 @@ function loadFontFromArrayBuffer (arrayBuffer, options={}) {
 		row[7].type = "radio";
 		row[7].name = "x-axis";
 		row[7].value = a;
-		row[7].checked = (a==0);
+		row[7].checked = (a===0);
 		row[7].onchange = axisCheckboxChange;
 
 		row[8].type = "radio";
 		row[8].name = "y-axis";
 		row[8].value = a;
-		row[8].checked = (a==1);
+		row[8].checked = (a===1);
 		row[8].onchange = axisCheckboxChange;
 
 		axisEl.append(...row);
@@ -393,13 +393,17 @@ function loadFontFromArrayBuffer (arrayBuffer, options={}) {
 
 		const inputOrOutput = e.target.classList.contains("input") ? "input" : "output";
 		const inputOrOutputId = (inputOrOutput === "input") ? 0 : 1;
-
-		//const elMarker = (GLOBAL.draggingIndex === -1) ? Q("g.current") : Q(`g.location.${inputOrOutput}[data-index="${GLOBAL.draggingIndex}"]`);
 		const el = e.target;
 		const axisEl = el.closest(".axis");
 		const axisId = parseInt(axisEl.dataset.axisId);
+		const axis = GLOBAL.font.fvar.axes[axisId];
+		let val = parseFloat(el.value);
+		if (el.classList.contains("slider") && Q("#integer-dragging").checked && ![axis.minValue, axis.maxValue].includes(val)) {
+			val = Math.round(val);
+			el.value = val;
+		}
 		const otherInputEl = el.classList.contains("slider") ? axisEl.querySelector(`.${inputOrOutput}.numeric`) : axisEl.querySelector(`.${inputOrOutput}.slider`);
-		otherInputEl.value = el.value;
+		otherInputEl.value = val;
 
 		// move the marker
 		if (GLOBAL.draggingIndex === -1) {
@@ -751,6 +755,10 @@ function svgMouseMove(e) {
 
 	let xCoord = axisCoordFromSvgCoord(visibleAxisIds[0], svgX);
 	let yCoord = axisCoordFromSvgCoord(visibleAxisIds[1], svgY);
+	if (Q("#integer-dragging").checked) {
+		xCoord = Math.round(xCoord);
+		yCoord = Math.round(yCoord);
+	}
 	xCoord = Math.min(xCoord, GLOBAL.font.fvar.axes[visibleAxisIds[0]].maxValue);
 	xCoord = Math.max(xCoord, GLOBAL.font.fvar.axes[visibleAxisIds[0]].minValue);
 	yCoord = Math.min(yCoord, GLOBAL.font.fvar.axes[visibleAxisIds[1]].maxValue);
@@ -1378,9 +1386,7 @@ function updateMappingsSliders(m) {
 		// enable all the outputs
 		Qall("#axes .axis input.output").forEach(el => el.disabled = false);
 	}
-
 }
-
 
 
 function selectAxisControls(e) {
