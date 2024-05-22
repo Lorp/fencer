@@ -426,12 +426,11 @@ function loadFontFromArrayBuffer (arrayBuffer, options={}) {
 		const parentEl = el.closest(".axis,.key");
 		const inputOrOutput = +e.shiftKey; // 0 for input, 1 for output
 
-		// is this the reset button of the key row?
+		// is this the "reset all" button in the key row?
 		if (parentEl.classList.contains("key")) {
 
 			if (GLOBAL.draggingIndex === -1) {
-				GLOBAL.current[0] = getDefaultAxisCoords();
-				GLOBAL.current[1] = [...GLOBAL.current[0]]; // this is safe, as default is never transformed (this MUST be a separate array)
+				GLOBAL.current[0] = getDefaultAxisCoords(); // don’t reset GLOBAL.current[1] directly
 			}
 			else {
 				GLOBAL.mappings[GLOBAL.draggingIndex][inputOrOutput] = getDefaultAxisCoords();
@@ -445,8 +444,7 @@ function loadFontFromArrayBuffer (arrayBuffer, options={}) {
 			const axis = GLOBAL.font.fvar.axes[axisId];
 
 			if (GLOBAL.draggingIndex === -1) {
-				GLOBAL.current[0][axisId] = axis.defaultValue;
-				//GLOBAL.current[1][axisId] = axis.defaultValue;
+				GLOBAL.current[0][axisId] = axis.defaultValue; // don’t reset GLOBAL.current[1] directly
 			}
 			else {
 				GLOBAL.mappings[GLOBAL.draggingIndex][inputOrOutput][axisId] = axis.defaultValue;
