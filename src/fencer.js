@@ -302,8 +302,6 @@ function loadFontFromArrayBuffer (arrayBuffer, options={}) {
 	key[4].style.fontFamily = "Material Symbols Outlined";
 	key[4].title = "Reset all input axes\n(shift-click to reset all output axes)";
 	key[4].onclick = axisReset;
-	key[1].style.gridColumn = "2 / 4"; // occupy 2 cells
-	key[3].style.gridColumn = "5 / 7"; // occupy 2 cells
 
 	keyEl.append(...key);
 	Q("#axes").append(keyEl);
@@ -419,6 +417,7 @@ function loadFontFromArrayBuffer (arrayBuffer, options={}) {
 		mappingsChanged();
 		updateRenders();
 		updateMappingsXML();
+		formatNumericControls(GLOBAL.draggingIndex);
 	}
 
 	function axisReset (e) {
@@ -447,7 +446,7 @@ function loadFontFromArrayBuffer (arrayBuffer, options={}) {
 
 			if (GLOBAL.draggingIndex === -1) {
 				GLOBAL.current[0][axisId] = axis.defaultValue;
-				GLOBAL.current[1][axisId] = axis.defaultValue;
+				//GLOBAL.current[1][axisId] = axis.defaultValue;
 			}
 			else {
 				GLOBAL.mappings[GLOBAL.draggingIndex][inputOrOutput][axisId] = axis.defaultValue;
@@ -1104,6 +1103,14 @@ function mappingsChanged(mode) {
 	elCurrent1.style.opacity = 0.4;
 	elCurrent1.style.color = "var(--currentLocationColor)";
 
+	// update the output locations for the current axis, if it’s selected
+	if (GLOBAL.draggingIndex === -1) {
+		Qall("#axes .axis").forEach((axisEl, a) => {
+			axisEl.querySelectorAll("input.output").forEach(el => el.value = GLOBAL.current[1][a]);
+		});
+		formatNumericControls(-1);
+	}	
+
 	// draw the arrow
 	const arrowSvg = svgArrow({index: -1, x1: svgCoordsFrom[0], y1: svgCoordsFrom[1], x2: svgCoordsTo[0], y2: svgCoordsTo[1], tipLen: 7, tipWid: 7, strokeWidth: 1, color: "var(--currentLocationColor)"});
 
@@ -1362,18 +1369,43 @@ function exportFontWithTables(font, inserts={}, deletes={}) {
 	return newFontBuf;
 }
 
+function formatNumericControls(m) {
+	Qall("#axes .axis").forEach((axisEl, a) => {
+		const axis = GLOBAL.font.fvar.axes[a];
+		const inputNumericEl = axisEl.querySelector(".input.numeric");
+		const outputNumericEl = axisEl.querySelector(".output.numeric");
+		const inputVal = (m === -1) ? GLOBAL.current[0][a] : GLOBAL.mappings[m][0][a];
+		const outputVal = (m === -1) ? GLOBAL.current[1][a] : GLOBAL.mappings[m][1][a];
+
+		if (simpleNormalize(axis, inputVal) === 0)
+			inputNumericEl.classList.add("default");
+		else
+			inputNumericEl.classList.remove("default");
+
+		if (simpleNormalize(axis, outputVal) === 0)
+			outputNumericEl.classList.add("default");
+		else
+			outputNumericEl.classList.remove("default");
+	});
+}
 
 function updateMappingsSliders(m) {
 
 	Qall("#axes .axis").forEach((axisEl, a) => {
+		const axis = GLOBAL.font.fvar.axes[a];
 		const inputSliderEl = axisEl.querySelector(".input.slider");
 		const inputNumericEl = axisEl.querySelector(".input.numeric");
 		const outputSliderEl = axisEl.querySelector(".output.slider");
 		const outputNumericEl = axisEl.querySelector(".output.numeric");
 
-		inputSliderEl.value = inputNumericEl.value = (m === -1) ? GLOBAL.current[0][a] : GLOBAL.mappings[m][0][a];
-		outputSliderEl.value = outputNumericEl.value = (m === -1) ? GLOBAL.current[1][a] : GLOBAL.mappings[m][1][a];
+		const inputVal = (m === -1) ? GLOBAL.current[0][a] : GLOBAL.mappings[m][0][a];
+		const outputVal = (m === -1) ? GLOBAL.current[1][a] : GLOBAL.mappings[m][1][a];
+
+		inputSliderEl.value = inputNumericEl.value = inputVal;
+		outputSliderEl.value = outputNumericEl.value = outputVal;
 	});
+
+	formatNumericControls(m);
 
 	// select the correct item in the mappings dropdown
 	Q("#mapping-selector").value = m;
@@ -1502,8 +1534,10 @@ function initFencer() {
 					if (!isResizing) return;
 					const dx = e.clientX - initialMouseX;
 					const dy = e.clientY - initialMouseY;
-					windowEl.style.width = initialWindowWidth + dx + 'px';
-					windowEl.style.height = initialWindowHeight + dy + 'px';				
+					if (!resizeHandle.classList.contains("no-horizontal"))
+						windowEl.style.width = initialWindowWidth + dx + 'px';
+					if (!resizeHandle.classList.contains("no-vertical"))
+						windowEl.style.height = initialWindowHeight + dy + 'px';				
 					mappingsChanged(); // update the SVG, yay!
 				};
 

@@ -7,6 +7,25 @@
 	<meta charset="utf-8">
 	<style>
 
+/* container query to remove columns when container is narrower than 200px */
+@container Settings (max-width: 300px) {
+	.content #axes>.key {
+		grid-template-columns: 40px 40px auto 40px auto 16px 16px;
+	}
+	.content #axes>.axis {
+		grid-template-columns: 40px 40px auto 40px auto 16px 16px;
+	}
+	.content #axes input.slider {
+		display: none;
+	}
+	.content #axes>.key *:nth-child(2) {
+		grid-column: auto;
+	}
+	.content #axes>.key *:nth-child(4) {
+		grid-column: auto;
+	}
+}
+
 :root {
 	font-family: IBM Plex Sans;
 	font-size: 16px;
@@ -60,6 +79,7 @@ a:hover, a:visited {
 .window>h2 {
 	background-color: #ccc;
 	color: #333;
+	border-bottom: 1px solid black;
 	margin: 0;
 	padding-left: 0.5em;
 	user-select: none;
@@ -89,21 +109,29 @@ a:hover, a:visited {
 
 .window>.resize {
 	position: absolute;
-	right: 0;
-	bottom: 0;
+	right: -1px;
+	bottom: -1px;
 	width: 20px;
 	height: 20px;
-	font-family: Material Symbols Outlined;
+	/* font-family: Material Symbols Outlined; */
+	border: solid black;
+	border-width: 1px 0 0 1px;
 	cursor: nw-resize;
 	user-select: none;
+	background-color: white;
 }
 
-.window>.resize::before {
+/* .window>.resize::before {
 	content: "aspect_ratio";
+} */
+
+.window.fontinfo {
+	container-name: Settings;
+	container-type: inline-size;
 }
 
 .window.fontinfo .content {
-	background-color: lightblue;
+	/* background-color: lightblue; */
 	user-select: none;
 }
 
@@ -159,13 +187,8 @@ a:hover, a:visited {
 	font-family: Material Symbols Outlined;
 }
 
-.output {
+.input, .output {
 	color: #093;
-}
-
-.input {
-	color: #093;
-/*}	color: #c91616;*/
 }
 
 .mapping {
@@ -181,7 +204,6 @@ a:hover, a:visited {
 	display: grid;
 	grid-template-rows: auto auto 1fr;
 	background-color: #eee;
-	border: 1px solid #ccc;
 	box-sizing: border-box;
 }
 
@@ -273,8 +295,12 @@ a:hover, a:visited {
 	grid-template-columns: 40px 40px 1fr auto 40px 1fr auto 16px 16px;
 }
 
-#axes .key>*:nth-child(4), #axes .axis>*:nth-child(4) {
-	padding: 0 2px;
+#axes .key *:nth-child(2) {
+	grid-column: 2 / 4;
+}
+
+#axes .key *:nth-child(4) {
+	grid-column: 5 / 7;
 }
 
 #axes .key>*:nth-child(4), #axes .axis>*:nth-child(4) {
@@ -314,7 +340,13 @@ a:hover, a:visited {
 }
 
 input.numeric {
+	font-weight: bold;
 	width: calc(100% - 7px);
+}
+
+input.numeric.default {
+	font-weight: normal;
+	color: grey;
 }
 
 
@@ -343,7 +375,11 @@ input.numeric {
 			<div class="content">
 				<select id="mapping-selector"></select>
 				<div id="axes"></div>
-			</div>	
+				<div class="extra">&nbsp;</div>
+			</div>
+
+			<div class="resize no-vertical"></div>
+
 		</div>
 
 		<div class="window mappings-ui" style="width: 600px; height: 700px; left: 420px; top: 10px;">
@@ -369,7 +405,6 @@ input.numeric {
 					</div>
 			
 				</div>
-
 
 			</div>
 
