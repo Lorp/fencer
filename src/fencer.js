@@ -92,6 +92,9 @@ function mappingSimpleNormalize(axes, mapping) {
 }
 
 /*
+
+// we can repurpose this code for adding/subtracting epsilon
+
 window.onkeydown = function (e) {
 
 	// disable for input elements!
@@ -221,16 +224,16 @@ function getArrowPath(arrow) {
 function axisCoordFromSvgCoord (a, val) {
 	const visibleAxisIds = getVisibleAxisIds();
 	const axis = GLOBAL.font.fvar.axes[a];
-	const cs = getComputedStyle(Q(".svg-container"));
-	const length = parseFloat((visibleAxisIds[0] === a) ? cs.width : cs.height);
+	const rect =  Q(".svg-container").getBoundingClientRect();
+	const length = parseFloat((visibleAxisIds[0] === a) ? rect.width : rect.height);
 	return val / length * (axis.maxValue - axis.minValue) + axis.minValue;
 }
 
 function svgCoordFromAxisCoord (a, val) {
 	const visibleAxisIds = getVisibleAxisIds();
 	const axis = GLOBAL.font.fvar.axes[a];
-	const cs = getComputedStyle(Q(".svg-container"));
-	const length = parseFloat((visibleAxisIds[0] === a) ? cs.width : cs.height);
+	const rect =  Q(".svg-container").getBoundingClientRect();
+	const length = parseFloat((visibleAxisIds[0] === a) ? rect.width : rect.height);
 	return (val - axis.minValue) / (axis.maxValue - axis.minValue) * length;
 }
 
@@ -424,7 +427,7 @@ function loadFontFromArrayBuffer (arrayBuffer, options={}) {
 		console.log("axisReset");
 		const el = e.target;
 		const parentEl = el.closest(".axis,.key");
-		const inputOrOutput = +e.shiftKey; // 0 for input, 1 for output
+		const inputOrOutputId = +e.shiftKey; // 0 for input, 1 for output
 
 		// is this the "reset all" button in the key row?
 		if (parentEl.classList.contains("key")) {
@@ -433,7 +436,7 @@ function loadFontFromArrayBuffer (arrayBuffer, options={}) {
 				GLOBAL.current[0] = getDefaultAxisCoords(); // don’t reset GLOBAL.current[1] directly
 			}
 			else {
-				GLOBAL.mappings[GLOBAL.draggingIndex][inputOrOutput] = getDefaultAxisCoords();
+				GLOBAL.mappings[GLOBAL.draggingIndex][inputOrOutputId] = getDefaultAxisCoords();
 			}
 		}
 
@@ -447,7 +450,7 @@ function loadFontFromArrayBuffer (arrayBuffer, options={}) {
 				GLOBAL.current[0][axisId] = axis.defaultValue; // don’t reset GLOBAL.current[1] directly
 			}
 			else {
-				GLOBAL.mappings[GLOBAL.draggingIndex][inputOrOutput][axisId] = axis.defaultValue;
+				GLOBAL.mappings[GLOBAL.draggingIndex][inputOrOutputId][axisId] = axis.defaultValue;
 			}
 		}
 
@@ -995,12 +998,9 @@ function mappingsChanged(mode) {
 	// draw x-axis and y-axis
 	const svgOriginCoords = svgCoordsFromAxisCoords(getDefaultAxisCoords());
 
-	const cs = getComputedStyle(Q(".svg-container"));
-	const width = parseFloat(cs.width);
-	const height = parseFloat(cs.height);
-	
-	const xAxisEl = SVG("line", {x1:0, y1:svgOriginCoords[1], x2:width, y2:svgOriginCoords[1], stroke: "grey"});
-	const yAxisEl = SVG("line", {x1:svgOriginCoords[0], y1:0, x2:svgOriginCoords[0], y2:height, stroke: "grey"});
+	const rect =  Q(".svg-container").getBoundingClientRect();
+	const xAxisEl = SVG("line", {x1:0, y1:svgOriginCoords[1], x2:rect.width, y2:svgOriginCoords[1], stroke: "grey"});
+	const yAxisEl = SVG("line", {x1:svgOriginCoords[0], y1:0, x2:svgOriginCoords[0], y2:rect.height, stroke: "grey"});
 	GLOBAL.svgEl.appendChild(xAxisEl);
 	GLOBAL.svgEl.appendChild(yAxisEl);
 
