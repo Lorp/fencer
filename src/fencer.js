@@ -256,9 +256,13 @@ function loadFontFromArrayBuffer (arrayBuffer, options={}) {
 	console.log("GLOBAL.font.buf");
 	console.log(GLOBAL.font.buf);
 
+	Q(".window.fontinfo .filename").textContent = `${options.filename} (${GLOBAL.font.buf.byteLength} bytes)`;
+	Q(".window.fontinfo .name").textContent = GLOBAL.font.names[6];
+
 	// set the font face to the arraybuffer
 	if (GLOBAL.fontFace)
 		document.fonts.delete(GLOBAL.fontFace);
+
 	GLOBAL.fontFace = new FontFace(GLOBAL.font.names[6], arrayBuffer);
 	GLOBAL.fontFace.load().then(loadedFace => {
 

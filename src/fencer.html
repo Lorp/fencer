@@ -128,6 +128,17 @@ a:hover, a:visited {
 .window.fontinfo {
 	container-name: Settings;
 	container-type: inline-size;
+
+	.intro {
+		display: grid;
+		grid-template-columns: 75px 1fr;
+		.name {
+			font-weight: bold;
+		}
+		.filename {
+			font-style: italic;
+		}
+	}
 }
 
 .window.fontinfo .content {
@@ -373,7 +384,11 @@ input.numeric.default {
 		<div class="window fontinfo" style="width: 400px; left: 10px; top: 10px;">
 			<h2>Settings</h2>
 			<div class="content">
-				<select id="mapping-selector"></select>
+				<div class="intro">
+					<label>Name</label><div class="name"></div>
+					<label>File</label><div class="filename"></div>
+					<label>Controls</label><div><select id="mapping-selector"></select></div>
+				</div>
 				<div id="axes"></div>
 				<div class="extra">&nbsp;</div>
 			</div>
