@@ -167,9 +167,7 @@ a:hover, a:visited {
 	height: 100%;
 	font-size: 12px;
 	font-family: Roboto Mono, monospace;
-	padding: 0; /* disable textarea default */
-	margin: 0; /* disable textarea default */
-	border: none; /* disable textarea default */
+	padding: 0; margin: 0; border: none; /* disable textarea default */
 }
 
 .window.mappings .html {
@@ -189,7 +187,7 @@ a:hover, a:visited {
 	font-family: Material Symbols Outlined;
 }
 
-.input, .output {
+input.numeric {
 	color: #093;
 }
 
@@ -436,7 +434,7 @@ input.numeric.default {
 
 		</div>
 
-		<div class="window renders" style="left: 0; top: 730px; width: 1500px;">
+		<div class="window renders" style="left: 10px; top: 730px; width: 1500px;">
 			<h2>Renders</h2>
 			<div>
 				<select disabled>
