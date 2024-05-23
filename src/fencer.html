@@ -9,19 +9,19 @@
 
 /* container query to remove columns when container is narrower than 200px */
 @container Settings (max-width: 300px) {
-	.content #axes>.key {
+	.content .axes>.key {
 		grid-template-columns: 40px 40px auto 40px auto 16px 16px;
 	}
-	.content #axes>.axis {
+	.content .axes>.axis {
 		grid-template-columns: 40px 40px auto 40px auto 16px 16px;
 	}
-	.content #axes input.slider {
+	.content .axes input.slider {
 		display: none;
 	}
-	.content #axes>.key *:nth-child(2) {
+	.content .axes>.key *:nth-child(2) {
 		grid-column: auto;
 	}
-	.content #axes>.key *:nth-child(4) {
+	.content .axes>.key *:nth-child(4) {
 		grid-column: auto;
 	}
 }
@@ -121,14 +121,14 @@ a:hover, a:visited {
 	background-color: white;
 }
 
-/* .window>.resize::before {
-	content: "aspect_ratio";
-} */
-
 .window.fontinfo {
 	container-name: Settings;
 	container-type: inline-size;
 
+	left: 10px;
+	top: 10px;
+	width: 400px;
+	
 	.intro {
 		display: grid;
 		grid-template-columns: 75px 1fr;
@@ -139,63 +139,169 @@ a:hover, a:visited {
 			font-style: italic;
 		}
 	}
+	.content {
+		user-select: none;
+	}
+	.axes {
+		background-color: white;
+		overflow-y: scroll;
+		.axis, .key {
+			display: grid;
+			grid-template-columns: 40px 40px 1fr auto 40px 1fr auto 16px 16px;
+		}
+		.key *:nth-child(2) {
+			grid-column: 2 / 4;
+		}
+		.key *:nth-child(4) {
+			grid-column: 5 / 7;
+		}
+		.key>*:nth-child(4), .axes .axis>*:nth-child(4) {
+			padding: 0 2px;
+		}
+		.key>*:nth-child(8), .axes .key>*:nth-child(9) {
+			text-align: center;
+		}
+		.key {
+			background: #eee;
+		}
+	}
 }
 
-.window.fontinfo .content {
-	user-select: none;
+.window.mappings-ui {
+	left: 420px;
+	top: 10px;
+	width: 600px;
+	height: 700px;
+	.content {
+		display: grid;
+		grid-template-columns: 40px 10px 1fr 10px;
+		grid-template-rows: 40px 10px 1fr 10px 80px;
+	}
+	#mappings-visual { /* this is the SVG element */
+		background-color: #eee;
+		width: 100%;
+		height: 100%;
+	}
+	.ruler {
+		background-color: #ccc;
+		color: black;
+		font-size: 0.8em;
+	}
 }
 
-.window.fontinfo textarea {
-	font-family: Roboto Mono, monospace;
+.window.mappings {
+	left: 1030px;
+	top: 10px;
+	width: 400px;
+	height: 500px;
+	.content {
+		position: relative;
+		display: grid;
+		grid-template-rows: auto 1fr;
+	}
+	.xml {
+		width: 100%;
+		height: 100%;
+		font-size: 12px;
+		font-family: Roboto Mono, monospace;
+		padding: 0; margin: 0; border: none; /* disable textarea defaults */
+	}
+	.html {
+		font-size: 12px;
+	}
+	.errors {
+		display: none;
+		position: absolute;
+		bottom: 0;
+		width: 100%;
+		background-color: red;
+		color: white;
+	}
+	.zoom {
+		font-family: Material Symbols Outlined;
+	}
+
 }
 
-.window.mappings-ui .content {
+.window.renders {
 	display: grid;
-	grid-template-columns: 40px 10px 1fr 10px;
-	grid-template-rows: 40px 10px 1fr 10px 80px;
-}
-
-.window.mappings-ui #mappings-visual {
+	left: 10px;
+	top: 730px;
+	width: 1500px;
+	grid-template-rows: auto auto 1fr;
 	background-color: #eee;
-	width: 100%;
-	height: 100%;
-}
-
-.ruler {
-	background-color: #ccc;
-	color: black;
-	font-size: 0.8em;
-}
-
-.window.mappings .content {
-	position: relative;
-	display: grid;
-	grid-template-rows: auto 1fr;
-}
-
-.window.mappings .xml {
-	width: 100%;
-	height: 100%;
-	font-size: 12px;
-	font-family: Roboto Mono, monospace;
-	padding: 0; margin: 0; border: none; /* disable textarea default */
-}
-
-.window.mappings .html {
-	font-size: 12px;
-}
-
-.window.mappings .errors {
-	display: none;
-	position: absolute;
-	bottom: 0;
-	width: 100%;
-	background-color: red;
-	color: white;
-}
-
-.zoom {
-	font-family: Material Symbols Outlined;
+	box-sizing: border-box;
+	.render-container {
+		width: 100%;
+	}
+	.render-item {
+		position: relative;
+		float: left;
+		width: 297px;
+		height: 297px;
+		overflow: hidden;
+		border: 1px solid #ccc;
+	}
+	.render {
+		position: absolute;
+		left: 0;
+		top: 0;
+		width: 100%;
+		height: 100%;
+		background-color: white;
+		font-size: 200px;
+	}
+	.render-item>label {
+		position: absolute;
+		left: 0;
+		bottom: 0;
+		background-color: green;
+		color: white;
+		font-size: 1em;
+		height: 1.4em;
+		width: 100%;
+		padding-left: 0.2em;
+		z-index: 10;
+	}
+	.render-controls-button {
+		position: absolute;
+		right: 4px;
+		top: 4px;
+		border: 1px solid #ccc;
+		font-size: 24px;
+		font-family: Material Symbols Outlined;
+		text-align: center;
+		border-radius: 3px;
+		cursor: default;
+		user-select: none;
+	}
+	.render-controls {
+		position: absolute;
+		left: 0;
+		top: 0;
+		display: none; /* we toggle between "none" and "block" */
+		width: 100%;
+		height: 100%;
+		font-family: IBM Plex Sans;
+		font-size: 14px;
+		background-color: #0003;
+		overflow-y: scroll;	
+	}
+	.render-controls div.axis * {
+		background-color: white;
+	}
+	.render-controls .axis {
+		display: grid;
+		grid-template-columns: 40px 40px 30px;
+	}
+	.render-controls .lock {
+		font-family: Material Symbols Outlined;
+		cursor: default;
+		user-select: none;
+	}
+	.axis.locked .value {
+		background-color: #eee;
+	}
 }
 
 input.numeric {
@@ -211,135 +317,12 @@ input.numeric {
 	font-size: 12px;
 }
 
-.window.renders {
-	display: grid;
-	grid-template-rows: auto auto 1fr;
-	background-color: #eee;
-	box-sizing: border-box;
-}
-
-.render-container {
-	width: 100%;
-}
-
-.render-item {
-	position: relative;
-	float: left;
-	width: 297px;
-	height: 297px;
-	overflow: hidden;
-	border: 1px solid #ccc;
-}
-
-.render {
-	position: absolute;
-	left: 0;
-	top: 0;
-	width: 100%;
-	height: 100%;
-	background-color: white;
-	font-size: 200px;
-}
-
-.render-item>label {
-	position: absolute;
-	left: 0;
-	bottom: 0;
-	background-color: green;
-	color: white;
-	font-size: 1em;
-	height: 1.4em;
-	width: 100%;
-	padding-left: 0.2em;
-	z-index: 10;
-}
-
-.render-controls-button {
-	position: absolute;
-	right: 4px;
-	top: 4px;
-	border: 1px solid #ccc;
-	font-size: 24px;
-	font-family: Material Symbols Outlined;
-	text-align: center;
-	border-radius: 3px;
-	cursor: default;
-	user-select: none;
-}
-
-.render-controls {
-	position: absolute;
-	left: 0;
-	top: 0;
-	display: none; /* we toggle between "none" and "block" */
-	width: 100%;
-	height: 100%;
-	font-family: IBM Plex Sans;
-	font-size: 14px;
-	background-color: #0003;
-	overflow-y: scroll;
-	
-}
-
-.render-controls div.axis * {
-	background-color: white;
-}
-
-.render-controls .axis {
-	display: grid;
-	grid-template-columns: 40px 40px 30px;
-}
-
-.render-controls .lock {
-	font-family: Material Symbols Outlined;
-	cursor: default;
-	user-select: none;
-}
-
-#axes {
-	background-color: white;
-	overflow-y: scroll;
-}
-
-#axes .axis, #axes .key {
-	display: grid;
-	grid-template-columns: 40px 40px 1fr auto 40px 1fr auto 16px 16px;
-}
-
-#axes .key *:nth-child(2) {
-	grid-column: 2 / 4;
-}
-
-#axes .key *:nth-child(4) {
-	grid-column: 5 / 7;
-}
-
-#axes .key>*:nth-child(4), #axes .axis>*:nth-child(4) {
-	padding: 0 2px;
-}
-
-#axes .key>*:nth-child(8), #axes .key>*:nth-child(9) {
-	text-align: center;
-}
-
-#axes .key {
-	background: #eee;
-}
-
 .lock::before {
 	content: "lock_open_right"; /* in Material Symbols Outlined */
 }
 
 .locked .lock::before {
 	content: "lock"; /* in Material Symbols Outlined */
-}
-
-.axis .value {
-	background-color: lightgreen;
-}
-
-.axis.locked .value {
-	background-color: inherit;
 }
 
 .hidden {
@@ -381,7 +364,7 @@ input.numeric.default {
 
 	<div class="window-canvas">
 		
-		<div class="window fontinfo" style="width: 400px; left: 10px; top: 10px;">
+		<div class="window fontinfo">
 			<h2>Settings</h2>
 			<div class="content">
 				<div class="intro">
@@ -389,7 +372,7 @@ input.numeric.default {
 					<label>File</label><div class="filename"></div>
 					<label>Controls</label><div><select id="mapping-selector"></select></div>
 				</div>
-				<div id="axes"></div>
+				<div class="axes"></div>
 				<div class="extra">&nbsp;</div>
 			</div>
 
@@ -397,7 +380,7 @@ input.numeric.default {
 
 		</div>
 
-		<div class="window mappings-ui" style="width: 600px; height: 700px; left: 420px; top: 10px;">
+		<div class="window mappings-ui">
 			<h2>Mappings</h2>
 
 			<div class="content">
@@ -427,13 +410,13 @@ input.numeric.default {
 			
 		</div>
 
-		<div class="window mappings" style="width: 400px; height: 500px; left: 1030px; top: 10px;">
+		<div class="window mappings">
 			<h2>XML</h2>
 			<div class="content" style="height: 100%;">
 				<div class="extra">
 					<button id="toggle-xml">Toggle XML</button>
-					<button class="zoom in">zoom_in</button>
 					<button class="zoom out">zoom_out</button>
+					<button class="zoom in">zoom_in</button>
 				</div>
 
 				<div class="html hidden">
@@ -449,7 +432,7 @@ input.numeric.default {
 
 		</div>
 
-		<div class="window renders" style="left: 10px; top: 730px; width: 1500px;">
+		<div class="window renders">
 			<h2>Renders</h2>
 			<div>
 				<select disabled>

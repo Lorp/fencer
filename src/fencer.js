@@ -308,7 +308,7 @@ function loadFontFromArrayBuffer (arrayBuffer, options={}) {
 	key[4].onclick = axisReset;
 
 	keyEl.append(...key);
-	Q("#axes").append(keyEl);
+	Q(".axes").append(keyEl);
 	
 	// 2. add a row for each axis
 	GLOBAL.font.fvar.axes.forEach((axis, a) => {
@@ -382,7 +382,7 @@ function loadFontFromArrayBuffer (arrayBuffer, options={}) {
 
 		axisEl.append(...row);
 
-		Q("#axes").append(axisEl);
+		Q(".axes").append(axisEl);
 
 		GLOBAL.current[0][a] = axis.defaultValue;
 		GLOBAL.current[1][a] = axis.defaultValue;
@@ -466,7 +466,7 @@ function loadFontFromArrayBuffer (arrayBuffer, options={}) {
 		let xSelected, ySelected;
 		const orientationChosen = e.target.name === "x-axis" ? "x-axis" : "y-axis";
 		const orientationNotChosen = e.target.name === "y-axis" ? "x-axis" : "y-axis";
-		Qall("#axes .axis").forEach(axisEl => {
+		Qall(".axes .axis").forEach(axisEl => {
 			if (axisEl.querySelector("input[name=x-axis]").checked)
 				xSelected = axisEl.querySelector("input[name=x-axis]").value;
 
@@ -477,7 +477,7 @@ function loadFontFromArrayBuffer (arrayBuffer, options={}) {
 		// ensure the x and y axis are different: force the other axis to be the first available axis
 		// - TODO: make this work for single-axis fonts
 		if (xSelected && ySelected && (xSelected === ySelected)) {
-			const axisEls = Qall("#axes .axis");
+			const axisEls = Qall(".axes .axis");
 			for (let a=0; a<axisEls.length; a++) {
 				const axisEl = axisEls[a];
 				if (!axisEl.querySelector(`input[name=${orientationNotChosen}]`).checked) {
@@ -489,7 +489,7 @@ function loadFontFromArrayBuffer (arrayBuffer, options={}) {
 		}
 
 		// update the mappingsView array
-		Qall("#axes .axis").forEach((axisEl, a) => {
+		Qall(".axes .axis").forEach((axisEl, a) => {
 			if (axisEl.querySelector("input[name=x-axis]").checked)
 				GLOBAL.mappingsView[0] = a;
 
@@ -525,7 +525,7 @@ function loadFontFromArrayBuffer (arrayBuffer, options={}) {
 
 	// if these axes represent the current location, disable all the initial input elements with class "output"
 	if (GLOBAL.draggingIndex === -1) {
-		Qall("#axes .axis input.output").forEach(el => el.disabled = true);
+		Qall(".axes .axis input.output").forEach(el => el.disabled = true);
 	}
 
 	// draw mappings SVG
@@ -540,7 +540,7 @@ function onDropFont (e) {
 	e.preventDefault();
 
 	// delete contents of the axes container
-	Q("#axes").innerHTML = "";
+	Q(".axes").innerHTML = "";
 
 	// get arrayBuffer from dropped object
 	const file = e.dataTransfer.files[0];
@@ -1104,7 +1104,7 @@ function mappingsChanged(mode) {
 
 	// update the output locations for the current axis, if it’s selected
 	if (GLOBAL.draggingIndex === -1) {
-		Qall("#axes .axis").forEach((axisEl, a) => {
+		Qall(".axes .axis").forEach((axisEl, a) => {
 			axisEl.querySelectorAll("input.output").forEach(el => el.value = GLOBAL.current[1][a]);
 		});
 		formatNumericControls(-1);
@@ -1369,7 +1369,7 @@ function exportFontWithTables(font, inserts={}, deletes={}) {
 }
 
 function formatNumericControls(m) {
-	Qall("#axes .axis").forEach((axisEl, a) => {
+	Qall(".axes .axis").forEach((axisEl, a) => {
 		const axis = GLOBAL.font.fvar.axes[a];
 		const inputNumericEl = axisEl.querySelector(".input.numeric");
 		const outputNumericEl = axisEl.querySelector(".output.numeric");
@@ -1390,7 +1390,7 @@ function formatNumericControls(m) {
 
 function updateMappingsSliders(m) {
 
-	Qall("#axes .axis").forEach((axisEl, a) => {
+	Qall(".axes .axis").forEach((axisEl, a) => {
 		const axis = GLOBAL.font.fvar.axes[a];
 		const inputSliderEl = axisEl.querySelector(".input.slider");
 		const inputNumericEl = axisEl.querySelector(".input.numeric");
@@ -1411,11 +1411,11 @@ function updateMappingsSliders(m) {
 
 	if (GLOBAL.draggingIndex === -1) {
 		// disable all the outputs
-		Qall("#axes .axis input.output").forEach(el => el.disabled = true);
+		Qall(".axes .axis input.output").forEach(el => el.disabled = true);
 	}
 	else {
 		// enable all the outputs
-		Qall("#axes .axis input.output").forEach(el => el.disabled = false);
+		Qall(".axes .axis input.output").forEach(el => el.disabled = false);
 	}
 }
 
