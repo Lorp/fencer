@@ -55,10 +55,12 @@ a:hover, a:visited {
 	height: calc(100vh - 2em);
 }
 
-/* A .window is a window within a .window-canvas
-   Children:
-   - H2, the window title
-   - DIV.resize, a handle to resize the window
+/* Let’s define our generic .window CSS */
+/* - each .window is a window within a .window-canvas
+   - Children:
+     - H2, the window title
+     - DIV.resize, a handle to resize the window
+     - DIV.close, a handle to close the window (not yet implemented)
 */
 .window {
 	position: absolute;
@@ -222,7 +224,6 @@ a:hover, a:visited {
 	.zoom {
 		font-family: Material Symbols Outlined;
 	}
-
 }
 
 .window.renders {
