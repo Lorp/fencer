@@ -4,12 +4,9 @@ import { SamsaFont, SamsaInstance, SamsaBuffer } from "./samsa-core/samsa-core.j
 import { VariationModel } from "./fontra-src-client-core/var-model.js"; // import Fontra var-model https://github.com/googlefonts/fontra
 
 const svgArrowHandleRadius = 12;
-const svgArrowHandleRadiusRoot2 = svgArrowHandleRadius * 1/Math.sqrt(2);
 const svgCurrentLocationRadius = 7;
 const svgArrowLineWidth = 2;
-const svgArrowHead = `<circle cx="0" cy="0" r="${svgArrowHandleRadius}" fill="#0003" stroke="currentColor" stroke-width="${svgArrowLineWidth}"/><circle cx="0" cy="0" r="5" fill="currentColor" stroke="none"/>`;
-const svgArrowTail = `<circle cx="0" cy="0" r="${svgArrowHandleRadius}" fill="#0003" stroke="currentColor" stroke-width="${svgArrowLineWidth}"/><line x1="${-svgArrowHandleRadiusRoot2}" y1="${-svgArrowHandleRadiusRoot2}" x2="${svgArrowHandleRadiusRoot2}" y2="${svgArrowHandleRadiusRoot2}" stroke="currentColor" stroke-width="${svgArrowLineWidth}"/><line x1="${-svgArrowHandleRadiusRoot2}" y1="${svgArrowHandleRadiusRoot2}" x2="${svgArrowHandleRadiusRoot2}" y2="${-svgArrowHandleRadiusRoot2}" stroke="currentColor" stroke-width="${svgArrowLineWidth}"/>`;
-const svgMapping = `<circle cx="0" cy="0" r="${svgArrowHandleRadius}" fill="currentColor" stroke="none"/>`;
+const svgMappingHandle = `<circle cx="0" cy="0" r="${svgArrowHandleRadius}" fill="currentColor" stroke="none"/>`;
 const svgCurrentLocation = `<circle cx="0" cy="0" r="${svgCurrentLocationRadius+svgArrowLineWidth}" fill="white" stroke="none"/><circle cx="0" cy="0" r="${svgCurrentLocationRadius}" fill="currentColor" stroke="none"/>`;
 const instanceColor = "#f00";
 
@@ -1052,23 +1049,23 @@ function mappingsChanged(mode) {
 		const elInput = SVG("g");
 		const elOutput = SVG("g");
 	
-		elInput.classList.add("input", "location");
-		elOutput.classList.add("output", "location");
+		elInput.classList.add("input", "location", "mapping");
+		elOutput.classList.add("output", "location", "mapping");
 	
-		elInput.innerHTML = svgMapping // svgArrowTail;
-		elOutput.innerHTML = svgMapping // svgArrowHead;
+		elInput.innerHTML = svgMappingHandle;
+		elOutput.innerHTML = svgMappingHandle;
 	
 		elInput.onmousedown = mappingMouseDown;
 		elOutput.onmousedown = mappingMouseDown;
 
 		elInput.dataset.index = m;
 		elOutput.dataset.index = m;
-	
+
 		const svgCoordsFrom = svgCoordsFromAxisCoords(mapping[0]);
 		const svgCoordsTo = svgCoordsFromAxisCoords(mapping[1]);
 
 		elInput.setPosition(svgCoordsFrom);
-		elInput.style.opacity = 0.4;
+		elInput.style.opacity = 0.8;
 		elOutput.setPosition(svgCoordsTo);
 		elOutput.style.opacity = 0.4;
 
