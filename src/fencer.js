@@ -558,41 +558,6 @@ function getDefaultAxisCoords() {
 
 function addRender(e, coords = GLOBAL.current[0], name="Current", color) {
 
-	// the controls icon
-	const controlsButtonEl = EL("div");
-	controlsButtonEl.classList.add("render-controls-button");
-	controlsButtonEl.innerText = "tune";
-	controlsButtonEl.onclick = clickControls;
-
-	// the controls
-	const controlsEl = EL("div");
-	controlsEl.classList.add("render-controls");
-	controlsEl.style.display = "none";
-	GLOBAL.font.fvar.axes.forEach((axis, a) => {
-
-		// axis row
-		const axisEl = EL("div");
-		axisEl.classList.add("axis", "locked");
-
-		// axis tag
-		const tagEl = EL("div");
-		tagEl.textContent = axis.axisTag;
-
-		// value
-		const valueEl = EL("input");
-		valueEl.classList.add("value");
-		valueEl.disabled = true;
-		valueEl.value = coords[a];
-
-		// lock/unlock
-		const lockEl = EL("div");
-		lockEl.classList.add("lock"); // we remove the class "locked" when it is unlocked
-		lockEl.onclick = lockElclick;
-	
-		axisEl.append(tagEl, valueEl, lockEl);
-		controlsEl.append(axisEl);
-
-	});
 
 	// the render item
 	const renderItemEl = EL("div");
@@ -609,7 +574,49 @@ function addRender(e, coords = GLOBAL.current[0], name="Current", color) {
 	labelEl.textContent = name;
 	labelEl.style.backgroundColor = color ? color : "var(--currentLocationColor)";
 
-	renderItemEl.append(renderEl, controlsEl, controlsButtonEl, labelEl);
+	renderItemEl.append(renderEl, labelEl);
+
+	if (name !== "Current") {
+
+		// the controls icon
+		const controlsButtonEl = EL("div");
+		controlsButtonEl.classList.add("render-controls-button");
+		controlsButtonEl.innerText = "tune";
+		controlsButtonEl.onclick = clickControls;
+
+		// the controls
+		const controlsEl = EL("div");
+		controlsEl.classList.add("render-controls");
+		controlsEl.style.display = "none";
+		GLOBAL.font.fvar.axes.forEach((axis, a) => {
+
+			// axis row
+			const axisEl = EL("div");
+			axisEl.classList.add("axis", "locked");
+
+			// axis tag
+			const tagEl = EL("div");
+			tagEl.textContent = axis.axisTag;
+
+			// value
+			const valueEl = EL("input");
+			valueEl.classList.add("value");
+			valueEl.disabled = true;
+			valueEl.value = coords[a];
+
+			// lock/unlock
+			const lockEl = EL("div");
+			lockEl.classList.add("lock"); // we remove the class "locked" when it is unlocked
+			lockEl.onclick = lockElclick;
+		
+			axisEl.append(tagEl, valueEl, lockEl);
+			controlsEl.append(axisEl);
+
+		});
+
+		renderItemEl.append(controlsEl, controlsButtonEl);
+	
+	}
 
 	Q(".render-container").append(renderItemEl);
 
@@ -617,7 +624,7 @@ function addRender(e, coords = GLOBAL.current[0], name="Current", color) {
 
 	GLOBAL.instances.push([
 		[...coords],
-		[...coords], // fix this
+		[...coords], // fix this (hmm, what’s wrong with it?... the [1] array gets recalculated in time for the "to" red markers to be positioned correctly)
 	])
 	
 }
