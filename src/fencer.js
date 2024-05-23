@@ -518,7 +518,7 @@ function loadFontFromArrayBuffer (arrayBuffer, options={}) {
 		GLOBAL.axisTouched = 0;
 
 	// add render for the current location
-	addRender();
+	addRender(undefined, GLOBAL.current[0], "Current");
 
 	// add renders for each named instance
 	GLOBAL.font.fvar.instances.forEach(instance => addRender(null, instance.coordinates, instance.name));	
@@ -556,7 +556,7 @@ function getDefaultAxisCoords() {
 	return GLOBAL.font.fvar.axes.map((axis, a) => axis.defaultValue );
 }
 
-function addRender(e, coords = GLOBAL.current[0], name="Current", color) {
+function addRender(e, coords = GLOBAL.current[0], name="Custom", color) {
 
 
 	// the render item
