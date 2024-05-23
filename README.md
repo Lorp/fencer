@@ -32,7 +32,7 @@ Fencer displays each mapping as an arrow rendered in green, with handles so that
 
 As you edit the mappings, even by dragging a mapping handle a small amount, Fencer builds a new font file with a new avar2 table, and renders it in the Renders window. In order to help you understand the effect of mappings you are creating, Fencer also shows you live updates for:
 * Each Named Instance location, shown in its untransformed and transformed locations, with an arrow between them, all rendered in red.
-* Various other instanaces, untransformed and transformed, rendered in grey.
+* Various other instances, untransformed and transformed, rendered in grey.
 * The Current location, untransformed and transformed, rendered in blue.
 
 ## Exercise 1: fencing off a 2-D (wght, wdth) corner in Sofia Sans
@@ -88,7 +88,7 @@ _One more thing:_ There is in fact one additional subtlety, which you may have n
 
 ## Exercise 2: fencing off a 2-D (wght, wdth) corner in Sofia Sans another way
 
-Redo the above exercise with the same rectanuglar zone. But this time, instead of using mappings to reduce Weight to solve the problem at the corner, use mappings to increase Width. In other words, your mappings (speficically, those that are not Pin mappings) should be arrows that point _up_ rather than _left_. Use the same number of mappings. Consider the benefits of this approach compared with the previous one.
+Redo the above exercise with the same rectanuglar zone. But this time, instead of using mappings to reduce Weight to solve the problem at the corner, use mappings to increase Width. In other words, your mappings (specifically, those that are not Pin mappings) should be arrows that point _up_ rather than _left_. Use the same number of mappings. Consider the benefits of this approach compared with the previous one.
 
 ## Trying your own fonts in Fencer
 
