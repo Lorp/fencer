@@ -1473,11 +1473,34 @@ function initFencer() {
 	// set up the windowing system
 	Qall(".window").forEach(windowEl => {
 
+		function saveWindowProperties() {
+			// save window states in local storage (position has changed for this window, classes may have changed for other windows)
+			// - TODO: add z-index to the stored properties when we implement it in UI
+			Qall(".window").forEach(el => {
+				const name = el.querySelector(":scope > h2").textContent;
+				const propString = JSON.stringify({left: el.style.left, top: el.style.top, width: el.style.width, height: el.style.height, classes: [...el.classList]});
+				localStorage.setItem(`fencer-window[${name}]`, propString);
+			});
+		}
+							
 		let isDragging = false;
 		let isResizing = false;
 		let initialMouseX, initialMouseY, initialWindowX, initialWindowY, initialWindowWidth, initialWindowHeight;
-
 		const titleBar = windowEl.querySelector(":scope > h2");
+		const name = titleBar.textContent;
+
+		// retrieve initial window rect, if available
+		const windowProps = JSON.parse(localStorage.getItem(`fencer-window[${name}]`));
+		if (windowProps) {
+			if (windowProps.left) windowEl.style.left = windowProps.left;
+			if (windowProps.top) windowEl.style.top = windowProps.top;
+			if (windowProps.width) windowEl.style.width = windowProps.width;
+			if (windowProps.height) windowEl.style.height = windowProps.height; // this is sometimes not set, i.e. auto, which is fine
+			if (windowProps.classes) {
+				windowProps.classes.forEach(className => windowEl.classList.add(className));
+			}
+		}
+
 		if (titleBar) {
 			windowEl.querySelector(":scope > h2").onmousedown = e => {
 				const windowEl = e.target.closest(".window");
@@ -1498,13 +1521,12 @@ function initFencer() {
 					windowEl.style.top = initialWindowY + dy + "px";
 				};
 
-				// ending
+				// ending drag
 				document.onmouseup = e => {
 					isDragging = false;
 					document.onmousemove = null;
 					document.onmouseup = null;
-
-					// TODO: store new position in cookie or local storage
+					saveWindowProperties(); // store new position in local storage
 				};
 
 				// window title typography and z-index
@@ -1515,6 +1537,7 @@ function initFencer() {
 					else
 						el.classList.remove("selected", "top");
 				});	
+
 			};
 		}
 
@@ -1544,7 +1567,7 @@ function initFencer() {
 					isResizing = false;
 					document.onmousemove = null;
 					document.onmouseup = null;
-					// TODO: store new position in cookie or local storage
+					saveWindowProperties(); // store new position in local storage
 				};
 			};
 		}
