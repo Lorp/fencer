@@ -1194,8 +1194,11 @@ function getGraticulesForAxis(axis) {
 				graticules.add(Math.floor(v / inc) * inc);
 		}	
 	}
-	else if (Q("#grid-style").value === "fill-space") {
+	else if (Q("#grid-style").value.startsWith("fill-space")) {
 		let inc = 20; // measured in svg px units
+		let match;
+		if (match = Q("#grid-style").value.match(/fill-space-(\d+)/)) // e.g. fill-space-20, fill-space-40
+			inc = parseInt(match[1]);
 		for (let val = svgCoordFromAxisCoord(axis.axisId, axis.defaultValue) + inc; axisCoordFromSvgCoord(axis.axisId, val) < axis.maxValue; val += inc) { // get the max side of the axis
 			graticules.add(axisCoordFromSvgCoord(axis.axisId, val));
 		}
