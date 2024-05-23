@@ -672,9 +672,6 @@ function addMapping() {
 	updateMappingsSliders(GLOBAL.draggingIndex);
 	updateMappingsXML();
 	updateRenders();
-
-	// mappingsChanged();
-	// updateMappingsXML();
 }
 
 function deleteMapping() {
@@ -1612,13 +1609,11 @@ function updateRenders() {
 				const axisEl = axisEls[a];
 				const valueEl = axisEl.querySelector(".value");
 				if (!axisEl.classList.contains("locked")) {
-					const valueEl = axisEl.querySelector(".value");
 					valueEl.value = GLOBAL.current[0][a];
 				}
 				fvsEntries.push(`"${axis.axisTag}" ${valueEl.value}`);
 			});
-		}
-		
+		}		
 		renderEl.style.fontVariationSettings = fvsEntries.join();
 	});
 }
