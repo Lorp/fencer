@@ -1185,13 +1185,25 @@ function getGraticulesForAxis(axis) {
 	if (axis.maxValue - axis.minValue == 0)
 		return [axis.maxValue];
 
-	let inc = Math.pow(10, Math.floor(Math.log10((axis.maxValue - axis.minValue) * 0.3))); // get a value for inc, which is a power of 10 (10 as the inc from 33 to 330, then it goes to 100)
-	const graticules = new Set([axis.minValue, axis.defaultValue, axis.maxValue]); // init the graticules set/array
-	for (let v = axis.minValue; v < axis.maxValue; v+=inc) {
-		const gridVal = Math.floor(v / inc) * inc;
-		if (gridVal > axis.minValue)
-			graticules.add(Math.floor(v / inc) * inc);
+	const graticules = new Set([axis.minValue, axis.defaultValue, axis.maxValue]); // init the set of graticules
+	if (Q("#grid-style").value === "powers-of-10") {
+		let inc = Math.pow(10, Math.floor(Math.log10((axis.maxValue - axis.minValue) * 0.3))); // get a value for inc, which is a power of 10 (10 as the inc from 33 to 330, then it goes to 100)
+		for (let v = axis.minValue; v < axis.maxValue; v+=inc) {
+			const gridVal = Math.floor(v / inc) * inc;
+			if (gridVal > axis.minValue)
+				graticules.add(Math.floor(v / inc) * inc);
+		}	
 	}
+	else if (Q("#grid-style").value === "fill-space") {
+		let inc = 20; // measured in svg px units
+		for (let val = svgCoordFromAxisCoord(axis.axisId, axis.defaultValue) + inc; axisCoordFromSvgCoord(axis.axisId, val) < axis.maxValue; val += inc) { // get the max side of the axis
+			graticules.add(axisCoordFromSvgCoord(axis.axisId, val));
+		}
+		for (let val = svgCoordFromAxisCoord(axis.axisId, axis.defaultValue) - inc; axisCoordFromSvgCoord(axis.axisId, val) > axis.minValue; val -= inc) { // get the min side of the axis
+			graticules.add(axisCoordFromSvgCoord(axis.axisId, val));
+		}
+	}
+
 	return [...graticules].sort((a,b)=>a-b); // return an array of the set (i.e. a unique array)
 }
 
@@ -1446,6 +1458,7 @@ function initFencer() {
 
 	Q("#sample-text").oninput = sampleTextChange; // handle change of sample text
 	Q("#mapping-selector").onchange = selectMapping; // handle change of mappings selector
+	Q("#grid-style").onchange = mappingsChanged;
 	Q("#add-render").onclick = addRender;
 	Q("#download-font").onclick = downloadFont;
 

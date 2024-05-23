@@ -83,7 +83,7 @@ a:hover, a:visited {
 	color: #333;
 	border-bottom: 1px solid black;
 	margin: 0;
-	padding-left: 0.5em;
+	padding-left: 6px;
 	user-select: none;
 	font-size: 1em;
 	font-weight: normal;
@@ -115,7 +115,6 @@ a:hover, a:visited {
 	bottom: -1px;
 	width: 20px;
 	height: 20px;
-	/* font-family: Material Symbols Outlined; */
 	border: solid black;
 	border-width: 1px 0 0 1px;
 	cursor: nw-resize;
@@ -134,6 +133,7 @@ a:hover, a:visited {
 	.intro {
 		display: grid;
 		grid-template-columns: 75px 1fr;
+		padding: 2px 0 10px 7px;
 		.name {
 			font-weight: bold;
 			white-space: nowrap;
@@ -142,6 +142,9 @@ a:hover, a:visited {
 			font-style: italic;
 			white-space: nowrap;
 		}
+	}
+	.extra {
+		padding: 10px 0 10px 7px;
 	}
 	.content {
 		user-select: none;
@@ -376,7 +379,9 @@ input.numeric.default {
 					<label>Controls</label><div><select id="mapping-selector"></select></div>
 				</div>
 				<div class="axes"></div>
-				<div class="extra">&nbsp;</div>
+				<div class="extra">
+					<button id="download-font" disabled>Save font</button>
+				</div>
 			</div>
 
 			<div class="resize no-vertical"></div>
@@ -399,7 +404,15 @@ input.numeric.default {
 
 					<button id="add-mapping" disabled>Add mapping</button>
 					<button id="delete-mapping" disabled>Delete mapping</button>
-					<input type="checkbox" id="integer-dragging"> <label for="integer-dragging">Integer dragging</label>
+					<br>
+					Grid style
+					<select id="grid-style">
+						<option value="powers-of-10">powers of 10</option>
+						<option value="fill-space">fill space</option>
+					</select>
+					<br>
+					<label for="integer-dragging">Integer dragging</label> <input type="checkbox" id="integer-dragging">
+
 		
 					<div id="mappings-ui-info">
 						<div id="coords"></div>
@@ -442,8 +455,6 @@ input.numeric.default {
 					<option value="native">Native</option>
 					<option value="samsa">Samsa</option>
 				</select>
-
-				<button id="download-font" disabled>Save font</button>
 
 				<button id="add-render">Add instance</button>
 
