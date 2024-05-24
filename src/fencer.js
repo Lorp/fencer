@@ -1197,7 +1197,7 @@ function getGraticulesForAxis(axis) {
 	else if (Q("#grid-style").value.startsWith("fill-space")) {
 		let inc = 20; // measured in svg px units
 		let match;
-		if (match = Q("#grid-style").value.match(/fill-space-(\d+)/)) // e.g. fill-space-20, fill-space-40
+		if (match = Q("#grid-style").value.match(/^fill-space-(\d+)/)) // e.g. fill-space-20, fill-space-40
 			inc = parseInt(match[1]);
 		for (let val = svgCoordFromAxisCoord(axis.axisId, axis.defaultValue) + inc; axisCoordFromSvgCoord(axis.axisId, val) < axis.maxValue; val += inc) { // get the max side of the axis
 			graticules.add(axisCoordFromSvgCoord(axis.axisId, val));
@@ -1461,7 +1461,10 @@ function initFencer() {
 
 	Q("#sample-text").oninput = sampleTextChange; // handle change of sample text
 	Q("#mapping-selector").onchange = selectMapping; // handle change of mappings selector
-	Q("#grid-style").onchange = mappingsChanged;
+	Q("#grid-style").onchange = e => {
+		localStorage.setItem("fencer:gridStyle", e.target.value);
+		mappingsChanged();
+	};
 	Q("#add-render").onclick = addRender;
 	Q("#download-font").onclick = downloadFont;
 
@@ -1491,6 +1494,10 @@ function initFencer() {
 			loadFontFromArrayBuffer(arrayBuffer, {filename: filename});
 		});
 
+	// set grid-style selector to value stored in localStorage
+	const gridStyle = localStorage.getItem(`fencer:gridStyle`);
+	if (gridStyle) Q("#grid-style").value = gridStyle;
+
 	// set up the windowing system
 	Qall(".window").forEach(windowEl => {
 
@@ -1500,7 +1507,7 @@ function initFencer() {
 			Qall(".window").forEach(el => {
 				const name = el.querySelector(":scope > h2").textContent;
 				const propString = JSON.stringify({left: el.style.left, top: el.style.top, width: el.style.width, height: el.style.height, classes: [...el.classList]});
-				localStorage.setItem(`fencer-window[${name}]`, propString);
+				localStorage.setItem(`fencer:window[${name}]`, propString);
 			});
 		}
 							
@@ -1510,8 +1517,8 @@ function initFencer() {
 		const titleBar = windowEl.querySelector(":scope > h2");
 		const name = titleBar.textContent;
 
-		// retrieve initial window rect, if available
-		const windowProps = JSON.parse(localStorage.getItem(`fencer-window[${name}]`));
+		// retrieve initial window rect from localStorage
+		const windowProps = JSON.parse(localStorage.getItem(`fencer:window[${name}]`));
 		if (windowProps) {
 			if (windowProps.left) windowEl.style.left = windowProps.left;
 			if (windowProps.top) windowEl.style.top = windowProps.top;
