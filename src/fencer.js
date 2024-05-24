@@ -1485,6 +1485,17 @@ function initFencer() {
 		Q(".mappings .xml").classList.toggle("hidden");
 	};
 
+	// save XML
+	Q("button#save-xml").onclick = e => {
+		//const uint8 = new Uint8Array(GLOBAL.fontBuffer.buffer);
+		const fauxLink = EL("a");
+		fauxLink.download = "fencer.xml";
+		fauxLink.href = "data:application/xml;charset=UTF-8," + encodeURIComponent(Q(".mappings .xml").value);
+		document.body.append(fauxLink); // needed for Firefox, not Chrome or Safari
+		fauxLink.click();
+		fauxLink.remove();
+	};
+
 	// load initial font
 	const filename = "SofiaSans-VF.ttf"; // or "RobotoA2-avar2-VF.ttf";
 	const filepath = "../fonts/" + filename;
