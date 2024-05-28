@@ -400,7 +400,7 @@ function loadFontFromArrayBuffer (arrayBuffer, options={}) {
 		const axisId = parseInt(axisEl.dataset.axisId);
 		const axis = GLOBAL.font.fvar.axes[axisId];
 		let val = parseFloat(el.value);
-		if (el.classList.contains("slider") && Q("#integer-dragging").checked && ![axis.minValue, axis.maxValue].includes(val)) {
+		if (el.classList.contains("slider") && Q("#integer-snapping").checked && ![axis.minValue, axis.maxValue].includes(val)) {
 			val = Math.round(val);
 			el.value = val;
 		}
@@ -760,7 +760,7 @@ function svgMouseMove(e) {
 
 	let xCoord = axisCoordFromSvgCoord(visibleAxisIds[0], svgX);
 	let yCoord = axisCoordFromSvgCoord(visibleAxisIds[1], svgY);
-	if (Q("#integer-dragging").checked) {
+	if (Q("#integer-snapping").checked) {
 		xCoord = Math.round(xCoord);
 		yCoord = Math.round(yCoord);
 	}
