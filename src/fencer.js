@@ -1015,8 +1015,8 @@ function mappingsChanged(mode) {
 	const svgOriginCoords = svgCoordsFromAxisCoords(getDefaultAxisCoords());
 
 	const rect =  Q(".svg-container").getBoundingClientRect();
-	const xAxisEl = SVG("line", {x1:0, y1:svgOriginCoords[1], x2:rect.width, y2:svgOriginCoords[1], stroke: "grey"});
-	const yAxisEl = SVG("line", {x1:svgOriginCoords[0], y1:0, x2:svgOriginCoords[0], y2:rect.height, stroke: "grey"});
+	const xAxisEl = SVG("line", {x1:0, y1:svgOriginCoords[1], x2:rect.width, y2:svgOriginCoords[1], stroke: "black", strokeWidth: 2});
+	const yAxisEl = SVG("line", {x1:svgOriginCoords[0], y1:0, x2:svgOriginCoords[0], y2:rect.height, stroke: "black", strokeWidth: 2});
 	GLOBAL.svgEl.appendChild(xAxisEl);
 	GLOBAL.svgEl.appendChild(yAxisEl);
 
@@ -1037,7 +1037,7 @@ function mappingsChanged(mode) {
 				pathStr += (xn === 0 ? "M" : "L") + svgCoordsFromAxisCoords(gridLocations[xn * yGraticules.length + yn][1]).join();
 
 		// add the path to the SVG
-		const path = SVG("path", {d: pathStr, stroke: "grey", fill: "none"});
+		const path = SVG("path", {d: pathStr, stroke: "#bbb", fill: "none"});
 		GLOBAL.svgEl.append(path);
 	}
 	
