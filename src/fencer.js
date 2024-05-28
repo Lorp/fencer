@@ -1009,18 +1009,44 @@ function mappingsChanged(mode) {
 	GLOBAL.svgEl.appendChild(xAxisEl);
 	GLOBAL.svgEl.appendChild(yAxisEl);
 
-	// draw the grid locations
-	gridLocations.forEach((location, l) => {
-		const [svgX0, svgY0] = svgCoordsFromAxisCoords(location[0]);
-		const [svgX1, svgY1] = svgCoordsFromAxisCoords(location[1]);
+	// draw grid locations as a grid
+	if (Q("#grid-style").value.startsWith("grid-")) {
+		gridLocations.forEach((location, l) => {
+			const xIndex = Math.floor(l / yGraticules.length);
+			const yIndex = l % yGraticules.length;
+			const [x1, y1] = svgCoordsFromAxisCoords(location[1]);
+	 		if (xIndex < xGraticules.length-1) {
+				const topRight = gridLocations[l+yGraticules.length];
+				if (topRight) {
+					const [x2, y2] = svgCoordsFromAxisCoords(topRight[1]);
+					const hLine = SVG("line", {x1: x1, y1: y1, x2: x2, y2: y2, stroke: "grey"});
+					GLOBAL.svgEl.append(hLine);
+				}
+			}
+			if (yIndex < yGraticules.length-1) {
+				const bottomLeft = gridLocations[l+1];
+				if (bottomLeft) {
+					const [x2, y2] = svgCoordsFromAxisCoords(bottomLeft[1])
+					const vLine = SVG("line", {x1: x1, y1: y1, x2: x2, y2: y2, stroke: "grey"});
+					GLOBAL.svgEl.append(vLine);
+				}
+			}
+		});
+	}
+	// draw grid locations as vectors
+	else {
+		gridLocations.forEach((location, l) => {
+			const [svgX0, svgY0] = svgCoordsFromAxisCoords(location[0]);
+			const [svgX1, svgY1] = svgCoordsFromAxisCoords(location[1]);
 
-		// are the input and output equal in this projection? (need to allow for normalization rounding)
-		if (!locationsAreEqual(location[0], location[1], visibleAxisIds)) {
-			const arrow = svgArrow({x1: svgX0, y1: svgY0, x2: svgX1, y2: svgY1, tipLen: 7, tipWid: 7, strokeWidth: 1, color: "grey"}); // draw an arrow
-			GLOBAL.svgEl.append(arrow);
-		}
-		GLOBAL.svgEl.append(SVG("circle", {cx: svgX0, cy: svgY0, r: 2.5, fill: "grey"})); // draw a dot
-	});
+			// are the input and output equal in this projection? (need to allow for normalization rounding)
+			if (!locationsAreEqual(location[0], location[1], visibleAxisIds)) {
+				const arrow = svgArrow({x1: svgX0, y1: svgY0, x2: svgX1, y2: svgY1, tipLen: 7, tipWid: 7, strokeWidth: 1, color: "grey"}); // draw an arrow
+				GLOBAL.svgEl.append(arrow);
+			}
+			GLOBAL.svgEl.append(SVG("circle", {cx: svgX0, cy: svgY0, r: 2.5, fill: "grey"})); // draw a dot	
+		});
+	}
 
 	// draw the instances (including current)
 	// - draw them early so they are underneath the mappings and current location which need to be dragged
@@ -1194,11 +1220,11 @@ function getGraticulesForAxis(axis) {
 				graticules.add(Math.floor(v / inc) * inc);
 		}	
 	}
-	else if (Q("#grid-style").value.startsWith("fill-space")) {
+	else if (Q("#grid-style").value.match(/^(fill-space-|grid-)/)) {
 		let inc = 20; // measured in svg px units
 		let match;
-		if (match = Q("#grid-style").value.match(/^fill-space-(\d+)/)) // e.g. fill-space-20, fill-space-40
-			inc = parseInt(match[1]);
+		if (match = Q("#grid-style").value.match(/^(fill-space-|grid-)(\d+)/)) // e.g. fill-space-20, fill-space-40
+			inc = parseInt(match[2]);
 		for (let val = svgCoordFromAxisCoord(axis.axisId, axis.defaultValue) + inc; axisCoordFromSvgCoord(axis.axisId, val) < axis.maxValue; val += inc) { // get the max side of the axis
 			graticules.add(axisCoordFromSvgCoord(axis.axisId, val));
 		}
