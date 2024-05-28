@@ -977,7 +977,7 @@ function mappingsChanged(mode) {
 			location[1] = denormalizeTuple(normalizedLocation.map((coord, a) => coord + deltas[0][a]/0x4000));
 		}
 		else {
-			location[1] = [...location[0]];
+			location[0].forEach((val, i) => location[1][i] = val); // alternative to location[1] = location[0] without reassigning array
 		}
 	}
 
@@ -1022,28 +1022,29 @@ function mappingsChanged(mode) {
 
 	// draw grid locations as a grid
 	if (Q("#grid-style").value.startsWith("grid-")) {
-		gridLocations.forEach((location, l) => {
-			const xIndex = Math.floor(l / yGraticules.length);
-			const yIndex = l % yGraticules.length;
-			const [x1, y1] = svgCoordsFromAxisCoords(location[1]);
-	 		if (xIndex < xGraticules.length-1) {
-				const topRight = gridLocations[l+yGraticules.length];
-				if (topRight) {
-					const [x2, y2] = svgCoordsFromAxisCoords(topRight[1]);
-					const hLine = SVG("line", {x1: x1, y1: y1, x2: x2, y2: y2, stroke: "grey"});
-					GLOBAL.svgEl.append(hLine);
-				}
+
+		// build a single path element that draws all the grid lines
+		let pathStr = "";
+
+		// vertical lines
+		for (let xn=0; xn < xGraticules.length; xn++) {
+			for (let yn=0; yn < yGraticules.length; yn++) {
+				pathStr += (yn === 0 ? "M" : "L") + svgCoordsFromAxisCoords(gridLocations[xn * yGraticules.length + yn][1]).join();
 			}
-			if (yIndex < yGraticules.length-1) {
-				const bottomLeft = gridLocations[l+1];
-				if (bottomLeft) {
-					const [x2, y2] = svgCoordsFromAxisCoords(bottomLeft[1])
-					const vLine = SVG("line", {x1: x1, y1: y1, x2: x2, y2: y2, stroke: "grey"});
-					GLOBAL.svgEl.append(vLine);
-				}
+		}
+
+		// horizontal lines
+		for (let yn=0; yn < yGraticules.length; yn++) {
+			for (let xn=0; xn < xGraticules.length; xn++) {
+				pathStr += (xn === 0 ? "M" : "L") + svgCoordsFromAxisCoords(gridLocations[xn * yGraticules.length + yn][1]).join();
 			}
-		});
+		}
+
+		// add the path to the SVG
+		const path = SVG("path", {d: pathStr, stroke: "grey", fill: "none"});
+		GLOBAL.svgEl.append(path);
 	}
+	
 	// draw grid locations as vectors
 	else {
 		gridLocations.forEach((location, l) => {
