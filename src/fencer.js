@@ -1027,18 +1027,14 @@ function mappingsChanged(mode) {
 		let pathStr = "";
 
 		// vertical lines
-		for (let xn=0; xn < xGraticules.length; xn++) {
-			for (let yn=0; yn < yGraticules.length; yn++) {
+		for (let xn=0; xn < xGraticules.length; xn++)
+			for (let yn=0; yn < yGraticules.length; yn++)
 				pathStr += (yn === 0 ? "M" : "L") + svgCoordsFromAxisCoords(gridLocations[xn * yGraticules.length + yn][1]).join();
-			}
-		}
 
 		// horizontal lines
-		for (let yn=0; yn < yGraticules.length; yn++) {
-			for (let xn=0; xn < xGraticules.length; xn++) {
+		for (let yn=0; yn < yGraticules.length; yn++)
+			for (let xn=0; xn < xGraticules.length; xn++)
 				pathStr += (xn === 0 ? "M" : "L") + svgCoordsFromAxisCoords(gridLocations[xn * yGraticules.length + yn][1]).join();
-			}
-		}
 
 		// add the path to the SVG
 		const path = SVG("path", {d: pathStr, stroke: "grey", fill: "none"});
