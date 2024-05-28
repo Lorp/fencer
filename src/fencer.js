@@ -673,8 +673,6 @@ function addMapping() {
 	// update stuff
 	mappingsSelectorPopulate();
 
-	console.log(GLOBAL.mappings)
-
 	mappingsChanged();
 	updateMappingsSliders(GLOBAL.draggingIndex);
 	updateMappingsXML();
@@ -871,6 +869,7 @@ function mappingsChanged(mode) {
 	let avarBuf; // if this remains undefined, we didn’t create an avar table
 	
 	// are there any mappings? (locs.length==1 means no mappings)
+	GLOBAL.ivs = null;
 	if (locs.length > 1) {
 
 		// Fontra method
@@ -940,6 +939,7 @@ function mappingsChanged(mode) {
 		// write new avar table
 		avarBuf = GLOBAL.font.tableEncoders.avar(GLOBAL.font, avar);
 
+		GLOBAL.ivs = ivs;
 	
 	}
 
@@ -964,10 +964,21 @@ function mappingsChanged(mode) {
 
 	// update the location[1] values for a given array of location[0] values
 	function instantiateLocation(sf, location) {
-		const axisSettings = {};
-		GLOBAL.font.fvar.axes.forEach((axis, a) => axisSettings[axis.axisTag] = location[0][a]); // untransformed
-		const si = new SamsaInstance(sf, axisSettings); // si.tuple is the transformed normalized tuple
-		location[1] = denormalizeTuple(si.tuple); // transformed and denormalized tuple
+		// find the transformed axis locations, by creating a SamsaInstance
+		// const axisSettings = {};
+		// GLOBAL.font.fvar.axes.forEach((axis, a) => axisSettings[axis.axisTag] = location[0][a]); // untransformed
+		// const si = new SamsaInstance(sf, axisSettings); // si.tuple is the transformed normalized tuple
+		// location[1] = denormalizeTuple(si.tuple); // transformed and denormalized tuple
+
+		// find the transformed axis locations, without creating a SamsaInstance
+		const normalizedLocation = location[0].map((coord, a) => simpleNormalize(GLOBAL.font.fvar.axes[a], coord));
+		if (GLOBAL.ivs) {
+			const deltas = SamsaFont.prototype.itemVariationStoreInstantiate(GLOBAL.ivs, normalizedLocation);
+			location[1] = denormalizeTuple(normalizedLocation.map((coord, a) => coord + deltas[0][a]/0x4000));
+		}
+		else {
+			location[1] = [...location[0]];
+		}
 	}
 
 	// create an instance for each location, in order to gets its normalized tuple
