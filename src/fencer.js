@@ -231,16 +231,14 @@ function svgCoordFromAxisCoord (a, val) {
 	const axis = GLOBAL.font.fvar.axes[a];
 	const rect =  Q(".svg-container").getBoundingClientRect();
 	const length = parseFloat((visibleAxisIds[0] === a) ? rect.width : rect.height);
-	return (val - axis.minValue) / (axis.maxValue - axis.minValue) * length;
+	return Math.round((val - axis.minValue) / (axis.maxValue - axis.minValue) * length * 1000) / 1000; // round to nearest 0.001 (avoids tiny rounding errors that bloat SVG)
 }
 
 function svgCoordsFromAxisCoords (coords) {
 
-	const a0 = coords[GLOBAL.mappingsView[0]];
-	const a1 = coords[GLOBAL.mappingsView[1]];
-
-	const s0 = svgCoordFromAxisCoord(GLOBAL.mappingsView[0], a0);
-	const s1 = svgCoordFromAxisCoord(GLOBAL.mappingsView[1], a1);
+	const [a0, a1] = GLOBAL.mappingsView;
+	const s0 = svgCoordFromAxisCoord(a0, coords[a0]);
+	const s1 = svgCoordFromAxisCoord(a1, coords[a1]);
 
 	return [s0, s1];
 }
@@ -748,7 +746,10 @@ function svgMouseMove(e) {
 	const visibleAxisIds = getVisibleAxisIds(); // which axes are we using?
 	const el = GLOBAL.dragging; // not e.target
 	const index = parseInt(el.dataset.index);
-	const rect = GLOBAL.svgEl.getBoundingClientRect();
+	//const rect = GLOBAL.svgEl.getBoundingClientRect();
+	const rect =  Q(".svg-container").getBoundingClientRect();
+
+
 	const mousex = e.clientX;
 	const mousey = rect.height - e.clientY;
 	const x = mousex - rect.left;
@@ -843,8 +844,9 @@ function mappingsChanged(mode) {
 	const visibleAxisIds = getVisibleAxisIds();
 	const visibleAxes = visibleAxisIds.map(a => GLOBAL.font.fvar.axes[a]);
 	const gridLocations = [];
-	const xGraticules = getGraticulesForAxis(visibleAxes[0]);
-	const yGraticules = getGraticulesForAxis(visibleAxes[1]);
+	const graticuleStyle = Q("#grid-style").value;
+	const xGraticules = getGraticulesForAxis(visibleAxes[0], graticuleStyle);
+	const yGraticules = getGraticulesForAxis(visibleAxes[1], graticuleStyle);
 
 	// draw a grid
 	xGraticules.forEach(x => {
@@ -1009,16 +1011,19 @@ function mappingsChanged(mode) {
 	}
 
 	// ok start redrawing the SVG
-	GLOBAL.svgEl.innerHTML = "";
+	Q("#mappings-visual g").innerHTML = "";
+
+	// get base rectangle
+	const rect =  Q(".svg-container").getBoundingClientRect();
+
+	// draw a white rectangle to clear the SVG
+	Q("#mappings-visual g").append(SVG("rect", {x:0, y:0, width:rect.width, height:rect.height, fill: "white"})); // draw a white rectangle
 
 	// draw x-axis and y-axis
 	const svgOriginCoords = svgCoordsFromAxisCoords(getDefaultAxisCoords());
 
-	const rect =  Q(".svg-container").getBoundingClientRect();
-	const xAxisEl = SVG("line", {x1:0, y1:svgOriginCoords[1], x2:rect.width, y2:svgOriginCoords[1], stroke: "black", strokeWidth: 2});
-	const yAxisEl = SVG("line", {x1:svgOriginCoords[0], y1:0, x2:svgOriginCoords[0], y2:rect.height, stroke: "black", strokeWidth: 2});
-	GLOBAL.svgEl.appendChild(xAxisEl);
-	GLOBAL.svgEl.appendChild(yAxisEl);
+	const axesEl = SVG("path", {d: `M0,${svgOriginCoords[1]}H${rect.width}M${svgOriginCoords[0]},0V${rect.height}Z`, fill: "none", stroke: "black", "stroke-width": 2}); // draw the axes with 2 lines
+	Q("#mappings-visual g").append(axesEl);
 
 	// draw grid locations as a grid
 	if (Q("#grid-style").value.startsWith("grid-")) {
@@ -1028,17 +1033,17 @@ function mappingsChanged(mode) {
 
 		// vertical lines
 		for (let xn=0; xn < xGraticules.length; xn++)
-			for (let yn=0; yn < yGraticules.length; yn++)
-				pathStr += (yn === 0 ? "M" : "L") + svgCoordsFromAxisCoords(gridLocations[xn * yGraticules.length + yn][1]).join();
+			for (let yn=0, cmd="M"; yn < yGraticules.length; yn++, cmd="L")
+				pathStr += cmd + svgCoordsFromAxisCoords(gridLocations[xn * yGraticules.length + yn][1]).join();
 
 		// horizontal lines
 		for (let yn=0; yn < yGraticules.length; yn++)
-			for (let xn=0; xn < xGraticules.length; xn++)
-				pathStr += (xn === 0 ? "M" : "L") + svgCoordsFromAxisCoords(gridLocations[xn * yGraticules.length + yn][1]).join();
+			for (let xn=0, cmd="M"; xn < xGraticules.length; xn++, cmd="L")
+				pathStr += cmd + svgCoordsFromAxisCoords(gridLocations[xn * yGraticules.length + yn][1]).join();
 
 		// add the path to the SVG
-		const path = SVG("path", {d: pathStr, stroke: "#bbb", fill: "none"});
-		GLOBAL.svgEl.append(path);
+		const path = SVG("path", {d: pathStr, stroke: "#ccc", fill: "none"});
+		Q("#mappings-visual g").append(path);
 	}
 	
 	// draw grid locations as vectors
@@ -1049,10 +1054,10 @@ function mappingsChanged(mode) {
 
 			// are the input and output equal in this projection? (need to allow for normalization rounding)
 			if (!locationsAreEqual(location[0], location[1], visibleAxisIds)) {
-				const arrow = svgArrow({x1: svgX0, y1: svgY0, x2: svgX1, y2: svgY1, tipLen: 7, tipWid: 7, strokeWidth: 1, color: "grey"}); // draw an arrow
-				GLOBAL.svgEl.append(arrow);
+				const arrow = svgArrow({x1: svgX0, y1: svgY0, x2: svgX1, y2: svgY1, tipLen: 7, tipWid: 7, strokeWidth: 1, color: "#bbb"}); // draw an arrow
+				Q("#mappings-visual g").append(arrow);	
 			}
-			GLOBAL.svgEl.append(SVG("circle", {cx: svgX0, cy: svgY0, r: 2.5, fill: "grey"})); // draw a dot	
+			Q("#mappings-visual g").append(SVG("circle", {cx: svgX0, cy: svgY0, r: 2.5, fill: "#bbb"})); // draw a dot
 		});
 	}
 
@@ -1074,14 +1079,14 @@ function mappingsChanged(mode) {
 		elInstance1.style.opacity = 0.4;
 		elInstance1.style.color = instanceColor;
 
-		GLOBAL.svgEl.append(elInstance1, elInstance0);
+		Q("#mappings-visual g").append(elInstance1, elInstance0);
 
 		// are the input and output equal in this projection? (need to allow for normalization rounding)
 		if (locationsAreEqual(location[0], location[1], visibleAxisIds)) {
-			GLOBAL.svgEl.append(elInstance0);
+			Q("#mappings-visual g").append(elInstance0);
 		}
 		else {
-			GLOBAL.svgEl.append(elInstance1, elInstance0, svgArrow({x1: svgX0, y1: svgY0, x2: svgX1, y2: svgY1, tipLen: 7, tipWid: 7, strokeWidth: 1, color: instanceColor})); // add an arrow
+			Q("#mappings-visual g").append(elInstance1, elInstance0, svgArrow({x1: svgX0, y1: svgY0, x2: svgX1, y2: svgY1, tipLen: 7, tipWid: 7, strokeWidth: 1, color: instanceColor})); // add an arrow
 		}
 	});
 
@@ -1115,9 +1120,8 @@ function mappingsChanged(mode) {
 		const arrowSvg = svgArrow({index: m, x1: svgCoordsFrom[0], y1: svgCoordsFrom[1], x2: svgCoordsTo[0], y2: svgCoordsTo[1], tipLen: 11, tipWid: 11, strokeWidth: 2});
 		arrowSvg.classList.add("mapping");
 
-		// add them all to the SVG element
-		GLOBAL.svgEl.append(arrowSvg, elInput, elOutput);
-	
+		// add them all to the SVG element		
+		Q("#mappings-visual g").append(arrowSvg, elOutput, elInput);
 	});
 
 	// display the current location (untransformed #0 and transformed #1)
@@ -1148,28 +1152,45 @@ function mappingsChanged(mode) {
 		formatNumericControls(-1);
 	}	
 
-	// draw the arrow
+	// draw the current arrow
 	const arrowSvg = svgArrow({index: -1, x1: svgCoordsFrom[0], y1: svgCoordsFrom[1], x2: svgCoordsTo[0], y2: svgCoordsTo[1], tipLen: 7, tipWid: 7, strokeWidth: 1, color: "var(--currentLocationColor)"});
+	Q("#mappings-visual g").append(elCurrent1, elCurrent0, arrowSvg); // order is important, since we must be able to click on the [0] version if they overlap
 
-	GLOBAL.svgEl.append(elCurrent1, elCurrent0, arrowSvg); // order is important, since we must be able to click on the [0] version if they overlap
+	// draw the rulers
+	const rulerX = Q(".ruler.horizontal"), rulerY = Q(".ruler.vertical");
+	const rulerGraticulesX = getGraticulesForAxis(visibleAxes[0], "ruler");
+	const rulerGraticulesY = getGraticulesForAxis(visibleAxes[1], "ruler");
 
+	if (!rulerX.textContent) {
+		rulerGraticulesX.forEach(x => {
+			const label = EL("div", {style: `position: absolute; transform: rotate(-90deg); transform-origin: left; bottom: 0; left: ${svgCoordFromAxisCoord(visibleAxes[0].axisId, x)}px`});
+			label.textContent = x;
+			rulerX.append(label);
+		});
+	}
+	if (!rulerY.textContent) {
+		rulerGraticulesY.forEach(y => {
+			const label = EL("div", {style: `position: absolute; right: 0; bottom: ${svgCoordFromAxisCoord(visibleAxes[1].axisId, y)-10}px`});
+			label.textContent = y;
+			rulerY.append(label);
+		});
+	}
 }
 
 function svgMouseUp(e) {
 	e.stopPropagation();
 
-	const rect = GLOBAL.svgEl.getBoundingClientRect();
+	const rect =  Q(".svg-container").getBoundingClientRect();
+
 	const x = e.clientX;
 	const y = e.clientY;
 
-	GLOBAL.svgEl.removeEventListener("mousemove", svgMouseMove); // = undefined;
-	GLOBAL.svgEl.removeEventListener("mouseup", svgMouseUp); // = undefined;
 	GLOBAL.dragging = undefined;
 	GLOBAL.dragOffset = undefined;
 
 	// disable what we put in place when we started dragging
-	document.mousemove = undefined;
-	document.mouseup = undefined;
+	document.mousemove = null;
+	document.mouseup = null;
 }
 
 function mappingMouseDown (e) {
@@ -1184,7 +1205,8 @@ function mappingMouseDown (e) {
 	// we hit a location
 	e.stopPropagation();
 
-	const rect = GLOBAL.svgEl.getBoundingClientRect();
+	const rect =  Q(".svg-container").getBoundingClientRect();
+	
 	GLOBAL.draggingIndex = parseInt(el.dataset.index);
 
 
@@ -1214,13 +1236,13 @@ function mappingMouseDown (e) {
 }
 
 // return a sorted array of values that span the axis from min to max, and are base 10 friendly
-function getGraticulesForAxis(axis) {
+function getGraticulesForAxis(axis, graticuleSpec) {
 
 	if (axis.maxValue - axis.minValue == 0)
 		return [axis.maxValue];
 
 	const graticules = new Set([axis.minValue, axis.defaultValue, axis.maxValue]); // init the set of graticules
-	if (Q("#grid-style").value === "powers-of-10") {
+	if (graticuleSpec === "powers-of-10") {
 		let inc = Math.pow(10, Math.floor(Math.log10((axis.maxValue - axis.minValue) * 0.3))); // get a value for inc, which is a power of 10 (10 as the inc from 33 to 330, then it goes to 100)
 		for (let v = axis.minValue; v < axis.maxValue; v+=inc) {
 			const gridVal = Math.floor(v / inc) * inc;
@@ -1228,10 +1250,10 @@ function getGraticulesForAxis(axis) {
 				graticules.add(Math.floor(v / inc) * inc);
 		}	
 	}
-	else if (Q("#grid-style").value.match(/^(fill-space-|grid-)/)) {
+	else if (graticuleSpec.match(/^(fill-space-|grid-)/)) {
 		let inc = 20; // measured in svg px units
 		let match;
-		if (match = Q("#grid-style").value.match(/^(fill-space-|grid-)(\d+)/)) // e.g. fill-space-20, fill-space-40
+		if (match = graticuleSpec.match(/^(fill-space-|grid-)(\d+)/)) // e.g. fill-space-20, fill-space-40
 			inc = parseInt(match[2]);
 		for (let val = svgCoordFromAxisCoord(axis.axisId, axis.defaultValue) + inc; axisCoordFromSvgCoord(axis.axisId, val) < axis.maxValue; val += inc) { // get the max side of the axis
 			graticules.add(axisCoordFromSvgCoord(axis.axisId, val));
@@ -1472,6 +1494,34 @@ function updateMappingsSliders(m) {
 	}
 }
 
+function updateSVGTransform() {
+
+	// fix the transform
+	Q("#mappings-visual g").attr({
+		transform: `scale(1 -1) translate(10 -${Q(".svg-container").getBoundingClientRect().height + 10})`,
+	});
+
+	// draw the rulers
+	const visibleAxisIds = getVisibleAxisIds();
+	const visibleAxes = visibleAxisIds.map(a => GLOBAL.font.fvar.axes[a]);
+	const rulerX = Q(".ruler.horizontal"), rulerY = Q(".ruler.vertical");
+	const rulerGraticulesX = getGraticulesForAxis(visibleAxes[0], "ruler");
+	const rulerGraticulesY = getGraticulesForAxis(visibleAxes[1], "ruler");
+
+	rulerX.textContent = "";
+	rulerGraticulesX.forEach(x => {
+		const label = EL("div", {style: `position: absolute; transform: rotate(-90deg); transform-origin: left; bottom: 0; left: ${svgCoordFromAxisCoord(visibleAxisIds[0], x)}px`});
+		label.textContent = x;
+		rulerX.append(label);
+	});
+	rulerY.textContent = "";
+	rulerGraticulesY.forEach(y => {
+		const label = EL("div", {style: `position: absolute; right: 0; bottom: ${svgCoordFromAxisCoord(visibleAxisIds[1], y)-8}px`});
+		label.textContent = y;
+		rulerY.append(label);
+	});
+}
+
 
 function selectAxisControls(e) {
 
@@ -1486,8 +1536,8 @@ function initFencer() {
 
 	// init the svg
 	GLOBAL.svgEl = SVG("svg");
+	GLOBAL.svgEl.append(SVG("g")); // this <g> element has all the content and has a transform
 	GLOBAL.svgEl.id = "mappings-visual";
-	GLOBAL.svgEl.setAttribute("transform", "scale(1 -1)");
 	
 	Q("#mapping-selector").onchange = selectAxisControls;
 
@@ -1521,7 +1571,6 @@ function initFencer() {
 
 	// save XML
 	Q("button#save-xml").onclick = e => {
-		//const uint8 = new Uint8Array(GLOBAL.fontBuffer.buffer);
 		const fauxLink = EL("a");
 		fauxLink.download = "fencer.xml";
 		fauxLink.href = "data:application/xml;charset=UTF-8," + encodeURIComponent(Q(".mappings .xml").value);
@@ -1537,6 +1586,8 @@ function initFencer() {
 		.then(response => response.arrayBuffer())
 		.then(arrayBuffer => {
 			loadFontFromArrayBuffer(arrayBuffer, {filename: filename});
+
+			updateSVGTransform();
 		});
 
 	// set grid-style selector to value stored in localStorage
@@ -1548,7 +1599,7 @@ function initFencer() {
 
 		function saveWindowProperties() {
 			// save window states in local storage (position has changed for this window, classes may have changed for other windows)
-			// - TODO: add z-index to the stored properties when we implement it in UI
+			// - TODO: add z-index to the stored properties for all windows when we implement it in UI
 			Qall(".window").forEach(el => {
 				const name = el.querySelector(":scope > h2").textContent;
 				const propString = JSON.stringify({left: el.style.left, top: el.style.top, width: el.style.width, height: el.style.height, classes: [...el.classList]});
@@ -1631,8 +1682,12 @@ function initFencer() {
 					if (!resizeHandle.classList.contains("no-horizontal"))
 						windowEl.style.width = initialWindowWidth + dx + 'px';
 					if (!resizeHandle.classList.contains("no-vertical"))
-						windowEl.style.height = initialWindowHeight + dy + 'px';				
-					mappingsChanged(); // update the SVG, yay!
+						windowEl.style.height = initialWindowHeight + dy + 'px';
+
+					if (windowEl.classList.contains("mappings-ui")) {
+						mappingsChanged(); // update the SVG, yay!
+						updateSVGTransform();
+					}
 				};
 
 				// ending resize
