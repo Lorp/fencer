@@ -249,11 +249,6 @@ function loadFontFromArrayBuffer (arrayBuffer, options={}) {
 	GLOBAL.familyName = GLOBAL.font.names[6];
 	GLOBAL.fontBuffer = GLOBAL.font.buf;
 
-	console.log("GLOBAL.font");
-	console.log(GLOBAL.font);
-	console.log("GLOBAL.font.buf");
-	console.log(GLOBAL.font.buf);
-
 	Q(".window.fontinfo .filename").textContent = `${options.filename} (${GLOBAL.font.buf.byteLength} bytes)`;
 	Q(".window.fontinfo .name").textContent = GLOBAL.font.names[6];
 
@@ -739,6 +734,7 @@ function svgArrow(options) {
 
 function svgMouseMove(e) {
 
+	e.preventDefault();
 	e.stopPropagation();
 	if (!GLOBAL.dragging)
 		return;
@@ -1203,6 +1199,7 @@ function mappingMouseDown (e) {
 	}
 
 	// we hit a location
+	e.preventDefault();
 	e.stopPropagation();
 
 	const rect =  Q(".svg-container").getBoundingClientRect();
@@ -1627,6 +1624,7 @@ function initFencer() {
 
 		if (titleBar) {
 			windowEl.querySelector(":scope > h2").onmousedown = e => {
+				e.preventDefault();
 				const windowEl = e.target.closest(".window");
 
 				// setup
@@ -1638,6 +1636,7 @@ function initFencer() {
 
 				// dragging
 				document.onmousemove = e => {
+					e.preventDefault();
 					if (!isDragging) return;
 					const dx = e.clientX - initialMouseX;
 					const dy = e.clientY - initialMouseY;
@@ -1668,6 +1667,7 @@ function initFencer() {
 		const resizeHandle = windowEl.querySelector(":scope > .resize");
 		if (resizeHandle) {
 			resizeHandle.onmousedown = e => {
+				e.preventDefault();
 				isResizing = true;
 				initialMouseX = e.clientX;
 				initialMouseY = e.clientY;
@@ -1676,6 +1676,7 @@ function initFencer() {
 
 				// resizing
 				document.onmousemove = e => {
+					e.preventDefault();
 					if (!isResizing) return;
 					const dx = e.clientX - initialMouseX;
 					const dy = e.clientY - initialMouseY;
