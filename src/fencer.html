@@ -199,6 +199,23 @@ a:hover, a:visited {
 		position: relative;
 		color: black;
 		font-size: 0.8em;
+		&.horizontal .graticule {
+			position: absolute; transform: rotate(-90deg); transform-origin: left; bottom: 0;
+		}
+		&.vertical .graticule {
+			position: absolute; right: 0;
+		}
+		.puck {
+			position: absolute;
+			padding: 0 2px;
+			color: green;
+			background-color: white;
+			border: 1px solid black;
+			.horizontal & {
+				transform: rotate(-90deg);
+				top: 4px;
+			}
+		}		
 	}
 	.extra {
 		background-color: white;
@@ -402,9 +419,9 @@ input.numeric.default {
 
 			<div class="content">
 
-				<div></div><div></div><div class="ruler horizontal"></div><div></div>
+				<div></div><div></div><div class="ruler horizontal"><div class="puck"></div></div><div></div>
 				<div></div><div></div><div></div><div></div>
-				<div class="ruler vertical"></div><div></div>
+				<div class="ruler vertical"><div class="puck"></div></div><div></div>
 					<div class="svg-container"></div>
 				<div></div>
 				<div></div><div></div><div></div><div></div>

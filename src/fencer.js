@@ -405,8 +405,7 @@ function loadFontFromArrayBuffer (arrayBuffer, options={}) {
 			GLOBAL.current[0][axisId] = parseFloat(el.value);
 		}
 		else {
-			const mapping = GLOBAL.mappings[GLOBAL.draggingIndex];
-			mapping[inputOrOutputId][axisId] = parseFloat(el.value);
+			GLOBAL.mappings[GLOBAL.draggingIndex][inputOrOutputId][axisId] = parseFloat(el.value);
 		}
 
 		GLOBAL.axisTouched = axisId;
@@ -730,64 +729,6 @@ function svgArrow(options) {
 
 	arrowSvg.append(pathEl);
 	return arrowSvg;
-}
-
-function svgMouseMove(e) {
-
-	e.preventDefault();
-	e.stopPropagation();
-	if (!GLOBAL.dragging)
-		return;
-
-	const visibleAxisIds = getVisibleAxisIds(); // which axes are we using?
-	const el = GLOBAL.dragging; // not e.target
-	const index = parseInt(el.dataset.index);
-	//const rect = GLOBAL.svgEl.getBoundingClientRect();
-	const rect =  Q(".svg-container").getBoundingClientRect();
-
-
-	const mousex = e.clientX;
-	const mousey = rect.height - e.clientY;
-	const x = mousex - rect.left;
-	const y = mousey + rect.top;
-	const svgX = x - GLOBAL.dragOffset[0];
-	const svgY = y - GLOBAL.dragOffset[1];
-
-	let xCoord = axisCoordFromSvgCoord(visibleAxisIds[0], svgX);
-	let yCoord = axisCoordFromSvgCoord(visibleAxisIds[1], svgY);
-	if (Q("#integer-snapping").checked) {
-		xCoord = Math.round(xCoord);
-		yCoord = Math.round(yCoord);
-	}
-	xCoord = Math.min(xCoord, GLOBAL.font.fvar.axes[visibleAxisIds[0]].maxValue);
-	xCoord = Math.max(xCoord, GLOBAL.font.fvar.axes[visibleAxisIds[0]].minValue);
-	yCoord = Math.min(yCoord, GLOBAL.font.fvar.axes[visibleAxisIds[1]].maxValue);
-	yCoord = Math.max(yCoord, GLOBAL.font.fvar.axes[visibleAxisIds[1]].minValue);
-
-	if (index === -1) { // current location
-		// it’s the current location marker
-		GLOBAL.current[0][visibleAxisIds[0]] = xCoord; // input
-		GLOBAL.current[0][visibleAxisIds[1]] = yCoord; // input
-	}
-	else {
-		// it’s a mapping location marker, so get the arrow with this index
-		const mapping = GLOBAL.mappings[index];
-		let inputOrOutputId;
-		if (el.classList.contains("input"))
-			inputOrOutputId = 0;
-		else if (el.classList.contains("output"))
-			inputOrOutputId = 1;
-
-		if (inputOrOutputId !== undefined) {
-			mapping[inputOrOutputId][visibleAxisIds[0]] = xCoord;
-			mapping[inputOrOutputId][visibleAxisIds[1]] = yCoord;
-		}
-	}
-
-	mappingsChanged();
-	updateMappingsSliders(index);
-	updateMappingsXML();
-	updateRenders();
 }
 
 function mappingsChanged(mode) {
@@ -1173,6 +1114,68 @@ function mappingsChanged(mode) {
 	}
 }
 
+function svgMouseMove(e) {
+
+	e.preventDefault();
+	e.stopPropagation();
+	if (!GLOBAL.dragging)
+		return;
+
+	const visibleAxisIds = getVisibleAxisIds(); // which axes are we using?
+	const el = GLOBAL.dragging; // not e.target
+	const index = parseInt(el.dataset.index);
+	//const rect = GLOBAL.svgEl.getBoundingClientRect();
+	const rect =  Q(".svg-container").getBoundingClientRect();
+
+
+	const mousex = e.clientX;
+	const mousey = rect.height - e.clientY;
+	const x = mousex - rect.left;
+	const y = mousey + rect.top;
+	const svgX = x - GLOBAL.dragOffset[0];
+	const svgY = y - GLOBAL.dragOffset[1];
+
+	let xCoord = axisCoordFromSvgCoord(visibleAxisIds[0], svgX);
+	let yCoord = axisCoordFromSvgCoord(visibleAxisIds[1], svgY);
+	if (Q("#integer-snapping").checked) {
+		xCoord = Math.round(xCoord);
+		yCoord = Math.round(yCoord);
+	}
+	xCoord = Math.min(xCoord, GLOBAL.font.fvar.axes[visibleAxisIds[0]].maxValue);
+	xCoord = Math.max(xCoord, GLOBAL.font.fvar.axes[visibleAxisIds[0]].minValue);
+	yCoord = Math.min(yCoord, GLOBAL.font.fvar.axes[visibleAxisIds[1]].maxValue);
+	yCoord = Math.max(yCoord, GLOBAL.font.fvar.axes[visibleAxisIds[1]].minValue);
+
+	if (index === -1) { // current location
+		// it’s the current location marker
+		GLOBAL.current[0][visibleAxisIds[0]] = xCoord; // input
+		GLOBAL.current[0][visibleAxisIds[1]] = yCoord; // input
+	}
+	else {
+		// it’s a mapping location marker, so get the arrow with this index
+		const mapping = GLOBAL.mappings[index];
+		let inputOrOutputId;
+		if (el.classList.contains("input"))
+			inputOrOutputId = 0;
+		else if (el.classList.contains("output"))
+			inputOrOutputId = 1;
+
+		if (inputOrOutputId !== undefined) {
+			mapping[inputOrOutputId][visibleAxisIds[0]] = xCoord;
+			mapping[inputOrOutputId][visibleAxisIds[1]] = yCoord;
+		}
+	}
+
+	
+	//axisCoordsFromSvgCoords(visibleAxisIds, svgX, svgY);
+	updatePucks(svgCoordsFromAxisCoords([xCoord, yCoord]));
+
+	mappingsChanged();
+	updateMappingsSliders(index);
+	updateMappingsXML();
+	updateRenders();
+}
+
 function svgMouseUp(e) {
 	e.stopPropagation();
 
@@ -1183,6 +1186,9 @@ function svgMouseUp(e) {
 
 	GLOBAL.dragging = undefined;
 	GLOBAL.dragOffset = undefined;
+
+	// hide pucks
+	Qall(".ruler .puck").forEach(el => el.classList.add("hidden"));
 
 	// disable what we put in place when we started dragging
 	document.mousemove = null;
@@ -1214,8 +1220,8 @@ function mappingMouseDown (e) {
 	const mousex = e.clientX;
 	const mousey = rect.height - e.clientY;
 
-	const svgX = mousex - rect.left;
-	const svgY = mousey + rect.top;
+	let svgX = mousex - rect.left;
+	let svgY = mousey + rect.top;
 
 	const dx = svgX - coords[0];
 	const dy = svgY - coords[1];
@@ -1227,9 +1233,32 @@ function mappingMouseDown (e) {
 	Q("#mapping-selector").value = GLOBAL.draggingIndex;
 	updateMappingsSliders(GLOBAL.draggingIndex);
 
+	// display pucks on each ruler
+	const visibleAxisIds = getVisibleAxisIds();
+	svgX -= dx;
+	svgY -= dy;
+	let xCoord = axisCoordFromSvgCoord(visibleAxisIds[0], svgX);
+	let yCoord = axisCoordFromSvgCoord(visibleAxisIds[1], svgY);
+	Qall(".ruler .puck").forEach(el => el.classList.remove("hidden"));
+	updatePucks(svgCoordsFromAxisCoords([xCoord, yCoord]));
+
 	// these need to be on the document, not on the mousedown element
 	document.onmousemove = svgMouseMove;
 	document.onmouseup = svgMouseUp; // maybe mouseup should be when overflows (outside of min/max) are snapped back to [min,max]
+}
+
+// update the position of hte pucks on each ruler
+function updatePucks(svgCoords) {
+	const [svgX, svgY] = svgCoords;
+	const visibleAxisIds = getVisibleAxisIds();
+	const hPuck = Q(".ruler.horizontal .puck"), vPuck = Q(".ruler.vertical .puck");
+	const coords = [axisCoordFromSvgCoord(visibleAxisIds[0], svgX), axisCoordFromSvgCoord(visibleAxisIds[1], svgY)];
+	hPuck.classList.remove("hidden");
+	hPuck.textContent = Math.round(coords[0] * 100)/100;
+	hPuck.style.left = `${svgX-20}px`
+	vPuck.classList.remove("hidden");
+	vPuck.textContent = Math.round(coords[1] * 100)/100;
+	vPuck.style.bottom = `${svgY-8}px`
 }
 
 // return a sorted array of values that span the axis from min to max, and are base 10 friendly
@@ -1505,15 +1534,18 @@ function updateSVGTransform() {
 	const rulerGraticulesX = getGraticulesForAxis(visibleAxes[0], "ruler");
 	const rulerGraticulesY = getGraticulesForAxis(visibleAxes[1], "ruler");
 
-	rulerX.textContent = "";
+	// remove old graticules
+	Qall(".graticule").forEach(el => el.remove());
+
+	//rulerX.textContent = "";
 	rulerGraticulesX.forEach(x => {
-		const label = EL("div", {style: `position: absolute; transform: rotate(-90deg); transform-origin: left; bottom: 0; left: ${svgCoordFromAxisCoord(visibleAxisIds[0], x)}px`});
+		const label = EL("div", {class: "graticule", style: `left: ${svgCoordFromAxisCoord(visibleAxisIds[0], x)}px`});
 		label.textContent = x;
 		rulerX.append(label);
 	});
-	rulerY.textContent = "";
+	//rulerY.textContent = "";
 	rulerGraticulesY.forEach(y => {
-		const label = EL("div", {style: `position: absolute; right: 0; bottom: ${svgCoordFromAxisCoord(visibleAxisIds[1], y)-8}px`});
+		const label = EL("div", {class: "graticule", style: `bottom: ${svgCoordFromAxisCoord(visibleAxisIds[1], y)-8}px`});
 		label.textContent = y;
 		rulerY.append(label);
 	});
