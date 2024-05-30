@@ -239,7 +239,6 @@ function svgCoordsFromAxisCoords (coords) {
 	const [a0, a1] = GLOBAL.mappingsView;
 	const s0 = svgCoordFromAxisCoord(a0, coords[a0]);
 	const s1 = svgCoordFromAxisCoord(a1, coords[a1]);
-
 	return [s0, s1];
 }
 
@@ -248,6 +247,15 @@ function loadFontFromArrayBuffer (arrayBuffer, options={}) {
 	GLOBAL.font = new SamsaFont(new SamsaBuffer(arrayBuffer));
 	GLOBAL.familyName = GLOBAL.font.names[6];
 	GLOBAL.fontBuffer = GLOBAL.font.buf;
+
+	// reset some stuff
+	GLOBAL.draggingIndex = -1;
+	GLOBAL.mappings.length = 0;
+	GLOBAL.instances.length = 0;
+
+	Q(".render-container").textContent = ""; // reset render-container
+	addRender(undefined, GLOBAL.current[0], "Current"); // add render for the current location
+	GLOBAL.font.fvar.instances.forEach(instance => addRender(null, instance.coordinates, instance.name)); // add renders for each named instance
 
 	Q(".window.fontinfo .filename").textContent = `${options.filename} (${GLOBAL.font.buf.byteLength} bytes)`;
 	Q(".window.fontinfo .name").textContent = GLOBAL.font.names[6];
@@ -417,7 +425,6 @@ function loadFontFromArrayBuffer (arrayBuffer, options={}) {
 	}
 
 	function axisReset (e) {
-		console.log("axisReset");
 		const el = e.target;
 		const parentEl = el.closest(".axis,.key");
 		const inputOrOutputId = +e.shiftKey; // 0 for input, 1 for output
@@ -493,6 +500,9 @@ function loadFontFromArrayBuffer (arrayBuffer, options={}) {
 		// redraw the mappings SVG
 		// - TODO: decide if we need to update the mappingsView array
 		mappingsChanged();
+
+		// fix the rulers
+		updateSVGTransform();
 	}
 	
 	
@@ -509,18 +519,13 @@ function loadFontFromArrayBuffer (arrayBuffer, options={}) {
 	if (GLOBAL.font.fvar.axes.length > 0)
 		GLOBAL.axisTouched = 0;
 
-	// add render for the current location
-	addRender(undefined, GLOBAL.current[0], "Current");
-
-	// add renders for each named instance
-	GLOBAL.font.fvar.instances.forEach(instance => addRender(null, instance.coordinates, instance.name));	
-
 	// if these axes represent the current location, disable all the initial input elements with class "output"
 	if (GLOBAL.draggingIndex === -1) {
 		Qall(".axes .axis input.output").forEach(el => el.disabled = true);
 	}
 
 	// draw mappings SVG
+	updateSVGTransform();
 	mappingsChanged(0);
 	updateRenders();
 	
@@ -607,17 +612,18 @@ function addRender(e, coords = GLOBAL.current[0], name="Custom", color) {
 		});
 
 		renderItemEl.append(controlsEl, controlsButtonEl);
-	
+
+		GLOBAL.instances.push([
+			[...coords],
+			[...coords], // fix this (hmm, what’s wrong with it?... the [1] array gets recalculated in time for the "to" red markers to be positioned correctly)
+		])
+		
 	}
 
 	Q(".render-container").append(renderItemEl);
 
 	updateRenders();
 
-	GLOBAL.instances.push([
-		[...coords],
-		[...coords], // fix this (hmm, what’s wrong with it?... the [1] array gets recalculated in time for the "to" red markers to be positioned correctly)
-	])
 	
 }
 
@@ -1071,10 +1077,10 @@ function mappingsChanged(mode) {
 	elCurrent0.innerHTML = svgCurrentLocation;
 	elCurrent0.setPosition(svgCoordsFrom);
 	elCurrent0.style.opacity = 0.9;
-	elCurrent0.classList.add("current", "location");
+	elCurrent0.classList.add("current", "location", "input"); // input class allows it to be handled by the mappings mouse handlers
 	elCurrent0.style.color = "var(--currentLocationColor)";
 	elCurrent0.dataset.index = -1;
-	elCurrent0.onmousedown = mappingMouseDown;
+	elCurrent0.onmousedown = mappingMouseDown; // only elCurrent0 gets a mouse handler
 
 	elCurrent1.innerHTML = svgCurrentLocation;
 	elCurrent1.setPosition(svgCoordsTo);
@@ -1123,8 +1129,7 @@ function svgMouseMove(e) {
 
 	const visibleAxisIds = getVisibleAxisIds(); // which axes are we using?
 	const el = GLOBAL.dragging; // not e.target
-	const index = parseInt(el.dataset.index);
-	//const rect = GLOBAL.svgEl.getBoundingClientRect();
+	const index = parseInt(el.dataset.index); // should be the same as GLOBAL.draggingIndex, as set in mousedown event
 	const rect =  Q(".svg-container").getBoundingClientRect();
 
 
@@ -1146,29 +1151,12 @@ function svgMouseMove(e) {
 	yCoord = Math.min(yCoord, GLOBAL.font.fvar.axes[visibleAxisIds[1]].maxValue);
 	yCoord = Math.max(yCoord, GLOBAL.font.fvar.axes[visibleAxisIds[1]].minValue);
 
-	if (index === -1) { // current location
-		// it’s the current location marker
-		GLOBAL.current[0][visibleAxisIds[0]] = xCoord; // input
-		GLOBAL.current[0][visibleAxisIds[1]] = yCoord; // input
-	}
-	else {
-		// it’s a mapping location marker, so get the arrow with this index
-		const mapping = GLOBAL.mappings[index];
-		let inputOrOutputId;
-		if (el.classList.contains("input"))
-			inputOrOutputId = 0;
-		else if (el.classList.contains("output"))
-			inputOrOutputId = 1;
+	const inputOrOutputId = +el.classList.contains("output"); // yields 0 for input, 1 for output (works for current as well as mappings)
+	const mapping = index === -1 ? GLOBAL.current : GLOBAL.mappings[GLOBAL.draggingIndex];
+	mapping[inputOrOutputId][visibleAxisIds[0]] = xCoord;
+	mapping[inputOrOutputId][visibleAxisIds[1]] = yCoord;
 
-		if (inputOrOutputId !== undefined) {
-			mapping[inputOrOutputId][visibleAxisIds[0]] = xCoord;
-			mapping[inputOrOutputId][visibleAxisIds[1]] = yCoord;
-		}
-	}
-
-	
-	//axisCoordsFromSvgCoords(visibleAxisIds, svgX, svgY);
-	updatePucks(svgCoordsFromAxisCoords([xCoord, yCoord]));
+	updatePucks(svgCoordsFromAxisCoords(mapping[inputOrOutputId])); // they were made visible in mousedown event
 
 	mappingsChanged();
 	updateMappingsSliders(index);
@@ -1191,8 +1179,8 @@ function svgMouseUp(e) {
 	Qall(".ruler .puck").forEach(el => el.classList.add("hidden"));
 
 	// disable what we put in place when we started dragging
-	document.mousemove = null;
-	document.mouseup = null;
+	document.onmousemove = null;
+	document.onmouseup = null;
 }
 
 function mappingMouseDown (e) {
@@ -1211,7 +1199,6 @@ function mappingMouseDown (e) {
 	const rect =  Q(".svg-container").getBoundingClientRect();
 	
 	GLOBAL.draggingIndex = parseInt(el.dataset.index);
-
 
 	const transform = el.getAttribute("transform");
 	const coordsStr = transform.match(/translate\(([^)]+),\s*([^)]+)\)/); // parse float in JS, not regex
@@ -1239,15 +1226,20 @@ function mappingMouseDown (e) {
 	svgY -= dy;
 	let xCoord = axisCoordFromSvgCoord(visibleAxisIds[0], svgX);
 	let yCoord = axisCoordFromSvgCoord(visibleAxisIds[1], svgY);
+
+	// show pucks
 	Qall(".ruler .puck").forEach(el => el.classList.remove("hidden"));
-	updatePucks(svgCoordsFromAxisCoords([xCoord, yCoord]));
+	const inputOrOutputId = el.classList.contains("input") ? 0 : 1;
+	const mapping = GLOBAL.draggingIndex === -1 ? GLOBAL.current : GLOBAL.mappings[GLOBAL.draggingIndex];
+	updatePucks(svgCoordsFromAxisCoords(mapping[inputOrOutputId]));
 
 	// these need to be on the document, not on the mousedown element
 	document.onmousemove = svgMouseMove;
 	document.onmouseup = svgMouseUp; // maybe mouseup should be when overflows (outside of min/max) are snapped back to [min,max]
 }
 
-// update the position of hte pucks on each ruler
+// update the position of the pucks on each ruler
+// TODO: fix issue with puck positions (it changes with string length)
 function updatePucks(svgCoords) {
 	const [svgX, svgY] = svgCoords;
 	const visibleAxisIds = getVisibleAxisIds();
@@ -1303,7 +1295,6 @@ function uint8ArrayToBase64(uint8) {
 }
 
 function xmlChanged(e) {
-	console.log("XML change")
 	const xmlString = e.target.value;
 	const mappings = [];
 	const parser = new DOMParser();
@@ -1331,7 +1322,6 @@ function xmlChanged(e) {
 				// get the xvalue attribute and compare it to the axis min and max
 				const xvalue = parseFloat(dimEl.getAttribute("xvalue"));
 				if (xvalue < axis.minValue || xvalue > axis.maxValue) {
-					console.log(xvalue, axis.minValue, axis.maxValue)
 					errors.push(`Input axis ${axisName} value ${xvalue} is outside the range [${axis.minValue},${axis.maxValue}]`);
 				}
 			});
@@ -1489,6 +1479,7 @@ function formatNumericControls(m) {
 	});
 }
 
+// update sliders for mapping m (use m=-1 for current location)
 function updateMappingsSliders(m) {
 
 	Qall(".axes .axis").forEach((axisEl, a) => {
@@ -1511,12 +1502,10 @@ function updateMappingsSliders(m) {
 	Q("#mapping-selector").value = m;
 
 	if (GLOBAL.draggingIndex === -1) {
-		// disable all the outputs
-		Qall(".axes .axis input.output").forEach(el => el.disabled = true);
+		Qall(".axes .axis input.output").forEach(el => el.disabled = true); // disable all the output elements
 	}
 	else {
-		// enable all the outputs
-		Qall(".axes .axis input.output").forEach(el => el.disabled = false);
+		Qall(".axes .axis input.output").forEach(el => el.disabled = false); // enable all the output elements
 	}
 }
 
@@ -1534,16 +1523,13 @@ function updateSVGTransform() {
 	const rulerGraticulesX = getGraticulesForAxis(visibleAxes[0], "ruler");
 	const rulerGraticulesY = getGraticulesForAxis(visibleAxes[1], "ruler");
 
-	// remove old graticules
+	// update the axis graticules
 	Qall(".graticule").forEach(el => el.remove());
-
-	//rulerX.textContent = "";
 	rulerGraticulesX.forEach(x => {
 		const label = EL("div", {class: "graticule", style: `left: ${svgCoordFromAxisCoord(visibleAxisIds[0], x)}px`});
 		label.textContent = x;
 		rulerX.append(label);
 	});
-	//rulerY.textContent = "";
 	rulerGraticulesY.forEach(y => {
 		const label = EL("div", {class: "graticule", style: `bottom: ${svgCoordFromAxisCoord(visibleAxisIds[1], y)-8}px`});
 		label.textContent = y;
@@ -1556,6 +1542,7 @@ function selectAxisControls(e) {
 
 	mappingsSelectorPopulate();
 }
+
 
 function initFencer() {
 
@@ -1615,8 +1602,6 @@ function initFencer() {
 		.then(response => response.arrayBuffer())
 		.then(arrayBuffer => {
 			loadFontFromArrayBuffer(arrayBuffer, {filename: filename});
-
-			updateSVGTransform();
 		});
 
 	// set grid-style selector to value stored in localStorage
