@@ -1435,11 +1435,15 @@ function exportFontWithTables(font, inserts={}, deletes={}) {
 		return length + (4 - length%4) % 4
 	}
 
+	function u32FromTag(tag) {
+		return [...tag].reduce((acc, curr) => (acc << 8) + curr.charCodeAt(0), 0);
+	}
+
 	const newTables = font.tableList
-						.map(table => { return { tag: table.tag, checkSum: 0, offset: 0, length: table.length, buffer: table.buffer } } )
+						.map(table => { return { tag: table.tag, tagU32: u32FromTag(table.tag), checkSum: 0, offset: 0, length: table.length, buffer: table.buffer } } )
 						.filter(table => !deletes[table.tag] && !inserts[table.tag]);
 
-	Object.keys(inserts).forEach(tag => newTables.push({ tag: tag, checkSum: 0, offset: 0, length: inserts[tag].byteLength, buffer: inserts[tag] }));
+	Object.keys(inserts).forEach(tag => newTables.push({ tag: tag, tagU32: u32FromTag(tag), checkSum: 0, offset: 0, length: inserts[tag].byteLength, buffer: inserts[tag] }));
 	const newFontSize = 12 + 16 * newTables.length + newTables.reduce((acc, table) => acc + paddedLength(table.length), 0);
 	const newFontBuf = new SamsaBuffer(new ArrayBuffer(newFontSize)); // allocate memory for the new font
 
@@ -1453,8 +1457,8 @@ function exportFontWithTables(font, inserts={}, deletes={}) {
 	newFontBuf.u32 = font.header.sfntVersion;
 	newFontBuf.u16_array = [newTables.length, ...font.binarySearchParams(newTables.length)]; // 1+3 U16 values
 	newTables
-		.sort((a,b) => { if (a.tag < b.tag) return -1; if (a.tag > b.tag) return 1; return 0; }) // sort by tag
-		.forEach(table => newFontBuf.u32_array = newFontBuf.tableDirectoryEntry(table)); // write 4 U32 values for each table
+		.sort((a,b) => a.tagU32 - b.tagU32 ) // sort by tag
+		.forEach(table => newFontBuf.u32_array = [table.tagU32, table.checkSum, table.offset, table.length]); // write 4 U32 values for each table
 	newFontBuf.seek(0);
 	return newFontBuf;
 }
