@@ -7,25 +7,6 @@
 	<meta charset="utf-8">
 	<style>
 
-/* container query to remove columns when container is narrower than 200px */
-@container Settings (max-width: 300px) {
-	.content .axes>.key {
-		grid-template-columns: 40px 40px auto 40px auto 16px 16px;
-	}
-	.content .axes>.axis {
-		grid-template-columns: 40px 40px auto 40px auto 16px 16px;
-	}
-	.content .axes input.slider {
-		display: none;
-	}
-	.content .axes>.key *:nth-child(2) {
-		grid-column: auto;
-	}
-	.content .axes>.key *:nth-child(4) {
-		grid-column: auto;
-	}
-}
-
 :root {
 	font-family: IBM Plex Sans;
 	font-size: 16px;
