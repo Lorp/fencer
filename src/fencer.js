@@ -312,76 +312,83 @@ function loadFontFromArrayBuffer (arrayBuffer, options={}) {
 	Q(".axes").append(keyEl);
 	
 	// 2. add a row for each axis
+	let tabIndex = 1;
 	GLOBAL.font.fvar.axes.forEach((axis, a) => {
 		const axisEl = EL("div");
 		axisEl.classList.add("axis");
 		axisEl.dataset.axisId = a;
 
-		// we are populating this grid definition: grid-template-columns: 40px 40px 1fr auto 40px 1fr auto 16px 16px;
-		const row = [ EL("input"), EL("input"), EL("input"), EL("div"), EL("input"), EL("input"), EL("div"), EL("input"), EL("input")];
-
-		row[0].value = axis.axisTag;
-		row[0].classList.add("monospace");
-		row[0].disabled = true;
-		row[0].title = `${axis.axisTag} (${axis.name})\nmin: ${axis.minValue}\ndefault: ${axis.defaultValue}\nmax: ${axis.maxValue}`;
+		const tagEl = EL("input", {
+			value: axis.axisTag,
+			class: "monospace",
+			disabled: true,
+			title: `${axis.axisTag} (${axis.name})\nmin: ${axis.minValue}\ndefault: ${axis.defaultValue}\nmax: ${axis.maxValue}`,
+		});
 
 		// right-arrow
-		row[3].textContent = "→";
+		const spacerEl = EL("div");
+		spacerEl.textContent = "→";
 
 		// input/output numerics
-		const inNumEl = EL("input");
-		const outNumEl = EL("input");
-		inNumEl.value = axis.defaultValue;
-		inNumEl.classList.add("input", "numeric");
-		outNumEl.value = axis.defaultValue;
-		outNumEl.classList.add("output", "numeric");
-		row[1] = inNumEl;
-		row[4] = outNumEl;
+		const inNumEl = EL("input", {
+			tabindex: tabIndex++,
+			value: axis.defaultValue,
+			class: "input numeric"
+		});
+		const outNumEl = EL("input", {
+			tabindex: tabIndex++,
+			value: axis.defaultValue,
+			class: "output numeric"
+		});
 
 		// input/output sliders
-		const inEl = EL("input");
-		inEl.type = "range";
-		inEl.style.width = "100%";
-		inEl.min = axis.minValue;
-		inEl.max = axis.maxValue;
-		inEl.value = axis.defaultValue;
-		inEl.step = "0.001";
-		inEl.classList.add("slider", "input", "slider");
-
-		const outEl = EL("input");
-		outEl.type = "range";
-		outEl.style.width = "100%";
-		outEl.min = axis.minValue;
-		outEl.max = axis.maxValue;
-		outEl.value = axis.defaultValue;
-		outEl.step = "0.001";
-		outEl.classList.add("slider", "output", "slider");
-
-		row[2] = inEl;
-		row[5] = outEl;
+		const inEl = EL("input", {
+			type: "range",
+			tabindex: -1,
+			style: "width: 100%",
+			min: axis.minValue,
+			max: axis.maxValue,
+			value: axis.defaultValue,
+			step: "0.001",
+			class: "input slider"
+		});
+		const outEl = EL("input", {
+			type: "range",
+			tabindex: -1,
+			style: "width: 100%",
+			min: axis.minValue,
+			max: axis.maxValue,
+			value: axis.defaultValue,
+			step: "0.001",
+			class: "output slider"
+		});
 
 		// set change event for all input elements
 		inNumEl.oninput = outNumEl.oninput = inEl.oninput = outEl.oninput = axisChange;
 		inNumEl.onchange = outNumEl.onchange = inEl.onchange = outEl.onchange = axisChange;
 
-		row[6].style.fontFamily = "Material Symbols Outlined";
-		row[6].textContent = "refresh";
-		row[6].onclick = axisReset;
-		row[6].title = "Reset input axis\n(shift-click to reset output axis)";
+		const refreshEl = EL("div", {title: "Reset input axis\n(shift-click to reset output axis)", class: "symbol"});
+		refreshEl.textContent = "refresh";
+		refreshEl.onclick = axisReset;
 
-		row[7].type = "radio";
-		row[7].name = "x-axis";
-		row[7].value = a;
-		row[7].checked = (a===0);
-		row[7].onchange = axisCheckboxChange;
-
-		row[8].type = "radio";
-		row[8].name = "y-axis";
-		row[8].value = a;
-		row[8].checked = (a===1);
-		row[8].onchange = axisCheckboxChange;
-
-		axisEl.append(...row);
+		const xAxisEl = EL("input", {type: "radio", name: "x-axis", value: a});
+		const yAxisEl = EL("input", {type: "radio", name: "y-axis", value: a});
+		xAxisEl.checked = a===0;
+		yAxisEl.checked = a===1;
+		xAxisEl.onchange = yAxisEl.onchange = axisCheckboxChange
+		
+		// we are populating this grid definition: grid-template-columns: 40px 40px 1fr auto 40px 1fr auto 16px 16px;
+		axisEl.append(
+			tagEl,
+			inNumEl,
+			inEl,
+			spacerEl,
+			outNumEl,
+			outEl,
+			refreshEl,
+			xAxisEl,
+			yAxisEl,
+		);
 
 		Q(".axes").append(axisEl);
 
