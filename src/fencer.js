@@ -1319,9 +1319,8 @@ function xmlChanged(e) {
 		xmlDoc.querySelectorAll("mappings>mapping").forEach(mappingEl => {
 
 			// initialize the mapping to be the default location for all axes, on input and output
-			const mapping = [];
-			mapping[0] = GLOBAL.font.fvar.axes.map(axis => axis.defaultValue);
-			mapping[1] = [...mapping[0]];
+			const mapping = [GLOBAL.font.fvar.axes.map(axis => axis.defaultValue), []];
+			mapping[1].push(...mapping[0]);
 
 			mappingEl.querySelectorAll("input>dimension").forEach(dimEl => {
 				const axisName = dimEl.getAttribute("name");
@@ -1356,7 +1355,7 @@ function xmlChanged(e) {
 		});	
 	}
 
-	// TODO: we also need to fail if any of the mappings are outside the axis ranges
+	// any errors?
 	if (errors.length) {
 		Q(".mappings .errors").style.display = "block";
 		Q(".mappings .errors").innerText = errors.join("<br>");
