@@ -1,3 +1,5 @@
+![Fencer](images/fencer-mindwarping-ai.jpg)
+
 # Fencer
 Fencer is a GUI app that allows users to create avar (v2) tables inside their variable fonts. These tables allow for more complex and expressive mappings between designspace locations and variable font instances. Use cases include:
 * arbitrary distortion of the designspace, avoiding the need for additional masters and thus reducing font size;
