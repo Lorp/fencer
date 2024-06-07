@@ -967,6 +967,46 @@ function mappingsChanged(mode) {
 	// draw a white rectangle to clear the SVG
 	Q("#mappings-visual g").append(SVG("rect", {x:0, y:0, width:rect.width, height:rect.height, fill: "white"})); // draw a white rectangle
 
+	// draw grid as colors from original location
+	if (Q("#show-colors").checked) {
+		gridLocations.forEach((location, l) => {
+
+			// get current visible axes
+			const [xAxisId, yAxisId] = getVisibleAxisIds();
+			const [xAxis, yAxis] = visibleAxisIds.map(a => GLOBAL.font.fvar.axes[a]);
+			let xRatio = 0, yRatio = 0;
+			
+			if (location[1][xAxisId] > xAxis.defaultValue)
+				xRatio = (location[1][xAxisId] - xAxis.defaultValue) / (xAxis.maxValue - xAxis.defaultValue);
+			else if (location[1][xAxisId] < visibleAxes[0].defaultValue)
+				xRatio = (location[1][xAxisId] - xAxis.defaultValue) / (xAxis.minValue - xAxis.defaultValue);
+
+			if (location[1][yAxisId] > yAxis.defaultValue)
+				yRatio = (location[1][yAxisId] - yAxis.defaultValue) / (yAxis.maxValue - yAxis.defaultValue);
+			else if (location[1][yAxisId] < yAxis.defaultValue)
+				yRatio = (location[1][yAxisId] - yAxis.defaultValue) / (yAxis.minValue - yAxis.defaultValue);
+
+			const hue = Math.atan2(yRatio, xRatio) * 180 / Math.PI * 2; // the *2 transforms [0,90] to [0,180]
+			const intensity = 50;
+			const saturation = Math.max(xRatio, yRatio) * 100;
+			const hslValue = `hsl(${Math.round(hue)}deg ${Math.round(saturation)}% ${Math.round(intensity)}%)`
+			const rgbValue = `rgb(${Math.round(xRatio * 255)} 255 ${Math.round(yRatio * 255)})`;
+
+			// convert coords to svg values
+			const [svgX0, svgY0] = svgCoordsFromAxisCoords(location[0]);
+			const size = 40;
+			const rectEl = SVG("rect", {x: svgX0-size/2, y: svgY0-size/2, width: size, height: size, fill: hslValue, stroke: "none"});
+
+			// add rectEl to the SVG
+			Q("#mappings-visual g").append(rectEl);
+		});
+	}
+
+	// draw a grey border to mask out the colours that go over the edge
+	const borderEl = SVG("path", {d: `M-10 -10H${rect.width+20}V${rect.height+20}H-10ZM0 0V${rect.height}H${rect.width}V0Z`, fill: "#eee", stroke: "none"});
+	Q("#mappings-visual g").append(borderEl);
+
+
 	// draw x-axis and y-axis
 	const svgOriginCoords = svgCoordsFromAxisCoords(getDefaultAxisCoords());
 
@@ -1011,41 +1051,6 @@ function mappingsChanged(mode) {
 
 	// draw grid as heat map?
 	// TODO: the idea is to show which locations have moved the most
-
-	// draw grid as colors from original location
-	if (Q("#show-colors").checked) {
-		gridLocations.forEach((location, l) => {
-
-			// get current visible axes
-			const [xAxisId, yAxisId] = getVisibleAxisIds();
-			const [xAxis, yAxis] = visibleAxisIds.map(a => GLOBAL.font.fvar.axes[a]);
-			let xRatio = 0, yRatio = 0;
-			
-			if (location[1][xAxisId] > xAxis.defaultValue)
-				xRatio = (location[1][xAxisId] - xAxis.defaultValue) / (xAxis.maxValue - xAxis.defaultValue);
-			else if (location[1][xAxisId] < visibleAxes[0].defaultValue)
-				xRatio = (location[1][xAxisId] - xAxis.defaultValue) / (xAxis.minValue - xAxis.defaultValue);
-
-			if (location[1][yAxisId] > yAxis.defaultValue)
-				yRatio = (location[1][yAxisId] - yAxis.defaultValue) / (yAxis.maxValue - yAxis.defaultValue);
-			else if (location[1][yAxisId] < yAxis.defaultValue)
-				yRatio = (location[1][yAxisId] - yAxis.defaultValue) / (yAxis.minValue - yAxis.defaultValue);
-
-			const hue = Math.atan2(yRatio, xRatio) * 180 / Math.PI * 2; // the *2 transforms [0,90] to [0,180]
-			const intensity = 50;
-			const saturation = Math.max(xRatio, yRatio) * 100;
-			const hslValue = `hsl(${Math.round(hue)}deg ${Math.round(saturation)}% ${Math.round(intensity)}%)`
-			const rgbValue = `rgb(${Math.round(xRatio * 255)} 255 ${Math.round(yRatio * 255)})`;
-
-			// convert coords to svg values
-			const [svgX0, svgY0] = svgCoordsFromAxisCoords(location[0]);
-			const size = 40;
-			const rectEl = SVG("rect", {x: svgX0-size/2, y: svgY0-size/2, width: size, height: size, fill: hslValue, stroke: "none"});
-
-			// add rectEl to the SVG
-			Q("#mappings-visual g").append(rectEl);
-		});
-	}
 
 	// draw the instances (including current)
 	// - draw them early so they are underneath the mappings and current location which need to be dragged
