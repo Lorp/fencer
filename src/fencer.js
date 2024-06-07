@@ -46,6 +46,10 @@ function clamp(value, min, max) {
 	return Math.max(min, Math.min(max, value));
 }
 
+function valueInAxisRange(value, axis) {
+	return typeof value === "number" && value >= axis.minValue && value <= axis.maxValue;
+}
+
 Element.prototype.attr = function (attrs) {
 	for (const prop in attrs) {
 		this.setAttributeNS(null, prop, attrs[prop])
@@ -1318,39 +1322,31 @@ function xmlChanged(e) {
 	else {
 		xmlDoc.querySelectorAll("mappings>mapping").forEach(mappingEl => {
 
-			// initialize the mapping to be the default location for all axes, on input and output
+			// initialize a new mapping at the default location for all axes, on input and output
 			const mapping = [GLOBAL.font.fvar.axes.map(axis => axis.defaultValue), []];
 			mapping[1].push(...mapping[0]);
 
-			mappingEl.querySelectorAll("input>dimension").forEach(dimEl => {
-				const axisName = dimEl.getAttribute("name");
-				const axis = GLOBAL.font.fvar.axes.find(axis => axis.name === axisName);
-				if (axisName && axis)
-					mapping[0][axis.axisId] = parseFloat(dimEl.getAttribute("xvalue"));
-				else
-					errors.push(`Input axis ${axisName} not found`);
-
-				// get the xvalue attribute and compare it to the axis min and max
-				const xvalue = parseFloat(dimEl.getAttribute("xvalue"));
-				if (xvalue < axis.minValue || xvalue > axis.maxValue) {
-					errors.push(`Input axis ${axisName} value ${xvalue} is outside the range [${axis.minValue},${axis.maxValue}]`);
-				}
-			});
-			mappingEl.querySelectorAll("output>dimension").forEach(dimEl => {
-				const axisName = dimEl.getAttribute("name");
-				const axis = GLOBAL.font.fvar.axes.find(axis => axis.name === axisName);
-				if (axisName && axis)
-					mapping[1][axis.axisId] = parseFloat(dimEl.getAttribute("xvalue"));
-				else
-					errors.push(`Output axis ${axisName} not found`);
-
-				// get the xvalue attribute and compare it to the axis min and max
-				const xvalue = parseFloat(dimEl.getAttribute("xvalue"));
-				if (xvalue < axis.minValue || xvalue > axis.maxValue)
-					errors.push(`Output axis ${axisName} value ${xvalue} is outside the range [${axis.minValue},${axis.maxValue}]`);
-				
+			// set any non-default inputs, then set any non-default outputs
+			["input", "output"].forEach((io, inputOrOutputId) => {
+				mappingEl.querySelectorAll(`${io}>dimension`).forEach(dimEl => {
+					const axisName = dimEl.getAttribute("name");
+					const axis = GLOBAL.font.fvar.axes.find(axis => axis.name === axisName);
+					if (axisName && axis) {
+						const value = parseFloat(dimEl.getAttribute("xvalue"));
+						if (valueInAxisRange(value, axis)) {
+							mapping[inputOrOutputId][axis.axisId] = value;
+						}
+						else {
+							errors.push(`${io} axis ${axisName} value ${value} is outside the range [${axis.minValue},${axis.maxValue}]`);
+						}
+					}
+					else {
+						errors.push(`${io} axis ${axisName} not found`);
+					}
+				});
 			});
 	
+			// add the mapping
 			mappings.push(mapping);
 		});	
 	}
