@@ -821,8 +821,8 @@ function mappingsChanged(mode) {
 		});	
 	});
 
-	//
-	let avarBuf; // if this remains undefined, we didn’t create an avar table
+	// if this remains undefined, we didn’t create an avar table
+	let avarBuf;
 	
 	// are there any mappings? (locs.length==1 means no mappings)
 	GLOBAL.ivs = null;
@@ -920,12 +920,6 @@ function mappingsChanged(mode) {
 
 	// update the location[1] values for a given array of location[0] values
 	function instantiateLocation(sf, location) {
-		// find the transformed axis locations, by creating a SamsaInstance
-		// const axisSettings = {};
-		// GLOBAL.font.fvar.axes.forEach((axis, a) => axisSettings[axis.axisTag] = location[0][a]); // untransformed
-		// const si = new SamsaInstance(sf, axisSettings); // si.tuple is the transformed normalized tuple
-		// location[1] = denormalizeTuple(si.tuple); // transformed and denormalized tuple
-
 		// find the transformed axis locations, without creating a SamsaInstance
 		const normalizedLocation = location[0].map((coord, a) => simpleNormalize(GLOBAL.font.fvar.axes[a], coord));
 		if (GLOBAL.ivs) {
@@ -1012,6 +1006,44 @@ function mappingsChanged(mode) {
 				Q("#mappings-visual g").append(arrow);	
 			}
 			Q("#mappings-visual g").append(SVG("circle", {cx: svgX0, cy: svgY0, r: 2.5, fill: "#bbb"})); // draw a dot
+		});
+	}
+
+	// draw grid as heat map?
+	// TODO: the idea is to show which locations have moved the most
+
+	// draw grid as colors from original location
+	if (Q("#show-colors").checked) {
+		gridLocations.forEach((location, l) => {
+
+			// get current visible axes
+			const [xAxisId, yAxisId] = getVisibleAxisIds();
+			const [xAxis, yAxis] = visibleAxisIds.map(a => GLOBAL.font.fvar.axes[a]);
+			let xRatio = 0, yRatio = 0;
+			
+			if (location[1][xAxisId] > xAxis.defaultValue)
+				xRatio = (location[1][xAxisId] - xAxis.defaultValue) / (xAxis.maxValue - xAxis.defaultValue);
+			else if (location[1][xAxisId] < visibleAxes[0].defaultValue)
+				xRatio = (location[1][xAxisId] - xAxis.defaultValue) / (xAxis.minValue - xAxis.defaultValue);
+
+			if (location[1][yAxisId] > yAxis.defaultValue)
+				yRatio = (location[1][yAxisId] - yAxis.defaultValue) / (yAxis.maxValue - yAxis.defaultValue);
+			else if (location[1][yAxisId] < yAxis.defaultValue)
+				yRatio = (location[1][yAxisId] - yAxis.defaultValue) / (yAxis.minValue - yAxis.defaultValue);
+
+			const hue = Math.atan2(yRatio, xRatio) * 180 / Math.PI * 2; // the *2 transforms [0,90] to [0,180]
+			const intensity = 50;
+			const saturation = Math.max(xRatio, yRatio) * 100;
+			const hslValue = `hsl(${Math.round(hue)}deg ${Math.round(saturation)}% ${Math.round(intensity)}%)`
+			const rgbValue = `rgb(${Math.round(xRatio * 255)} 255 ${Math.round(yRatio * 255)})`;
+
+			// convert coords to svg values
+			const [svgX0, svgY0] = svgCoordsFromAxisCoords(location[0]);
+			const size = 40;
+			const rectEl = SVG("rect", {x: svgX0-size/2, y: svgY0-size/2, width: size, height: size, fill: hslValue, stroke: "none"});
+
+			// add rectEl to the SVG
+			Q("#mappings-visual g").append(rectEl);
 		});
 	}
 
@@ -1378,7 +1410,7 @@ function updateMappingsXML() {
 			str += `    <${io}>\n`;
 			mapping[i].forEach((x, a) => {
 				const axis = GLOBAL.font.fvar.axes[a];
-				if (x !== undefined && axis.defaultValue !== x)
+				if (x !== undefined && axis.defaultValue !== x) // TODO: probbaly we should compare the simpleNormalize() values, not the raw values
 					str += `      <dimension name="${GLOBAL.font.fvar.axes[a].name}" xvalue="${x}"/>\n`;
 			});
 			str += `    </${io}>\n`;
@@ -1405,7 +1437,7 @@ function updateMappingsXML() {
 			});
 			mappingStr += "<br>";
 		});
-		details.innerHTML = mappingStr
+		details.innerHTML = mappingStr;
 		Q(".mappings .html").append(details);
 	});
 
@@ -1578,6 +1610,7 @@ function initFencer() {
 	};
 	Q("#add-render").onclick = addRender;
 	Q("#download-font").onclick = downloadFont;
+	Q("#show-colors").onchange = mappingsChanged;
 
 	Q(".window.mappings .xml").oninput = xmlChanged;
 
