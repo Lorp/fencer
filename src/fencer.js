@@ -53,7 +53,7 @@ Element.prototype.attr = function (attrs) {
 }
 
 Element.prototype.setPosition = function (position) {
-	this.setAttribute("transform", `translate(${position[0]}, ${position[1]})`)
+	this.setAttribute("transform", `translate(${position[0]},${position[1]})`)
 }
 
 function simpleNormalize(axis, value) {
@@ -1317,7 +1317,12 @@ function xmlChanged(e) {
 	}
 	else {
 		xmlDoc.querySelectorAll("mappings>mapping").forEach(mappingEl => {
-			const mapping = [[],[]];
+
+			// initialize the mapping to be the default location for all axes, on input and output
+			const mapping = [];
+			mapping[0] = GLOBAL.font.fvar.axes.map(axis => axis.defaultValue);
+			mapping[1] = [...mapping[0]];
+
 			mappingEl.querySelectorAll("input>dimension").forEach(dimEl => {
 				const axisName = dimEl.getAttribute("name");
 				const axis = GLOBAL.font.fvar.axes.find(axis => axis.name === axisName);
