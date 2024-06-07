@@ -52,7 +52,7 @@ To do so requires FIVE mappings. Let’s add them one by one:
 
 1. Click the “Add mapping” button to add the first mapping:
    * A mapping is added at the current location.
-   * Set the Input location (the base of the green arrow) to 900,62.5 by dragging the mapping handle to the bottom right corner.
+   * Set the Input location (the base of the green arrow) to 900,62.5 by dragging the mapping handle to the bottom right corner. It will help to turn on the “snap to integers” checkbox.
    * Set the Output location (the tip of the green arrow) to 700,62.5.
    * (Note that you can also use the sliders, or edit the XML directly to reposition mappings.)
    * This mapping is defining the bottom of the rectangular fenced region.
