@@ -990,7 +990,6 @@ function mappingsChanged(mode) {
 			const saturation = Math.max(xRatio, yRatio) * 100;
 			const lightness = 50;
 			const hslValue = `hsl(${Math.round(hue)}deg ${Math.round(saturation)}% ${Math.round(lightness)}%)`
-			const rgbValue = `rgb(${Math.round(xRatio * 255)} 255 ${Math.round(yRatio * 255)})`;
 
 			// convert coords to svg values
 			const [svgX0, svgY0] = svgCoordsFromAxisCoords(location[0]);
