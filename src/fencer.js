@@ -924,7 +924,7 @@ function mappingsChanged(mode) {
 		const normalizedLocation = location[0].map((coord, a) => simpleNormalize(GLOBAL.font.fvar.axes[a], coord));
 		if (GLOBAL.ivs) {
 			const deltas = SamsaFont.prototype.itemVariationStoreInstantiate(GLOBAL.ivs, normalizedLocation);
-			location[1] = denormalizeTuple(normalizedLocation.map((coord, a) => coord + deltas[0][a]/0x4000));
+			location[1] = denormalizeTuple(normalizedLocation.map((coord, a) => clamp(coord + deltas[0][a]/0x4000, -1, 1)));
 		}
 		else {
 			location[0].forEach((val, i) => location[1][i] = val); // alternative to location[1] = location[0] without reassigning array
