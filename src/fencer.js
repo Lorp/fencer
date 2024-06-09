@@ -1394,10 +1394,11 @@ function xmlChanged(e) {
 		Q(".mappings .errors").innerText = errors.join("<br>");
 	}
 	else {
+		GLOBAL.draggingIndex = -1;
 		GLOBAL.mappings.length = 0;
 		GLOBAL.mappings.push(...mappings);
 		mappingsChanged();
-		updateMappingsSliders(-1);
+		updateMappingsSliders(GLOBAL.draggingIndex);
 		updateRenders();
 		mappingsSelectorPopulate(); // repopulate the Controls dropdown
 	}
