@@ -987,9 +987,9 @@ function mappingsChanged(mode) {
 				yRatio = (location[1][yAxisId] - yAxis.defaultValue) / (yAxis.minValue - yAxis.defaultValue);
 
 			const hue = Math.atan2(yRatio, xRatio) * 180 / Math.PI * 2; // the *2 transforms [0,90] to [0,180]
-			const intensity = 50;
 			const saturation = Math.max(xRatio, yRatio) * 100;
-			const hslValue = `hsl(${Math.round(hue)}deg ${Math.round(saturation)}% ${Math.round(intensity)}%)`
+			const lightness = 50;
+			const hslValue = `hsl(${Math.round(hue)}deg ${Math.round(saturation)}% ${Math.round(lightness)}%)`
 			const rgbValue = `rgb(${Math.round(xRatio * 255)} 255 ${Math.round(yRatio * 255)})`;
 
 			// convert coords to svg values
