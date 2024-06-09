@@ -967,13 +967,14 @@ function mappingsChanged(mode) {
 	// draw a white rectangle to clear the SVG
 	Q("#mappings-visual g").append(SVG("rect", {x:0, y:0, width:rect.width, height:rect.height, fill: "white"})); // draw a white rectangle
 
-	// draw grid as colors from original location
+	// draw grid as colors
+	// - the idea is to draw colors from location[1] in the positions of locations[0]
 	if (Q("#show-colors").checked) {
 		gridLocations.forEach((location, l) => {
 
 			// get current visible axes
 			const [xAxisId, yAxisId] = getVisibleAxisIds();
-			const [xAxis, yAxis] = visibleAxisIds.map(a => GLOBAL.font.fvar.axes[a]);
+			const [xAxis, yAxis] = [xAxisId, yAxisId].map(a => GLOBAL.font.fvar.axes[a]);
 			let xRatio = 0, yRatio = 0;
 			
 			if (location[1][xAxisId] > xAxis.defaultValue)
@@ -987,9 +988,9 @@ function mappingsChanged(mode) {
 				yRatio = (location[1][yAxisId] - yAxis.defaultValue) / (yAxis.minValue - yAxis.defaultValue);
 
 			const hue = Math.atan2(yRatio, xRatio) * 180 / Math.PI * 2; // the *2 transforms [0,90] to [0,180]
-			const saturation = Math.max(xRatio, yRatio) * 100;
-			const lightness = 50;
-			const hslValue = `hsl(${Math.round(hue)}deg ${Math.round(saturation)}% ${Math.round(lightness)}%)`
+			const saturation = Math.max(xRatio, yRatio);
+			const lightness = 0.5;
+			const hslValue = `hsl(${Math.round(hue)}deg ${Math.round(saturation*100)}% ${Math.round(lightness*100)}%)`;
 
 			// convert coords to svg values
 			const [svgX0, svgY0] = svgCoordsFromAxisCoords(location[0]);
