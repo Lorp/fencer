@@ -1,0 +1,22 @@
+<mappings>
+  <mapping>
+    <input>
+      <dimension name="Optical size" xvalue="8"/>
+    </input>
+    <output>
+      <dimension name="Weight" xvalue="545.851"/>
+      <dimension name="XTSP" xvalue="16.223"/>
+    </output>
+  </mapping>
+  <mapping>
+    <input>
+      <dimension name="Optical size" xvalue="144"/>
+    </input>
+    <output>
+      <dimension name="Weight" xvalue="326.702"/>
+      <dimension name="Width" xvalue="89.204"/>
+      <dimension name="Optical size" xvalue="8"/>
+      <dimension name="XTSP" xvalue="-53.864"/>
+    </output>
+  </mapping>
+</mappings>

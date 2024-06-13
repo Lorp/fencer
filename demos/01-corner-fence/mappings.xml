@@ -1,0 +1,52 @@
+<mappings>
+  <mapping>
+    <input>
+      <dimension name="Weight" xvalue="900"/>
+      <dimension name="Width" xvalue="62.5"/>
+    </input>
+    <output>
+      <dimension name="Weight" xvalue="720"/>
+      <dimension name="Width" xvalue="62.5"/>
+    </output>
+  </mapping>
+  <mapping>
+    <input>
+      <dimension name="Weight" xvalue="900"/>
+      <dimension name="Width" xvalue="70"/>
+    </input>
+    <output>
+      <dimension name="Weight" xvalue="720"/>
+      <dimension name="Width" xvalue="70"/>
+    </output>
+  </mapping>
+  <mapping>
+    <input>
+      <dimension name="Weight" xvalue="720"/>
+      <dimension name="Width" xvalue="62.5"/>
+    </input>
+    <output>
+      <dimension name="Weight" xvalue="720"/>
+      <dimension name="Width" xvalue="62.5"/>
+    </output>
+  </mapping>
+  <mapping>
+    <input>
+      <dimension name="Weight" xvalue="720"/>
+      <dimension name="Width" xvalue="70"/>
+    </input>
+    <output>
+      <dimension name="Weight" xvalue="720"/>
+      <dimension name="Width" xvalue="70"/>
+    </output>
+  </mapping>
+  <mapping>
+    <input>
+      <dimension name="Weight" xvalue="900"/>
+      <dimension name="Width" xvalue="70.02"/>
+    </input>
+    <output>
+      <dimension name="Weight" xvalue="900"/>
+      <dimension name="Width" xvalue="70.02"/>
+    </output>
+  </mapping>
+</mappings>
