@@ -15,9 +15,8 @@ The UI implements a windowing system, where you can drag and resize windows acco
 	* a bank of sliders
 	* a dropdown selector to choose whether one is editing the Current location or one of the Mappings
 	* reset-to-default buttons (click resets input locations, shift-click resets output locations)
-	* radio buttons to select X and Y axes in the Mappings window.
 * **View windows**, where:
-	* the dimensions of the 2D space are controlled by the radio buttons in the Controls panel (by default, the first axis in the font uses the X dimension of the display, the second axis in the font uses the Y dimension of the display)
+	* the dimensions of the 2D space are controlled by the X and Y dropdown selectors at the bottom of the View (by default, the first axis in the font uses the X dimension of the display, the second axis in the font uses the Y dimension of the display)
 	* the Mappings are displayed as green arrows in 2D space
 	* you can add and delete Mappings, and drag them around
 	* the Current location is displayed as a blue dot, with its mapped location as pale blue dot
