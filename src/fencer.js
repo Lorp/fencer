@@ -308,6 +308,9 @@ function addView(e, xAxisId, yAxisId) {
 	updateSVGTransform(viewEl);
 
 	drawView(viewEl);
+
+	// make topmost
+	viewEl.querySelector("h2").dispatchEvent(new Event("mousedown"));
 }
 
 
@@ -1803,7 +1806,7 @@ function windowGiveInteractivity(windowEl) {
 		// save window states in local storage (position has changed for this window, classes may have changed for other windows)
 		// - TODO: add z-index to the stored properties for all windows when we implement it in UI
 		Qall(".window").forEach(el => {
-			const name = el.querySelector(":scope > h2").textContent;
+			let name = el.querySelector(":scope > h2").textContent.split(" ")[0]; // use the first word of the window title (we don’t want to store separate window properties for each view)
 			const propString = JSON.stringify({left: el.style.left, top: el.style.top, width: el.style.width, height: el.style.height, classes: [...el.classList]});
 			localStorage.setItem(`fencer:window[${name}]`, propString);
 		});
@@ -1816,8 +1819,17 @@ function windowGiveInteractivity(windowEl) {
 	const name = titleBar.textContent;
 
 	// retrieve initial window rect from localStorage
-	const windowProps = JSON.parse(localStorage.getItem(`fencer:window[${name}]`));
-	if (windowProps) {
+	const windowProps = JSON.parse(localStorage.getItem(`fencer:window[${name.startsWith("View") ? "View" : name}]`));
+
+	// is it an additional view window?
+	if (name.startsWith("View") && Qall(".window.view").length > 1) {
+		const style = Qall(".window.view")[Qall(".window.view").length - 2].style; // get the style of the most recently added view window
+		windowEl.style.left = (parseFloat(style.left) + 20) + "px";
+		windowEl.style.top = (parseFloat(style.top) + 20) + "px";
+		windowEl.style.width = style.width;
+		windowEl.style.height = style.height;
+	}
+	else if (windowProps) {
 		if (windowProps.left) windowEl.style.left = windowProps.left;
 		if (windowProps.top) windowEl.style.top = windowProps.top;
 		if (windowProps.width) windowEl.style.width = windowProps.width;
@@ -1865,7 +1877,6 @@ function windowGiveInteractivity(windowEl) {
 				else
 					el.classList.remove("selected", "top");
 			});	
-
 		};
 	}
 
