@@ -29,6 +29,11 @@ a:hover, a:visited {
 	height: 2em;
 }
 
+#app-menu {
+	background-color: white;
+	border-bottom: 1px solid black;
+}
+
 /* A .window-canvas contains all the windows in the system */
 .window-canvas {
 	position: relative;
@@ -80,15 +85,24 @@ a:hover, a:visited {
 	position: absolute;
 	right: 0;
 	top: 0;
-	background-color: #ccc;
-	color: #333;
-	padding: 0.5em;
+	height: 21px;
+	aspect-ratio: 1;
+	_width: 10px;
+	/* background-color: #ccc; */
+	border-left: 1px solid white;
+	/* color: #333; */
+	color: white;
+	_padding: 0.5em;
+	baseline-shift: -2px;
+	text-align: center;
 	cursor: pointer;
+	font-family: Material Symbols Outlined;
+	overflow: hidden;
 }
 
-.window>.close::before {
-	content: "✖";
-}
+/* .window>.close::before {
+	content: "close";
+} */
 
 .window>.resize {
 	position: absolute;
@@ -155,7 +169,7 @@ a:hover, a:visited {
 	}
 }
 
-.window.mappings-ui {
+.window.mappings-ui, .window.view {
 	left: 420px;
 	top: 10px;
 	width: 600px;
@@ -163,13 +177,14 @@ a:hover, a:visited {
 	.content {
 		display: grid;
 		grid-template-columns: 40px 10px 1fr 10px;
-		grid-template-rows: 40px 10px 1fr 10px 80px;
+		/* grid-template-rows: 40px 10px 1fr 10px 80px; */
+		grid-template-rows: 40px 10px 1fr 10px 20px;
 		background-color: #eee;
 	}
 	.svg-container { /* this contains the SVG element */
 		position: relative;
 	}
-	#mappings-visual { /* this is the SVG element */
+	.mappings-visual { /* this is the SVG element */
 		position: absolute;
 		width: calc(100% + 20px);
 		height: calc(100% + 20px);
@@ -377,12 +392,31 @@ input.numeric.default {
 
 <body>
 
-	<div id="title-bar"><span style="font-weight:bold;">FENCER</span> 🤺 avar2 mappings editor <img width="16" src="https://emojis.slackmojis.com/emojis/images/1670280918/63091/garden-fence.png"> <a href="https://github.com/lorp/fencer" target="_blank">https://github.com/lorp/fencer</a></div>
+	<div id="title-bar">
+		<span style="font-weight:bold;">FENCER</span> 🤺 avar2 mappings editor <img width="16" src="https://emojis.slackmojis.com/emojis/images/1670280918/63091/garden-fence.png"> <a href="https://github.com/lorp/fencer" target="_blank">https://github.com/lorp/fencer</a>
+	</div>
+	<div id="app-menu">
+		<button id="add-mapping" disabled>Add mapping (M)</button>
+		<button id="delete-mapping" disabled>Delete mapping</button>
+		<button id="add-view">Add view (V)</button>
+		<button id="download-font" disabled>Download font</button>
+		<button id="reset-ui">Reset UI</button>
+		Grid style
+		<select id="grid-style">
+			<option value="powers-of-10">powers of 10</option>
+			<option value="fill-space-40">vectors 40</option>
+			<option value="fill-space-20">vectors 20</option>
+			<option value="grid-40">grid 40</option>
+			<option value="grid-20" selected>grid 20</option>
+		</select>
+		<label for="integer-snapping">Snap to integers</label> <input type="checkbox" id="integer-snapping">
+		<label for="show-colors">Show colors</label> <input type="checkbox" id="show-colors">
+	</div>
 
 	<div class="window-canvas">
 		
 		<div class="window fontinfo">
-			<h2>Settings</h2>
+			<h2>Locations</h2>
 			<div class="content">
 				<div class="intro">
 					<label>Name</label><div class="name"></div>
@@ -391,7 +425,7 @@ input.numeric.default {
 				</div>
 				<div class="axes"></div>
 				<div class="extra">
-					<button id="download-font" disabled>Save font</button>
+					<!-- <button id="download-font" disabled>Save font</button> -->
 				</div>
 			</div>
 
@@ -400,7 +434,7 @@ input.numeric.default {
 		</div>
 
 		<div class="window mappings-ui">
-			<h2>Mappings</h2>
+			<h2>View <span class="description"></span></h2>
 
 			<div class="content">
 
@@ -413,23 +447,8 @@ input.numeric.default {
 
 				<div class="extra" style="grid-column: 1/5;">
 
-					<button id="add-mapping" disabled>Add mapping</button>
-					<button id="delete-mapping" disabled>Delete mapping</button>
-					<br>
-					Grid style
-					<select id="grid-style">
-						<option value="powers-of-10">powers of 10</option>
-						<option value="fill-space-40">vectors 40</option>
-						<option value="fill-space-20">vectors 20</option>
-						<option value="grid-40">grid 40</option>
-						<option value="grid-20" selected>grid 20</option>
-					</select>
-					<br>
-					<label for="integer-snapping">Snap to integers</label> <input type="checkbox" id="integer-snapping">
-					<label for="show-colors">Show colors</label> <input type="checkbox" id="show-colors">
-
-					<div id="mappings-ui-info">
-						<div id="coords"></div>
+					<div class="mappings-ui-info">
+						<div class="coords"></div>
 					</div>
 			
 				</div>

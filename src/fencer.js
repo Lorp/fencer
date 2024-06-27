@@ -92,6 +92,20 @@ function mappingSimpleNormalize(axes, mapping) {
 	return normalizedMapping;
 }
 
+
+// keyboard shorcuts
+window.onkeydown = e => {
+
+	// textarea and input should ignore this
+	if (["TEXTAREA","INPUT"].includes(e.target.tagName))
+		return;
+
+	//console.log(e);
+	if (e.code === "KeyM") addMapping(); // m = add mapping
+	if (e.code === "KeyV") addView(); // v = add view
+}
+
+
 /*
 
 // we can repurpose this code for adding/subtracting epsilon
@@ -181,6 +195,121 @@ function mappingsSelectorPopulate() {
 }
 
 
+// often, xAxisId and yAxisId are undefined, in which case we get the first axis that is not already in a view
+// - for simplicity, either set both axisIds or neither
+function addView(e, xAxisId, yAxisId) {
+	const axes = GLOBAL.font.fvar.axes;
+	let axisIds = [xAxisId, yAxisId]; // these will be overridden if undefined
+	const otherViewEls = Qall(".window.view");
+	let left = 420, top = 10;
+	if (otherViewEls.length) {
+		const lastViewEl = otherViewEls[otherViewEls.length-1];
+		left = parseFloat(lastViewEl.style.left) + 10;
+		top = parseFloat(lastViewEl.style.top) + 10;
+	}
+
+	const viewEl = EL("div", {class: "window view", style: `width: 500px; height: 500px; left: ${left}px; top: ${top}px;`});
+	viewEl.dataset.axisIds = axisIds.join();
+	viewEl.innerHTML = 
+`	<h2>View <span class="description"></span></h2>
+
+	<div class="content">
+
+		<div></div><div></div><div class="ruler horizontal"><div class="puck hidden"></div></div><div></div>
+		<div></div><div></div><div></div><div></div>
+		<div class="ruler vertical"><div class="puck hidden"></div></div><div></div>
+			<div class="svg-container"></div>
+		<div></div>
+		<div></div><div></div><div></div><div></div>
+
+		<div class="extra" style="grid-column: 1/5;">
+
+			<div class="axis-selector">
+				X <select class="x"></select>
+				Y <select class="y"></select>
+			</div>
+
+			<div class="mappings-ui-info">
+				<div class="coords"></div>
+			</div>
+	
+		</div>
+
+	</div>
+
+	<div class="close"></div>
+	<div class="resize"></div>	
+`;
+
+	// which axes is this view looking at?
+	if (xAxisId === undefined || yAxisId === undefined) { // for simplicity, you either set both axisIds or neither
+
+		// work out which axes to assign to the view: we’ll take the fist two that are not assigned in other views
+		const assignedAxisIds = new Set();
+		Qall(".window.view").forEach(viewEl => {
+			if (viewEl.dataset.axisIds) {
+				viewEl.dataset.axisIds.split(",").map(str => parseInt(str)).forEach(axisId => assignedAxisIds.add(axisId));
+			}
+		});
+
+		const availableAxisIds = [];
+		for (let a=0; a<GLOBAL.font.fvar.axisCount; a++) {
+			if (!assignedAxisIds.has(a))
+				availableAxisIds.push(a);
+		}
+
+		// now the first two items in availableAxisIds will be this view’s axisIds
+		const assignedAxisIds_ = [...assignedAxisIds]; // arrayify the set
+		axisIds.length = 0;
+		if (availableAxisIds.length >= 2)
+			axisIds.push(availableAxisIds[0], availableAxisIds[1]);
+		else if (availableAxisIds.length === 1)
+			axisIds.push(availableAxisIds[0], assignedAxisIds_.find(a => a !== availableAxisIds[0]));
+		else
+			axisIds.push(assignedAxisIds_[0], assignedAxisIds_[1]);
+
+		[xAxisId, yAxisId] = axisIds;
+	}
+	viewEl.dataset.axisIds = axisIds.join(); // store the axisIds in the view
+	viewEl.querySelector("h2 .description").textContent = axisIds.map(a => axes[a].axisTag).join(":") + " [" + axisIds.join(":") + "]"; // display the axisIds and tags in the window title
+
+	// create the svg element for this view
+	const svgEl = SVG("svg", {class: "mappings-visual"});
+	svgEl.append(SVG("g")); // this <g> element has all the content and has a transform	
+	viewEl.querySelector(".svg-container").append(svgEl);
+
+	// add the xAxis and yAxis axis selectors to the "extra" div
+	const xSelect = viewEl.querySelector(".extra .axis-selector select.x"); //EL("select");
+	const ySelect = viewEl.querySelector(".extra .axis-selector select.y"); //EL("select");
+	axes.forEach((axis, a) => {
+		const optionEl = EL("option");
+		optionEl.value = a;
+		optionEl.textContent = axis.axisTag;
+		xSelect.append(optionEl);
+		ySelect.append(optionEl.cloneNode(true));
+	});
+	xSelect.value = xAxisId;
+	ySelect.value = yAxisId;
+	xSelect.onchange = ySelect.onchange = e => {
+		const viewEl = e.target.closest(".window.view");
+		const xAxisId = parseInt(xSelect.value);
+		const yAxisId = parseInt(ySelect.value);
+		viewEl.dataset.axisIds = [xAxisId, yAxisId].join();
+		viewEl.querySelector("h2 .description").textContent = [xAxisId, yAxisId].map(a => axes[a].axisTag).join(":") + " [" + [xAxisId, yAxisId].join(":") + "]";
+		mappingsChanged();
+	};
+
+	// add the view to the DOM
+	Q(".window-canvas").append(viewEl);
+
+	// activate window controls
+	windowGiveInteractivity(viewEl);
+	updateSVGTransform(viewEl);
+
+	drawView(viewEl);
+}
+
+
 // returns a string ready to be assigned as the "d" attribute of an SVG <path> element
 // - color is assigned later, on the element itself
 // - call with getArrowPath({x1: x1, x2: x2, y1: y1, y2: y2, tipLen: tipLen, tipWid: tipWid, strokeWidth: strokeWidth})
@@ -222,27 +351,34 @@ function getArrowPath(arrow) {
 	return pathStr;
 }
 
-function axisCoordFromSvgCoord (a, val) {
-	const visibleAxisIds = getVisibleAxisIds();
+function axisCoordFromSvgCoord (viewEl, a, val) {
+	const rect = viewEl.querySelector(".svg-container").getBoundingClientRect();
+	const visibleAxisIds = getVisibleAxisIds(viewEl);
 	const axis = GLOBAL.font.fvar.axes[a];
-	const rect =  Q(".svg-container").getBoundingClientRect();
 	const length = parseFloat((visibleAxisIds[0] === a) ? rect.width : rect.height);
 	return val / length * (axis.maxValue - axis.minValue) + axis.minValue;
 }
 
-function svgCoordFromAxisCoord (a, val) {
-	const visibleAxisIds = getVisibleAxisIds();
+function svgCoordFromAxisCoord (viewEl, a, val) {
+	// console.log(viewEl);
+	// console.log(viewEl.querySelector(".svg-container"));
+	const rect = viewEl.querySelector(".svg-container").getBoundingClientRect();
+	// console.log(rect);
+	// if (!rect) rect =  Q(".svg-container").getBoundingClientRect();
+	const visibleAxisIds = getVisibleAxisIds(viewEl);
 	const axis = GLOBAL.font.fvar.axes[a];
-	const rect =  Q(".svg-container").getBoundingClientRect();
+	//const rect =  Q(".svg-container").getBoundingClientRect();
 	const length = parseFloat((visibleAxisIds[0] === a) ? rect.width : rect.height);
 	return Math.round((val - axis.minValue) / (axis.maxValue - axis.minValue) * length * 1000) / 1000; // round to nearest 0.001 (avoids tiny rounding errors that bloat SVG)
 }
 
-function svgCoordsFromAxisCoords (coords) {
-
-	const [a0, a1] = GLOBAL.mappingsView;
-	const s0 = svgCoordFromAxisCoord(a0, coords[a0]);
-	const s1 = svgCoordFromAxisCoord(a1, coords[a1]);
+function svgCoordsFromAxisCoords (viewEl, coords) {
+	// if (!rect) rect =  Q(".svg-container").getBoundingClientRect();
+	// if (!svgEl) svgEl = Q(".mappings-visual");
+	//const [a0, a1] = GLOBAL.mappingsView;
+	const [xAxisId, yAxisId] = getVisibleAxisIds(viewEl);
+	const s0 = svgCoordFromAxisCoord(viewEl, xAxisId, coords[xAxisId]);
+	const s1 = svgCoordFromAxisCoord(viewEl, yAxisId, coords[yAxisId]);
 	return [s0, s1];
 }
 
@@ -268,32 +404,46 @@ function loadFontFromArrayBuffer (arrayBuffer, options={}) {
 	if (GLOBAL.fontFace)
 		document.fonts.delete(GLOBAL.fontFace);
 
-	GLOBAL.fontFace = new FontFace(GLOBAL.font.names[6], arrayBuffer);
-	GLOBAL.fontFace.load().then(loadedFace => {
+	//GLOBAL.fontFace = new FontFace(GLOBAL.font.names[6], arrayBuffer);
+	// GLOBAL.fontFace = new FontFace("Fencer-initial", arrayBuffer);
+	// GLOBAL.fontFace.load().then(loadedFace => {
 
-		document.fonts.add(loadedFace);
-		const renderEls = Qall(".render");
+	// 	document.fonts.add(loadedFace);
+	// 	const renderEls = Qall(".render");
 
-		// locked axes are stored in dataset
-		renderEls.forEach(renderEl => {
-			renderEl.style.fontFamily = GLOBAL.font.names[6];
-		});
+	// 	// locked axes are stored in dataset
+	// 	renderEls.forEach(renderEl => {
+	// 		//renderEl.style.fontFamily = GLOBAL.font.names[6];
+	// 		//renderEl.style.fontFamily = "Fencer-initial";
+	// 	});
 
-		// activate buttons
-		Q("#download-font").disabled = false;
-		Q("#add-mapping").disabled = false;
-		Q("#delete-mapping").disabled = false;
+	// 	// activate buttons
+	// 	Q("#download-font").disabled = false;
+	// 	Q("#add-mapping").disabled = false;
+	// 	Q("#delete-mapping").disabled = false;
 
-		// on add/delete mapping button click
-		Q("#add-mapping").onclick = addMapping;
-		Q("#delete-mapping").onclick = deleteMapping;
+	// 	// on add/delete mapping button click
+	// 	Q("#add-mapping").onclick = addMapping;
+	// 	Q("#delete-mapping").onclick = deleteMapping;
 
-		// init the mappings xml
-		updateMappingsXML();
-	});
+	// 	// init the mappings xml
+	// 	updateMappingsXML();
+	// });
 
+	// reset UI
+	// - activate buttons
+	Q("#download-font").disabled = false;
+	Q("#add-mapping").disabled = false;
+	Q("#delete-mapping").disabled = false;
+	// - on add/delete mapping button click
+	Q("#add-mapping").onclick = addMapping;
+	Q("#delete-mapping").onclick = deleteMapping;
+	Q("#add-view").onclick = addView;
+	// - other stuff
 	mappingsSelectorPopulate();
-
+	Qall(".window.view").forEach(viewEl => viewEl.remove()); // remove any existing views
+	updateMappingsXML();
+	
 	// build axis controls
 
 	// 1. add a row for the key
@@ -473,6 +623,8 @@ function loadFontFromArrayBuffer (arrayBuffer, options={}) {
 	}
 
 	function axisCheckboxChange(e) {
+
+		alert ("axes changes");
 		let xSelected, ySelected;
 		const orientationChosen = e.target.name === "x-axis" ? "x-axis" : "y-axis";
 		const orientationNotChosen = e.target.name === "y-axis" ? "x-axis" : "y-axis";
@@ -485,14 +637,12 @@ function loadFontFromArrayBuffer (arrayBuffer, options={}) {
 		});
 
 		// ensure the x and y axis are different: force the other axis to be the first available axis
-		// - TODO: make this work for single-axis fonts
+		// - TODO: check this works for single-axis fonts
 		if (xSelected && ySelected && (xSelected === ySelected)) {
 			const axisEls = Qall(".axes .axis");
-			for (let a=0; a<axisEls.length; a++) {
-				const axisEl = axisEls[a];
+			for (const axisEl of axisEls) {
 				if (!axisEl.querySelector(`input[name=${orientationNotChosen}]`).checked) {
 					axisEl.querySelector(`input[name=${orientationNotChosen}]`).checked = true;
-					// mappingsView[1] = a;
 					break;
 				}
 			}
@@ -507,13 +657,16 @@ function loadFontFromArrayBuffer (arrayBuffer, options={}) {
 				GLOBAL.mappingsView[1] = a;
 		});
 
+		// update the title
+		Q(".window.mappings-ui h2 .description").textContent = GLOBAL.font.fvar.axes[GLOBAL.mappingsView[0]].axisTag + "/" + GLOBAL.font.fvar.axes[GLOBAL.mappingsView[1]].axisTag;
+		console.log(GLOBAL.font.fvar.axes[GLOBAL.mappingsView[0]])
 
 		// redraw the mappings SVG
 		// - TODO: decide if we need to update the mappingsView array
 		mappingsChanged();
 
 		// fix the rulers
-		updateSVGTransform();
+		//updateSVGTransform();
 	}
 	
 	
@@ -536,10 +689,13 @@ function loadFontFromArrayBuffer (arrayBuffer, options={}) {
 	}
 
 	// draw mappings SVG
-	updateSVGTransform();
+	//updateSVGTransform();
 	mappingsChanged(0);
 	updateRenders();
-	
+
+	// create initial view by dispatching event to the "Add view" button
+	Q("#add-view").dispatchEvent(new Event("click"));
+		
 }
 
 function onDropFont (e) {
@@ -561,11 +717,10 @@ function onDropFont (e) {
 
 function getDefaultAxisCoords() {
 
-	return GLOBAL.font.fvar.axes.map((axis, a) => axis.defaultValue );
+	return GLOBAL.font.fvar.axes.map(axis => axis.defaultValue);
 }
 
 function addRender(e, coords = GLOBAL.current[0], name="Custom", color) {
-
 
 	// the render item
 	const renderItemEl = EL("div");
@@ -709,12 +864,17 @@ function deleteMapping() {
 
 }
 
-function getVisibleAxisIds() {
-	const xAxisEl = Q("input[name=x-axis]:checked").closest(".axis");
-	const yAxisEl = Q("input[name=y-axis]:checked").closest(".axis");
-	const xAxisIndex = parseInt(xAxisEl.dataset.axisId);
-	const yAxisIndex = parseInt(yAxisEl.dataset.axisId);
-	return [xAxisIndex, yAxisIndex];
+function getVisibleAxisIds(viewEl) {
+	if (viewEl && viewEl.dataset.axisIds !== undefined) {
+		return viewEl.dataset.axisIds.split(",").map(a => parseInt(a));
+	}
+	else {
+		const xAxisEl = Q("input[name=x-axis]:checked").closest(".axis");
+		const yAxisEl = Q("input[name=y-axis]:checked").closest(".axis");
+		const xAxisIndex = parseInt(xAxisEl.dataset.axisId);
+		const yAxisIndex = parseInt(yAxisEl.dataset.axisId);
+		return [xAxisIndex, yAxisIndex];
+	}
 }
 
 // return an SVG element that represents an arrow
@@ -747,6 +907,283 @@ function svgArrow(options) {
 	arrowSvg.append(pathEl);
 	return arrowSvg;
 }
+
+// update the location[1] values for a given array of location[0] values
+function instantiateLocation(location) {
+	// find the transformed axis locations, without creating a SamsaInstance
+	const normalizedLocation = location[0].map((coord, a) => simpleNormalize(GLOBAL.font.fvar.axes[a], coord));
+	if (GLOBAL.ivs) {
+		const deltas = SamsaFont.prototype.itemVariationStoreInstantiate(GLOBAL.ivs, normalizedLocation);
+		location[1] = denormalizeTuple(normalizedLocation.map((coord, a) => clamp(coord + deltas[0][a]/0x4000, -1, 1)));
+	}
+	else {
+		location[0].forEach((val, i) => location[1][i] = val); // make a copy
+	}
+}
+
+function drawView(viewEl) {
+
+	// ok start redrawing the SVG
+	const svgEl = viewEl.querySelector(".mappings-visual")
+	const g = viewEl.querySelector(".mappings-visual g")
+	g.innerHTML = "";
+
+	// get base rectangle
+	const rect = viewEl.querySelector(".svg-container").getBoundingClientRect();
+
+	// update current location and instance locations
+	// - TODO: this does not belong in the drawing function
+	//[GLOBAL.current, ...GLOBAL.instances].forEach(location => instantiateLocation(location));
+
+	// set up the grid locations
+	const [xAxisId, yAxisId] = getVisibleAxisIds(viewEl);
+	const [xAxis, yAxis] = [xAxisId, yAxisId].map(a => GLOBAL.font.fvar.axes[a]);
+
+	const gridLocations = [];
+	const graticuleStyle = Q("#grid-style").value;
+	const xGraticules = getGraticulesForAxis(viewEl, xAxis, graticuleStyle);
+	const yGraticules = getGraticulesForAxis(viewEl, yAxis, graticuleStyle);
+
+	// draw a grid
+	xGraticules.forEach(x => {
+		yGraticules.forEach(y => {
+
+			const gridLocation = [[],[]];
+			GLOBAL.font.fvar.axes.forEach((axis, a) => {
+				let val;
+				if (axis === xAxis)
+					val = x;
+				else if (axis === yAxis)
+					val = y;
+				else
+					val = GLOBAL.current[0][a];
+				gridLocation[0][a] = gridLocation[1][a] = val;
+			});
+			gridLocations.push(gridLocation);
+		});	
+	});
+	gridLocations.forEach(location => instantiateLocation(location));
+
+	// draw a white rectangle to clear the SVG
+	// Q(".mappings-visual g").append(SVG("rect", {x:0, y:0, width:rect.width, height:rect.height, fill: "white"})); // draw a white rectangle
+	g.append(SVG("rect", {x:0, y:0, width:rect.width, height:rect.height, fill: "white"})); // draw a white rectangle
+
+	// draw grid as colors
+	// - the idea is to draw colors from location[1] in the positions of locations[0]
+	if (Q("#show-colors").checked) {
+		gridLocations.forEach((location, l) => {
+
+			// get current visible axes
+			// const [xAxisId, yAxisId] = getVisibleAxisIds(viewEl);
+			// const [xAxis, yAxis] = [xAxisId, yAxisId].map(a => GLOBAL.font.fvar.axes[a]);
+			let xRatio = 0, yRatio = 0;
+			
+			if (location[1][xAxisId] > xAxis.defaultValue)
+				xRatio = (location[1][xAxisId] - xAxis.defaultValue) / (xAxis.maxValue - xAxis.defaultValue);
+			else if (location[1][xAxisId] < visibleAxes[0].defaultValue)
+				xRatio = (location[1][xAxisId] - xAxis.defaultValue) / (xAxis.minValue - xAxis.defaultValue);
+
+			if (location[1][yAxisId] > yAxis.defaultValue)
+				yRatio = (location[1][yAxisId] - yAxis.defaultValue) / (yAxis.maxValue - yAxis.defaultValue);
+			else if (location[1][yAxisId] < yAxis.defaultValue)
+				yRatio = (location[1][yAxisId] - yAxis.defaultValue) / (yAxis.minValue - yAxis.defaultValue);
+
+			const hue = Math.atan2(yRatio, xRatio) * 180 / Math.PI * 2; // the *2 transforms [0,90] to [0,180], thus from one hue to its complement
+			const saturation = Math.max(xRatio, yRatio);
+			const lightness = 0.5;
+			const hslValue = `hsl(${Math.round(hue)}deg ${Math.round(saturation*100)}% ${Math.round(lightness*100)}%)`;
+
+			// convert coords to svg values
+			const [svgX0, svgY0] = svgCoordsFromAxisCoords(rect, location[0]);
+			const size = 40;
+			const rectEl = SVG("rect", {x: svgX0-size/2, y: svgY0-size/2, width: size, height: size, fill: hslValue, stroke: "none"});
+
+			// add rectEl to the SVG
+			g.append(rectEl);
+		});
+	}
+
+	// draw a grey border to mask out the colours that go over the edge
+	const borderEl = SVG("path", {d: `M-10 -10H${rect.width+20}V${rect.height+20}H-10ZM0 0V${rect.height}H${rect.width}V0Z`, fill: "#eee", stroke: "none"});
+	g.append(borderEl);
+
+
+	// draw x-axis and y-axis
+	const svgOriginCoords = svgCoordsFromAxisCoords(viewEl, getDefaultAxisCoords());
+
+	const axesEl = SVG("path", {d: `M0,${svgOriginCoords[1]}H${rect.width}M${svgOriginCoords[0]},0V${rect.height}Z`, fill: "none", stroke: "black", "stroke-width": 2}); // draw the axes with 2 lines
+	g.append(axesEl);
+
+	// draw grid locations as a grid
+	if (Q("#grid-style").value.startsWith("grid-")) {
+
+		// build a single path element that draws all the grid lines
+		let pathStr = "";
+
+		// vertical lines
+		for (let xn=0; xn < xGraticules.length; xn++)
+			for (let yn=0, cmd="M"; yn < yGraticules.length; yn++, cmd="L")
+				pathStr += cmd + svgCoordsFromAxisCoords(viewEl, gridLocations[xn * yGraticules.length + yn][1]).join();
+
+		// horizontal lines
+		for (let yn=0; yn < yGraticules.length; yn++)
+			for (let xn=0, cmd="M"; xn < xGraticules.length; xn++, cmd="L")
+				pathStr += cmd + svgCoordsFromAxisCoords(viewEl, gridLocations[xn * yGraticules.length + yn][1]).join();
+
+		// add the path to the SVG
+		const path = SVG("path", {d: pathStr, stroke: "#ccc", fill: "none"});
+		g.append(path);
+	}
+	
+	// draw grid locations as vectors
+	else {
+		gridLocations.forEach((location, l) => {
+			const [svgX0, svgY0] = svgCoordsFromAxisCoords(viewEl, location[0]);
+			const [svgX1, svgY1] = svgCoordsFromAxisCoords(viewEl, location[1]);
+
+			// are the input and output equal in this projection? (need to allow for normalization rounding)
+			if (!locationsAreEqual(location[0], location[1], [xAxisId, yAxisId])) {
+				const arrow = svgArrow({x1: svgX0, y1: svgY0, x2: svgX1, y2: svgY1, tipLen: 7, tipWid: 7, strokeWidth: 1, color: "#bbb"}); // draw an arrow
+				g.append(arrow);	
+			}
+			g.append(SVG("circle", {cx: svgX0, cy: svgY0, r: 2.5, fill: "#bbb"})); // draw a dot
+		});
+	}
+
+	// draw grid as heat map?
+	// TODO: the idea is to show which locations have moved the most
+
+	// draw the instances (including current)
+	// - draw them early so they are underneath the mappings and current location which need to be dragged
+	GLOBAL.instances.forEach(location => {
+		const [svgX0, svgY0] = svgCoordsFromAxisCoords(viewEl, location[0]);
+		const [svgX1, svgY1] = svgCoordsFromAxisCoords(viewEl, location[1]);
+
+		const elInstance0 = SVG("g"), elInstance1 = SVG("g");
+
+		elInstance0.innerHTML = svgCurrentLocation;
+		elInstance0.setPosition([svgX0, svgY0]);
+		elInstance0.style.opacity = 0.9;
+		elInstance0.style.color = instanceColor;
+		
+		elInstance1.innerHTML = svgCurrentLocation;
+		elInstance1.setPosition([svgX1, svgY1]);
+		elInstance1.style.opacity = 0.4;
+		elInstance1.style.color = instanceColor;
+
+		g.append(elInstance1, elInstance0);
+
+		// are the input and output equal in this projection? (need to allow for normalization rounding)
+		if (locationsAreEqual(location[0], location[1], [xAxisId, yAxisId])) {
+			g.append(elInstance0);
+		}
+		else {
+			g.append(elInstance1, elInstance0, svgArrow({x1: svgX0, y1: svgY0, x2: svgX1, y2: svgY1, tipLen: 7, tipWid: 7, strokeWidth: 1, color: instanceColor})); // add an arrow
+		}
+	});
+
+	// draw the mappings
+	GLOBAL.mappings.forEach((mapping, m) => {
+
+		const elInput = SVG("g");
+		const elOutput = SVG("g");
+	
+		elInput.classList.add("input", "location", "mapping");
+		elOutput.classList.add("output", "location", "mapping");
+	
+		elInput.innerHTML = svgMappingHandle;
+		elOutput.innerHTML = svgMappingHandle;
+	
+		elInput.onmousedown = mappingMouseDown;
+		elOutput.onmousedown = mappingMouseDown;
+
+		elInput.dataset.index = m;
+		elOutput.dataset.index = m;
+
+		const svgCoordsFrom = svgCoordsFromAxisCoords(viewEl, mapping[0]);
+		const svgCoordsTo = svgCoordsFromAxisCoords(viewEl, mapping[1]);
+
+		elInput.setPosition(svgCoordsFrom);
+		elInput.style.opacity = 0.8;
+		elOutput.setPosition(svgCoordsTo);
+		elOutput.style.opacity = 0.4;
+
+		// draw the arrow
+		const arrowSvg = svgArrow({index: m, x1: svgCoordsFrom[0], y1: svgCoordsFrom[1], x2: svgCoordsTo[0], y2: svgCoordsTo[1], tipLen: 11, tipWid: 11, strokeWidth: 2});
+		arrowSvg.classList.add("mapping");
+
+		// add them all to the SVG element		
+		g.append(arrowSvg, elOutput, elInput);
+	});
+
+	// display the current location (untransformed #0 and transformed #1)
+	// - render #1 first since it may be underneath #0 (which needs mouse events)
+	const elCurrent0 = SVG("g"), elCurrent1 = SVG("g");
+
+	const svgCoordsFrom = svgCoordsFromAxisCoords(viewEl, GLOBAL.current[0]);
+	const svgCoordsTo = svgCoordsFromAxisCoords(viewEl, GLOBAL.current[1]);
+
+	elCurrent0.innerHTML = svgCurrentLocation;
+	elCurrent0.setPosition(svgCoordsFrom);
+	elCurrent0.style.opacity = 0.9;
+	elCurrent0.classList.add("current", "location", "input"); // input class allows it to be handled by the mappings mouse handlers
+	elCurrent0.style.color = "var(--currentLocationColor)";
+	elCurrent0.dataset.index = -1;
+	elCurrent0.onmousedown = mappingMouseDown; // only elCurrent0 gets a mouse handler
+
+	elCurrent1.innerHTML = svgCurrentLocation;
+	elCurrent1.setPosition(svgCoordsTo);
+	elCurrent1.style.opacity = 0.4;
+	elCurrent1.style.color = "var(--currentLocationColor)";
+
+	// draw the current arrow
+	const arrowSvg = svgArrow({index: -1, x1: svgCoordsFrom[0], y1: svgCoordsFrom[1], x2: svgCoordsTo[0], y2: svgCoordsTo[1], tipLen: 7, tipWid: 7, strokeWidth: 1, color: "var(--currentLocationColor)"});
+	g.append(elCurrent1, elCurrent0, arrowSvg); // order is important, since we must be able to click on the [0] version if they overlap
+
+	// draw the rulers
+	const rulerX = viewEl.querySelector(".ruler.horizontal"), rulerY = viewEl.querySelector(".ruler.vertical");
+	const rulerGraticulesX = getGraticulesForAxis(viewEl, xAxis, "ruler");
+	const rulerGraticulesY = getGraticulesForAxis(viewEl, yAxis, "ruler");
+
+	if (!rulerX.textContent) {
+		rulerGraticulesX.forEach(x => {
+			const label = EL("div", {style: `position: absolute; transform: rotate(-90deg); transform-origin: left; bottom: 0; left: ${svgCoordFromAxisCoord(viewEl, visibleAxes[0].axisId, x)}px`});
+			label.textContent = x;
+			rulerX.append(label);
+		});
+	}
+	if (!rulerY.textContent) {
+		rulerGraticulesY.forEach(y => {
+			const label = EL("div", {style: `position: absolute; right: 0; bottom: ${svgCoordFromAxisCoord(viewEl, visibleAxes[1].axisId, y)-10}px`});
+			label.textContent = y;
+			rulerY.append(label);
+		});
+	}
+}
+
+// returns true or false, depending on whether the two user locations are equal
+// - true if loc0 and loc1 are equal when simple-normalized
+// - false if loc0 and loc1 are not equal when simple-normalized
+// - axisIds is an optional array of axes to check (default is to check all axes)
+// - loc0 and loc1 are arrays of equal length
+function locationsAreEqual(loc0, loc1, axisIds) {
+	if (loc0.length !== loc1.length)
+		return false;
+
+	if (!axisIds)
+		axisIds = [...Array(loc0.length).keys()];
+
+	let equal = true;
+	for (let a=0; a<axisIds.length; a++) {
+		const axisId = axisIds[a];
+		if (simpleNormalize(GLOBAL.font.fvar.axes[axisId], loc0[axisId]) !== simpleNormalize(GLOBAL.font.fvar.axes[axisId], loc1[axisId])) {
+			equal = false;
+			break;
+		}
+	}
+	return equal;
+}
+
 
 function mappingsChanged(mode) {
 
@@ -794,32 +1231,32 @@ function mappingsChanged(mode) {
 		}
 	});
 
-	// set up the grid locations
-	const visibleAxisIds = getVisibleAxisIds();
-	const visibleAxes = visibleAxisIds.map(a => GLOBAL.font.fvar.axes[a]);
-	const gridLocations = [];
-	const graticuleStyle = Q("#grid-style").value;
-	const xGraticules = getGraticulesForAxis(visibleAxes[0], graticuleStyle);
-	const yGraticules = getGraticulesForAxis(visibleAxes[1], graticuleStyle);
+	// // set up the grid locations
+	// const visibleAxisIds = getVisibleAxisIds();
+	// const visibleAxes = visibleAxisIds.map(a => GLOBAL.font.fvar.axes[a]);
+	// const gridLocations = [];
+	// const graticuleStyle = Q("#grid-style").value;
+	// const xGraticules = getGraticulesForAxis(rect, visibleAxes[0], graticuleStyle);
+	// const yGraticules = getGraticulesForAxis(rect, visibleAxes[1], graticuleStyle);
 
-	// draw a grid
-	xGraticules.forEach(x => {
-		yGraticules.forEach(y => {
+	// // draw a grid
+	// xGraticules.forEach(x => {
+	// 	yGraticules.forEach(y => {
 
-			const gridLocation = [[],[]];
-			GLOBAL.font.fvar.axes.forEach((axis, a) => {
-				let val;
-				if (axis === visibleAxes[0])
-					val = x;
-				else if (axis === visibleAxes[1])
-					val = y;
-				else
-					val = GLOBAL.current[0][a];
-				gridLocation[0][a] = gridLocation[1][a] = val;
-			});
-			gridLocations.push(gridLocation);
-		});	
-	});
+	// 		const gridLocation = [[],[]];
+	// 		GLOBAL.font.fvar.axes.forEach((axis, a) => {
+	// 			let val;
+	// 			if (axis === visibleAxes[0])
+	// 				val = x;
+	// 			else if (axis === visibleAxes[1])
+	// 				val = y;
+	// 			else
+	// 				val = GLOBAL.current[0][a];
+	// 			gridLocation[0][a] = gridLocation[1][a] = val;
+	// 		});
+	// 		gridLocations.push(gridLocation);
+	// 	});	
+	// });
 
 	// if this remains undefined, we didn’t create an avar table
 	let avarBuf;
@@ -905,9 +1342,6 @@ function mappingsChanged(mode) {
 	else
 		GLOBAL.fontBuffer = exportFontWithTables(GLOBAL.font, undefined, { avar: true }); // explicitly delete any avar table
 
-	// create a new SamsaFont from the binary font, so that we can create instances and detemine transformed tuples
-	const sf = new SamsaFont(GLOBAL.fontBuffer);
-
 	// connect the new font to the UI
 	GLOBAL.familyName = "Fencer-" + Math.random().toString(36).substring(7);
 	if (GLOBAL.fontFace)
@@ -918,222 +1352,11 @@ function mappingsChanged(mode) {
 		Qall(".render").forEach( renderEl => renderEl.style.fontFamily = GLOBAL.familyName );
 	});
 
-	// update the location[1] values for a given array of location[0] values
-	function instantiateLocation(sf, location) {
-		// find the transformed axis locations, without creating a SamsaInstance
-		const normalizedLocation = location[0].map((coord, a) => simpleNormalize(GLOBAL.font.fvar.axes[a], coord));
-		if (GLOBAL.ivs) {
-			const deltas = SamsaFont.prototype.itemVariationStoreInstantiate(GLOBAL.ivs, normalizedLocation);
-			location[1] = denormalizeTuple(normalizedLocation.map((coord, a) => clamp(coord + deltas[0][a]/0x4000, -1, 1)));
-		}
-		else {
-			location[0].forEach((val, i) => location[1][i] = val); // alternative to location[1] = location[0] without reassigning array
-		}
-	}
+	// calculate the transformed locations of current and instances
+	[GLOBAL.current, ...GLOBAL.instances].forEach(location => instantiateLocation(location));
 
-	// create an instance for each location, in order to gets its normalized tuple
-	const locations = [GLOBAL.current, ...GLOBAL.instances];
-	[...locations, ...gridLocations].forEach(location => instantiateLocation(sf, location));
-
-	// returns true or false, depending on whether the two user locations are equal
-	// - true if loc0 and loc1 are equal when simple-normalized
-	// - false if loc0 and loc1 are not equal when simple-normalized
-	// - axisIds is an optional array of axes to check (default is to check all axes)
-	// - loc0 and loc1 are arrays of equal length
-	function locationsAreEqual(loc0, loc1, axisIds) {
-		if (loc0.length !== loc1.length)
-			return false;
-
-		if (!axisIds)
-			axisIds = [...Array(loc0.length).keys()];
-
-		let equal = true;
-		for (let a=0; a<axisIds.length; a++) {
-			const axisId = axisIds[a];
-			if (simpleNormalize(GLOBAL.font.fvar.axes[axisId], loc0[axisId]) !== simpleNormalize(GLOBAL.font.fvar.axes[axisId], loc1[axisId])) {
-				equal = false;
-				break;
-			}
-		}
-		return equal;
-	}
-
-	// ok start redrawing the SVG
-	Q("#mappings-visual g").innerHTML = "";
-
-	// get base rectangle
-	const rect =  Q(".svg-container").getBoundingClientRect();
-
-	// draw a white rectangle to clear the SVG
-	Q("#mappings-visual g").append(SVG("rect", {x:0, y:0, width:rect.width, height:rect.height, fill: "white"})); // draw a white rectangle
-
-	// draw grid as colors
-	// - the idea is to draw colors from location[1] in the positions of locations[0]
-	if (Q("#show-colors").checked) {
-		gridLocations.forEach((location, l) => {
-
-			// get current visible axes
-			const [xAxisId, yAxisId] = getVisibleAxisIds();
-			const [xAxis, yAxis] = [xAxisId, yAxisId].map(a => GLOBAL.font.fvar.axes[a]);
-			let xRatio = 0, yRatio = 0;
-			
-			if (location[1][xAxisId] > xAxis.defaultValue)
-				xRatio = (location[1][xAxisId] - xAxis.defaultValue) / (xAxis.maxValue - xAxis.defaultValue);
-			else if (location[1][xAxisId] < visibleAxes[0].defaultValue)
-				xRatio = (location[1][xAxisId] - xAxis.defaultValue) / (xAxis.minValue - xAxis.defaultValue);
-
-			if (location[1][yAxisId] > yAxis.defaultValue)
-				yRatio = (location[1][yAxisId] - yAxis.defaultValue) / (yAxis.maxValue - yAxis.defaultValue);
-			else if (location[1][yAxisId] < yAxis.defaultValue)
-				yRatio = (location[1][yAxisId] - yAxis.defaultValue) / (yAxis.minValue - yAxis.defaultValue);
-
-			const hue = Math.atan2(yRatio, xRatio) * 180 / Math.PI * 2; // the *2 transforms [0,90] to [0,180]
-			const saturation = Math.max(xRatio, yRatio);
-			const lightness = 0.5;
-			const hslValue = `hsl(${Math.round(hue)}deg ${Math.round(saturation*100)}% ${Math.round(lightness*100)}%)`;
-
-			// convert coords to svg values
-			const [svgX0, svgY0] = svgCoordsFromAxisCoords(location[0]);
-			const size = 40;
-			const rectEl = SVG("rect", {x: svgX0-size/2, y: svgY0-size/2, width: size, height: size, fill: hslValue, stroke: "none"});
-
-			// add rectEl to the SVG
-			Q("#mappings-visual g").append(rectEl);
-		});
-	}
-
-	// draw a grey border to mask out the colours that go over the edge
-	const borderEl = SVG("path", {d: `M-10 -10H${rect.width+20}V${rect.height+20}H-10ZM0 0V${rect.height}H${rect.width}V0Z`, fill: "#eee", stroke: "none"});
-	Q("#mappings-visual g").append(borderEl);
-
-
-	// draw x-axis and y-axis
-	const svgOriginCoords = svgCoordsFromAxisCoords(getDefaultAxisCoords());
-
-	const axesEl = SVG("path", {d: `M0,${svgOriginCoords[1]}H${rect.width}M${svgOriginCoords[0]},0V${rect.height}Z`, fill: "none", stroke: "black", "stroke-width": 2}); // draw the axes with 2 lines
-	Q("#mappings-visual g").append(axesEl);
-
-	// draw grid locations as a grid
-	if (Q("#grid-style").value.startsWith("grid-")) {
-
-		// build a single path element that draws all the grid lines
-		let pathStr = "";
-
-		// vertical lines
-		for (let xn=0; xn < xGraticules.length; xn++)
-			for (let yn=0, cmd="M"; yn < yGraticules.length; yn++, cmd="L")
-				pathStr += cmd + svgCoordsFromAxisCoords(gridLocations[xn * yGraticules.length + yn][1]).join();
-
-		// horizontal lines
-		for (let yn=0; yn < yGraticules.length; yn++)
-			for (let xn=0, cmd="M"; xn < xGraticules.length; xn++, cmd="L")
-				pathStr += cmd + svgCoordsFromAxisCoords(gridLocations[xn * yGraticules.length + yn][1]).join();
-
-		// add the path to the SVG
-		const path = SVG("path", {d: pathStr, stroke: "#ccc", fill: "none"});
-		Q("#mappings-visual g").append(path);
-	}
-	
-	// draw grid locations as vectors
-	else {
-		gridLocations.forEach((location, l) => {
-			const [svgX0, svgY0] = svgCoordsFromAxisCoords(location[0]);
-			const [svgX1, svgY1] = svgCoordsFromAxisCoords(location[1]);
-
-			// are the input and output equal in this projection? (need to allow for normalization rounding)
-			if (!locationsAreEqual(location[0], location[1], visibleAxisIds)) {
-				const arrow = svgArrow({x1: svgX0, y1: svgY0, x2: svgX1, y2: svgY1, tipLen: 7, tipWid: 7, strokeWidth: 1, color: "#bbb"}); // draw an arrow
-				Q("#mappings-visual g").append(arrow);	
-			}
-			Q("#mappings-visual g").append(SVG("circle", {cx: svgX0, cy: svgY0, r: 2.5, fill: "#bbb"})); // draw a dot
-		});
-	}
-
-	// draw grid as heat map?
-	// TODO: the idea is to show which locations have moved the most
-
-	// draw the instances (including current)
-	// - draw them early so they are underneath the mappings and current location which need to be dragged
-	GLOBAL.instances.forEach(location => {
-		const [svgX0, svgY0] = svgCoordsFromAxisCoords(location[0]);
-		const [svgX1, svgY1] = svgCoordsFromAxisCoords(location[1]);
-
-		const elInstance0 = SVG("g"), elInstance1 = SVG("g");
-
-		elInstance0.innerHTML = svgCurrentLocation;
-		elInstance0.setPosition([svgX0, svgY0]);
-		elInstance0.style.opacity = 0.9;
-		elInstance0.style.color = instanceColor;
-		
-		elInstance1.innerHTML = svgCurrentLocation;
-		elInstance1.setPosition([svgX1, svgY1]);
-		elInstance1.style.opacity = 0.4;
-		elInstance1.style.color = instanceColor;
-
-		Q("#mappings-visual g").append(elInstance1, elInstance0);
-
-		// are the input and output equal in this projection? (need to allow for normalization rounding)
-		if (locationsAreEqual(location[0], location[1], visibleAxisIds)) {
-			Q("#mappings-visual g").append(elInstance0);
-		}
-		else {
-			Q("#mappings-visual g").append(elInstance1, elInstance0, svgArrow({x1: svgX0, y1: svgY0, x2: svgX1, y2: svgY1, tipLen: 7, tipWid: 7, strokeWidth: 1, color: instanceColor})); // add an arrow
-		}
-	});
-
-	// draw the mappings
-	GLOBAL.mappings.forEach((mapping, m) => {
-
-		const elInput = SVG("g");
-		const elOutput = SVG("g");
-	
-		elInput.classList.add("input", "location", "mapping");
-		elOutput.classList.add("output", "location", "mapping");
-	
-		elInput.innerHTML = svgMappingHandle;
-		elOutput.innerHTML = svgMappingHandle;
-	
-		elInput.onmousedown = mappingMouseDown;
-		elOutput.onmousedown = mappingMouseDown;
-
-		elInput.dataset.index = m;
-		elOutput.dataset.index = m;
-
-		const svgCoordsFrom = svgCoordsFromAxisCoords(mapping[0]);
-		const svgCoordsTo = svgCoordsFromAxisCoords(mapping[1]);
-
-		elInput.setPosition(svgCoordsFrom);
-		elInput.style.opacity = 0.8;
-		elOutput.setPosition(svgCoordsTo);
-		elOutput.style.opacity = 0.4;
-
-		// draw the arrow
-		const arrowSvg = svgArrow({index: m, x1: svgCoordsFrom[0], y1: svgCoordsFrom[1], x2: svgCoordsTo[0], y2: svgCoordsTo[1], tipLen: 11, tipWid: 11, strokeWidth: 2});
-		arrowSvg.classList.add("mapping");
-
-		// add them all to the SVG element		
-		Q("#mappings-visual g").append(arrowSvg, elOutput, elInput);
-	});
-
-	// display the current location (untransformed #0 and transformed #1)
-	// - render #1 first since it may be underneath #0 (which needs mouse events)
-	const elCurrent0 = SVG("g"), elCurrent1 = SVG("g");
-
-	const svgCoordsFrom = svgCoordsFromAxisCoords(GLOBAL.current[0]);
-	const svgCoordsTo = svgCoordsFromAxisCoords(GLOBAL.current[1]);
-
-	elCurrent0.innerHTML = svgCurrentLocation;
-	elCurrent0.setPosition(svgCoordsFrom);
-	elCurrent0.style.opacity = 0.9;
-	elCurrent0.classList.add("current", "location", "input"); // input class allows it to be handled by the mappings mouse handlers
-	elCurrent0.style.color = "var(--currentLocationColor)";
-	elCurrent0.dataset.index = -1;
-	elCurrent0.onmousedown = mappingMouseDown; // only elCurrent0 gets a mouse handler
-
-	elCurrent1.innerHTML = svgCurrentLocation;
-	elCurrent1.setPosition(svgCoordsTo);
-	elCurrent1.style.opacity = 0.4;
-	elCurrent1.style.color = "var(--currentLocationColor)";
+	// DRAW ALL VIEWS!!
+	Qall(".window.view").forEach(viewEl => drawView(viewEl));
 
 	// update the output locations for the current axis, if it’s selected
 	if (GLOBAL.draggingIndex === -1) {
@@ -1143,31 +1366,9 @@ function mappingsChanged(mode) {
 		formatNumericControls(-1);
 	}	
 
-	// draw the current arrow
-	const arrowSvg = svgArrow({index: -1, x1: svgCoordsFrom[0], y1: svgCoordsFrom[1], x2: svgCoordsTo[0], y2: svgCoordsTo[1], tipLen: 7, tipWid: 7, strokeWidth: 1, color: "var(--currentLocationColor)"});
-	Q("#mappings-visual g").append(elCurrent1, elCurrent0, arrowSvg); // order is important, since we must be able to click on the [0] version if they overlap
-
-	// draw the rulers
-	const rulerX = Q(".ruler.horizontal"), rulerY = Q(".ruler.vertical");
-	const rulerGraticulesX = getGraticulesForAxis(visibleAxes[0], "ruler");
-	const rulerGraticulesY = getGraticulesForAxis(visibleAxes[1], "ruler");
-
-	if (!rulerX.textContent) {
-		rulerGraticulesX.forEach(x => {
-			const label = EL("div", {style: `position: absolute; transform: rotate(-90deg); transform-origin: left; bottom: 0; left: ${svgCoordFromAxisCoord(visibleAxes[0].axisId, x)}px`});
-			label.textContent = x;
-			rulerX.append(label);
-		});
-	}
-	if (!rulerY.textContent) {
-		rulerGraticulesY.forEach(y => {
-			const label = EL("div", {style: `position: absolute; right: 0; bottom: ${svgCoordFromAxisCoord(visibleAxes[1].axisId, y)-10}px`});
-			label.textContent = y;
-			rulerY.append(label);
-		});
-	}
 }
 
+// this function should be inside where we create the surrounding view and svg elements, then it can take all that nice context
 function svgMouseMove(e) {
 
 	e.preventDefault();
@@ -1175,10 +1376,28 @@ function svgMouseMove(e) {
 	if (!GLOBAL.dragging)
 		return;
 
-	const visibleAxisIds = getVisibleAxisIds(); // which axes are we using?
+//	const axes = GLOBAL.font.fvar.axes;
+
+
+	// const xAxis = axes[visibleAxisIds[0]];
+	// const yAxis = axes[visibleAxisIds[1]];
+
+	//const viewEl = GLOBAL.dragging.closest(".window.view");
 	const el = GLOBAL.dragging; // not e.target
-	const index = parseInt(el.dataset.index); // should be the same as GLOBAL.draggingIndex, as set in mousedown event
-	const rect =  Q(".svg-container").getBoundingClientRect();
+	// const el = 
+	// console.log("el", el)
+	// const svgEl = el.closest(".mappings-visual");
+	// console.log("svgEl", svgEl)
+	const viewEl = GLOBAL.draggingViewEl; // svgEl.closest(".window.view");
+	const [xAxisId, yAxisId] = getVisibleAxisIds(viewEl);
+	const [xAxis, yAxis] = [xAxisId, yAxisId].map(a => GLOBAL.font.fvar.axes[a]);
+
+	const visibleAxisIds = getVisibleAxisIds(viewEl); // which axes are we using?
+	//const index = parseInt(el.dataset.index); // should be the same as GLOBAL.draggingIndex, as set in mousedown event
+	const index = GLOBAL.draggingIndex;
+	//const rect =  el.closest(".svg-container").getBoundingClientRect();
+	const rect =  viewEl.querySelector(".svg-container").getBoundingClientRect();
+	//const svgEl = el.closest(".mappings-visual");
 
 
 	const mousex = e.clientX;
@@ -1188,23 +1407,24 @@ function svgMouseMove(e) {
 	const svgX = x - GLOBAL.dragOffset[0];
 	const svgY = y - GLOBAL.dragOffset[1];
 
-	let xCoord = axisCoordFromSvgCoord(visibleAxisIds[0], svgX);
-	let yCoord = axisCoordFromSvgCoord(visibleAxisIds[1], svgY);
+	let xCoord = axisCoordFromSvgCoord(viewEl, xAxisId, svgX);
+	let yCoord = axisCoordFromSvgCoord(viewEl, yAxisId, svgY);
 	if (Q("#integer-snapping").checked) {
 		xCoord = Math.round(xCoord);
 		yCoord = Math.round(yCoord);
 	}
-	xCoord = Math.min(xCoord, GLOBAL.font.fvar.axes[visibleAxisIds[0]].maxValue);
-	xCoord = Math.max(xCoord, GLOBAL.font.fvar.axes[visibleAxisIds[0]].minValue);
-	yCoord = Math.min(yCoord, GLOBAL.font.fvar.axes[visibleAxisIds[1]].maxValue);
-	yCoord = Math.max(yCoord, GLOBAL.font.fvar.axes[visibleAxisIds[1]].minValue);
+	xCoord = clamp(xCoord, xAxis.minValue, xAxis.maxValue);
+	yCoord = clamp(yCoord, yAxis.minValue, yAxis.maxValue);
+	//xCoord = Math.max(xCoord, xAxis.minValue);
+	// yCoord = Math.min(yCoord, yAxis.maxValue);
+	// yCoord = Math.max(yCoord, yAxis.minValue);
 
 	const inputOrOutputId = +el.classList.contains("output"); // yields 0 for input, 1 for output (works for current as well as mappings)
 	const mapping = index === -1 ? GLOBAL.current : GLOBAL.mappings[GLOBAL.draggingIndex];
-	mapping[inputOrOutputId][visibleAxisIds[0]] = xCoord;
-	mapping[inputOrOutputId][visibleAxisIds[1]] = yCoord;
+	mapping[inputOrOutputId][xAxisId] = xCoord;
+	mapping[inputOrOutputId][yAxisId] = yCoord;
 
-	updatePucks(svgCoordsFromAxisCoords(mapping[inputOrOutputId])); // they were made visible in mousedown event
+	updatePucks(viewEl, svgCoordsFromAxisCoords(viewEl, mapping[inputOrOutputId])); // they were made visible in mousedown event
 
 	mappingsChanged();
 	updateMappingsSliders(index);
@@ -1212,26 +1432,27 @@ function svgMouseMove(e) {
 	updateRenders();
 }
 
+// this function should be inside where we create the surrounding view and svg elements, then it can take all that nice context
 function svgMouseUp(e) {
 	e.stopPropagation();
 
-	const rect =  Q(".svg-container").getBoundingClientRect();
-
-	const x = e.clientX;
-	const y = e.clientY;
+	const viewEl = GLOBAL.draggingViewEl;
+	viewEl.querySelectorAll(".ruler .puck").forEach(el => el.classList.add("hidden")); // hide pucks
 
 	GLOBAL.dragging = undefined;
 	GLOBAL.dragOffset = undefined;
-
-	// hide pucks
-	Qall(".ruler .puck").forEach(el => el.classList.add("hidden"));
+	GLOBAL.draggingViewEl = undefined;
 
 	// disable what we put in place when we started dragging
 	document.onmousemove = null;
 	document.onmouseup = null;
 }
 
+// this function should be inside where we create the surrounding view and svg elements, then it can take all that nice context
 function mappingMouseDown (e) {
+
+	const viewEl = e.target.closest(".window.view")
+	GLOBAL.draggingViewEl = viewEl;
 
 	// if we hit the line, propagate the event
 	// - this works for icons for mapping location and current location
@@ -1244,7 +1465,7 @@ function mappingMouseDown (e) {
 	e.preventDefault();
 	e.stopPropagation();
 
-	const rect =  Q(".svg-container").getBoundingClientRect();
+	const rect =  e.target.closest(".svg-container").getBoundingClientRect();
 	
 	GLOBAL.draggingIndex = parseInt(el.dataset.index);
 
@@ -1269,17 +1490,16 @@ function mappingMouseDown (e) {
 	updateMappingsSliders(GLOBAL.draggingIndex);
 
 	// display pucks on each ruler
-	const visibleAxisIds = getVisibleAxisIds();
+	const visibleAxisIds = getVisibleAxisIds(viewEl);
 	svgX -= dx;
 	svgY -= dy;
-	let xCoord = axisCoordFromSvgCoord(visibleAxisIds[0], svgX);
-	let yCoord = axisCoordFromSvgCoord(visibleAxisIds[1], svgY);
 
 	// show pucks
-	Qall(".ruler .puck").forEach(el => el.classList.remove("hidden"));
+	// Qall(".ruler .puck").forEach(el => el.classList.remove("hidden"));
+	viewEl.querySelectorAll(".ruler .puck").forEach(el => el.classList.remove("hidden"));
 	const inputOrOutputId = el.classList.contains("input") ? 0 : 1;
 	const mapping = GLOBAL.draggingIndex === -1 ? GLOBAL.current : GLOBAL.mappings[GLOBAL.draggingIndex];
-	updatePucks(svgCoordsFromAxisCoords(mapping[inputOrOutputId]));
+	updatePucks(viewEl, svgCoordsFromAxisCoords(viewEl, mapping[inputOrOutputId]));
 
 	// these need to be on the document, not on the mousedown element
 	document.onmousemove = svgMouseMove;
@@ -1288,11 +1508,12 @@ function mappingMouseDown (e) {
 
 // update the position of the pucks on each ruler
 // TODO: fix issue with puck positions (it changes with string length)
-function updatePucks(svgCoords) {
+function updatePucks(viewEl, svgCoords) {
 	const [svgX, svgY] = svgCoords;
-	const visibleAxisIds = getVisibleAxisIds();
-	const hPuck = Q(".ruler.horizontal .puck"), vPuck = Q(".ruler.vertical .puck");
-	const coords = [axisCoordFromSvgCoord(visibleAxisIds[0], svgX), axisCoordFromSvgCoord(visibleAxisIds[1], svgY)];
+	const visibleAxisIds = getVisibleAxisIds(viewEl);
+	const rect = viewEl.querySelector(".svg-container").getBoundingClientRect();
+	const hPuck = viewEl.querySelector(".ruler.horizontal .puck"), vPuck = viewEl.querySelector(".ruler.vertical .puck");
+	const coords = [axisCoordFromSvgCoord(viewEl, visibleAxisIds[0], svgX), axisCoordFromSvgCoord(viewEl, visibleAxisIds[1], svgY)];
 	hPuck.classList.remove("hidden");
 	hPuck.textContent = Math.round(coords[0] * 100)/100;
 	hPuck.style.left = `${svgX-20}px`
@@ -1302,7 +1523,7 @@ function updatePucks(svgCoords) {
 }
 
 // return a sorted array of values that span the axis from min to max, and are base 10 friendly
-function getGraticulesForAxis(axis, graticuleSpec) {
+function getGraticulesForAxis(viewEl, axis, graticuleSpec) {
 
 	if (axis.maxValue - axis.minValue == 0)
 		return [axis.maxValue];
@@ -1321,11 +1542,11 @@ function getGraticulesForAxis(axis, graticuleSpec) {
 		let match;
 		if (match = graticuleSpec.match(/^(fill-space-|grid-)(\d+)/)) // e.g. fill-space-20, fill-space-40
 			inc = parseInt(match[2]);
-		for (let val = svgCoordFromAxisCoord(axis.axisId, axis.defaultValue) + inc; axisCoordFromSvgCoord(axis.axisId, val) < axis.maxValue; val += inc) { // get the max side of the axis
-			graticules.add(axisCoordFromSvgCoord(axis.axisId, val));
+		for (let val = svgCoordFromAxisCoord(viewEl, axis.axisId, axis.defaultValue) + inc; axisCoordFromSvgCoord(viewEl, axis.axisId, val) < axis.maxValue; val += inc) { // get the max side of the axis
+			graticules.add(axisCoordFromSvgCoord(viewEl, axis.axisId, val));
 		}
-		for (let val = svgCoordFromAxisCoord(axis.axisId, axis.defaultValue) - inc; axisCoordFromSvgCoord(axis.axisId, val) > axis.minValue; val -= inc) { // get the min side of the axis
-			graticules.add(axisCoordFromSvgCoord(axis.axisId, val));
+		for (let val = svgCoordFromAxisCoord(viewEl, axis.axisId, axis.defaultValue) - inc; axisCoordFromSvgCoord(viewEl, axis.axisId, val) > axis.minValue; val -= inc) { // get the min side of the axis
+			graticules.add(axisCoordFromSvgCoord(viewEl, axis.axisId, val));
 		}
 	}
 
@@ -1333,9 +1554,11 @@ function getGraticulesForAxis(axis, graticuleSpec) {
 }
 
 function deltaSetScale (deltaSet, scale=0x4000, round=true) {
-	const scaledDeltaSet = [];
-	deltaSet.forEach((delta, d) => scaledDeltaSet[d] = round ? Math.round(delta * scale) : delta * scale );
-	return scaledDeltaSet;
+	// const scaledDeltaSet = [];
+	// deltaSet.forEach((delta, d) => scaledDeltaSet[d] = round ? Math.round(delta * scale) : delta * scale );
+	// return scaledDeltaSet;
+
+	return round ? deltaSet.map(delta => Math.round(delta * scale)) : deltaSet.map(delta => delta * scale);
 }
 
 function uint8ArrayToBase64(uint8) {
@@ -1558,29 +1781,32 @@ function updateMappingsSliders(m) {
 	}
 }
 
-function updateSVGTransform() {
+function updateSVGTransform(viewEl) {
 
 	// fix the transform
-	Q("#mappings-visual g").attr({
-		transform: `scale(1 -1) translate(10 -${Q(".svg-container").getBoundingClientRect().height + 10})`,
+	if (!viewEl) viewEl = Q(".window.view");
+
+	viewEl.querySelector(".mappings-visual>g").attr({
+		transform: `scale(1 -1) translate(10 -${viewEl.querySelector(".svg-container").getBoundingClientRect().height + 10})`,
 	});
 
 	// draw the rulers
-	const visibleAxisIds = getVisibleAxisIds();
+	const visibleAxisIds = getVisibleAxisIds(viewEl);
 	const visibleAxes = visibleAxisIds.map(a => GLOBAL.font.fvar.axes[a]);
-	const rulerX = Q(".ruler.horizontal"), rulerY = Q(".ruler.vertical");
-	const rulerGraticulesX = getGraticulesForAxis(visibleAxes[0], "ruler");
-	const rulerGraticulesY = getGraticulesForAxis(visibleAxes[1], "ruler");
+	const rulerX = viewEl.querySelector(".ruler.horizontal"), rulerY = viewEl.querySelector(".ruler.vertical");
+	const rulerGraticulesX = getGraticulesForAxis(viewEl, visibleAxes[0], "ruler");
+	const rulerGraticulesY = getGraticulesForAxis(viewEl, visibleAxes[1], "ruler");
 
 	// update the axis graticules
-	Qall(".graticule").forEach(el => el.remove());
+	viewEl.querySelectorAll(".graticule").forEach(el => el.remove());
+	// Qall(".graticule").forEach(el => el.remove());
 	rulerGraticulesX.forEach(x => {
-		const label = EL("div", {class: "graticule", style: `left: ${svgCoordFromAxisCoord(visibleAxisIds[0], x)}px`});
+		const label = EL("div", {class: "graticule", style: `left: ${svgCoordFromAxisCoord(viewEl, visibleAxisIds[0], x)}px`});
 		label.textContent = x;
 		rulerX.append(label);
 	});
 	rulerGraticulesY.forEach(y => {
-		const label = EL("div", {class: "graticule", style: `bottom: ${svgCoordFromAxisCoord(visibleAxisIds[1], y)-8}px`});
+		const label = EL("div", {class: "graticule", style: `bottom: ${svgCoordFromAxisCoord(viewEl, visibleAxisIds[1], y)-8}px`});
 		label.textContent = y;
 		rulerY.append(label);
 	});
@@ -1593,6 +1819,123 @@ function selectAxisControls(e) {
 }
 
 
+function windowGiveInteractivity(windowEl) {
+
+	function saveWindowProperties() {
+		// save window states in local storage (position has changed for this window, classes may have changed for other windows)
+		// - TODO: add z-index to the stored properties for all windows when we implement it in UI
+		Qall(".window").forEach(el => {
+			const name = el.querySelector(":scope > h2").textContent;
+			const propString = JSON.stringify({left: el.style.left, top: el.style.top, width: el.style.width, height: el.style.height, classes: [...el.classList]});
+			localStorage.setItem(`fencer:window[${name}]`, propString);
+		});
+	}
+						
+	let isDragging = false;
+	let isResizing = false;
+	let initialMouseX, initialMouseY, initialWindowX, initialWindowY, initialWindowWidth, initialWindowHeight;
+	const titleBar = windowEl.querySelector(":scope > h2");
+	const name = titleBar.textContent;
+
+	// retrieve initial window rect from localStorage
+	const windowProps = JSON.parse(localStorage.getItem(`fencer:window[${name}]`));
+	if (windowProps) {
+		if (windowProps.left) windowEl.style.left = windowProps.left;
+		if (windowProps.top) windowEl.style.top = windowProps.top;
+		if (windowProps.width) windowEl.style.width = windowProps.width;
+		if (windowProps.height) windowEl.style.height = windowProps.height; // this is sometimes not set, i.e. auto, which is fine
+		if (windowProps.classes) {
+			windowProps.classes.forEach(className => windowEl.classList.add(className));
+		}
+	}
+
+	if (titleBar) {
+		windowEl.querySelector(":scope > h2").onmousedown = e => {
+			e.preventDefault();
+			const windowEl = e.target.closest(".window");
+
+			// setup
+			isDragging = true;
+			initialMouseX = e.clientX;
+			initialMouseY = e.clientY;
+			initialWindowX = windowEl.offsetLeft;
+			initialWindowY = windowEl.offsetTop;
+
+			// dragging
+			document.onmousemove = e => {
+				e.preventDefault();
+				if (!isDragging) return;
+				const dx = e.clientX - initialMouseX;
+				const dy = e.clientY - initialMouseY;
+				windowEl.style.left = initialWindowX + dx + "px";
+				windowEl.style.top = initialWindowY + dy + "px";
+			};
+
+			// ending drag
+			document.onmouseup = e => {
+				isDragging = false;
+				document.onmousemove = null;
+				document.onmouseup = null;
+				saveWindowProperties(); // store new position in local storage
+			};
+
+			// window title typography and z-index
+			// TODO: preserve order of windows below the selected one
+			Qall(".window").forEach(el => {
+				if (el === windowEl)
+					el.classList.add("selected", "top");
+				else
+					el.classList.remove("selected", "top");
+			});	
+
+		};
+	}
+
+	const resizeHandle = windowEl.querySelector(":scope > .resize");
+	if (resizeHandle) {
+		resizeHandle.onmousedown = e => {
+			e.preventDefault();
+			isResizing = true;
+			initialMouseX = e.clientX;
+			initialMouseY = e.clientY;
+			initialWindowWidth = windowEl.offsetWidth;
+			initialWindowHeight = windowEl.offsetHeight;
+
+			// resizing
+			document.onmousemove = e => {
+				e.preventDefault();
+				if (!isResizing) return;
+				const dx = e.clientX - initialMouseX;
+				const dy = e.clientY - initialMouseY;
+				if (!resizeHandle.classList.contains("no-horizontal"))
+					windowEl.style.width = initialWindowWidth + dx + 'px';
+				if (!resizeHandle.classList.contains("no-vertical"))
+					windowEl.style.height = initialWindowHeight + dy + 'px';
+
+				if (windowEl.classList.contains("view")) {
+					mappingsChanged(); // update the SVG, yay!
+					updateSVGTransform(windowEl);
+				}
+			};
+
+			// ending resize
+			document.onmouseup = e => {
+				isResizing = false;
+				document.onmousemove = null;
+				document.onmouseup = null;
+				saveWindowProperties(); // store new position in local storage
+			};
+		};
+	}
+
+	const closeButton = windowEl.querySelector(":scope > .close");
+	if (closeButton) {
+		closeButton.onclick = e => closeButton.closest(".window").remove();
+		closeButton.textContent = "close";
+	}
+}
+
+
 function initFencer() {
 
 	const fontinfo = Q(".fontinfo");
@@ -1600,13 +1943,14 @@ function initFencer() {
 	fontinfo.addEventListener("drop", onDropFont);
 
 	// init the svg
-	GLOBAL.svgEl = SVG("svg");
+	GLOBAL.svgEl = SVG("svg", {class: "mappings-visual"});
 	GLOBAL.svgEl.append(SVG("g")); // this <g> element has all the content and has a transform
-	GLOBAL.svgEl.id = "mappings-visual";
 	
 	Q("#mapping-selector").onchange = selectAxisControls;
 
-	Q(".window.mappings-ui .svg-container").append(GLOBAL.svgEl);
+	// delete the window created by the html
+	// TODO: remove the HTML and this code
+	Q(".window.mappings-ui").remove();
 
 	Q("#sample-text").oninput = sampleTextChange; // handle change of sample text
 	Q("#mapping-selector").onchange = selectMapping; // handle change of mappings selector
@@ -1661,115 +2005,10 @@ function initFencer() {
 	// set up the windowing system
 	Qall(".window").forEach(windowEl => {
 
-		function saveWindowProperties() {
-			// save window states in local storage (position has changed for this window, classes may have changed for other windows)
-			// - TODO: add z-index to the stored properties for all windows when we implement it in UI
-			Qall(".window").forEach(el => {
-				const name = el.querySelector(":scope > h2").textContent;
-				const propString = JSON.stringify({left: el.style.left, top: el.style.top, width: el.style.width, height: el.style.height, classes: [...el.classList]});
-				localStorage.setItem(`fencer:window[${name}]`, propString);
-			});
-		}
-							
-		let isDragging = false;
-		let isResizing = false;
-		let initialMouseX, initialMouseY, initialWindowX, initialWindowY, initialWindowWidth, initialWindowHeight;
-		const titleBar = windowEl.querySelector(":scope > h2");
-		const name = titleBar.textContent;
+		windowGiveInteractivity(windowEl);
 
-		// retrieve initial window rect from localStorage
-		const windowProps = JSON.parse(localStorage.getItem(`fencer:window[${name}]`));
-		if (windowProps) {
-			if (windowProps.left) windowEl.style.left = windowProps.left;
-			if (windowProps.top) windowEl.style.top = windowProps.top;
-			if (windowProps.width) windowEl.style.width = windowProps.width;
-			if (windowProps.height) windowEl.style.height = windowProps.height; // this is sometimes not set, i.e. auto, which is fine
-			if (windowProps.classes) {
-				windowProps.classes.forEach(className => windowEl.classList.add(className));
-			}
-		}
-
-		if (titleBar) {
-			windowEl.querySelector(":scope > h2").onmousedown = e => {
-				e.preventDefault();
-				const windowEl = e.target.closest(".window");
-
-				// setup
-				isDragging = true;
-				initialMouseX = e.clientX;
-				initialMouseY = e.clientY;
-				initialWindowX = windowEl.offsetLeft;
-				initialWindowY = windowEl.offsetTop;
-
-				// dragging
-				document.onmousemove = e => {
-					e.preventDefault();
-					if (!isDragging) return;
-					const dx = e.clientX - initialMouseX;
-					const dy = e.clientY - initialMouseY;
-					windowEl.style.left = initialWindowX + dx + "px";
-					windowEl.style.top = initialWindowY + dy + "px";
-				};
-
-				// ending drag
-				document.onmouseup = e => {
-					isDragging = false;
-					document.onmousemove = null;
-					document.onmouseup = null;
-					saveWindowProperties(); // store new position in local storage
-				};
-
-				// window title typography and z-index
-				// TODO: preserve order of windows below the selected one
-				Qall(".window").forEach(el => {
-					if (el === windowEl)
-						el.classList.add("selected", "top");
-					else
-						el.classList.remove("selected", "top");
-				});	
-
-			};
-		}
-
-		const resizeHandle = windowEl.querySelector(":scope > .resize");
-		if (resizeHandle) {
-			resizeHandle.onmousedown = e => {
-				e.preventDefault();
-				isResizing = true;
-				initialMouseX = e.clientX;
-				initialMouseY = e.clientY;
-				initialWindowWidth = windowEl.offsetWidth;
-				initialWindowHeight = windowEl.offsetHeight;
-
-				// resizing
-				document.onmousemove = e => {
-					e.preventDefault();
-					if (!isResizing) return;
-					const dx = e.clientX - initialMouseX;
-					const dy = e.clientY - initialMouseY;
-					if (!resizeHandle.classList.contains("no-horizontal"))
-						windowEl.style.width = initialWindowWidth + dx + 'px';
-					if (!resizeHandle.classList.contains("no-vertical"))
-						windowEl.style.height = initialWindowHeight + dy + 'px';
-
-					if (windowEl.classList.contains("mappings-ui")) {
-						mappingsChanged(); // update the SVG, yay!
-						updateSVGTransform();
-					}
-				};
-
-				// ending resize
-				document.onmouseup = e => {
-					isResizing = false;
-					document.onmousemove = null;
-					document.onmouseup = null;
-					saveWindowProperties(); // store new position in local storage
-				};
-			};
-		}
-
-		
 	});
+
 }
 
 function downloadFont() {
