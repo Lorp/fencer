@@ -11,12 +11,12 @@ Fencer is a GUI app that allows users to create avar (v2) tables inside their va
 ## UI Basics
 
 The UI implements a windowing system, where you can drag and resize windows according to your preference. The windows are:
-* **Settings window**, with:
+* **Locations window**, with:
 	* a bank of sliders
 	* a dropdown selector to choose whether one is editing the Current location or one of the Mappings
 	* reset-to-default buttons (click resets input locations, shift-click resets output locations)
 	* radio buttons to select X and Y axes in the Mappings window.
-* **Mappings window**, where:
+* **View windows**, where:
 	* the dimensions of the 2D space are controlled by the radio buttons in the Controls panel (by default, the first axis in the font uses the X dimension of the display, the second axis in the font uses the Y dimension of the display)
 	* the Mappings are displayed as green arrows in 2D space
 	* you can add and delete Mappings, and drag them around
