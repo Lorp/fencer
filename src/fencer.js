@@ -9,6 +9,7 @@ const svgArrowLineWidth = 2;
 const svgMappingHandle = `<circle cx="0" cy="0" r="${svgArrowHandleRadius}" fill="currentColor" stroke="none"/>`;
 const svgCurrentLocation = `<circle cx="0" cy="0" r="${svgCurrentLocationRadius+svgArrowLineWidth}" fill="white" stroke="none"/><circle cx="0" cy="0" r="${svgCurrentLocationRadius}" fill="currentColor" stroke="none"/>`;
 const instanceColor = "#f00";
+const ioStr = ["input","output"];
 
 const GLOBAL = {
 	svgElWidth: 400,
@@ -555,8 +556,7 @@ function loadFontFromArrayBuffer (arrayBuffer, options={}) {
 
 	function axisChange (e) {
 
-		const inputOrOutput = e.target.classList.contains("input") ? "input" : "output";
-		const inputOrOutputId = (inputOrOutput === "input") ? 0 : 1;
+		const ioId = +e.target.classList.contains("output");
 		const el = e.target;
 		const axisEl = el.closest(".axis");
 		const axisId = parseInt(axisEl.dataset.axisId);
@@ -566,7 +566,7 @@ function loadFontFromArrayBuffer (arrayBuffer, options={}) {
 			val = Math.round(val);
 			el.value = val;
 		}
-		const otherInputEl = el.classList.contains("slider") ? axisEl.querySelector(`.${inputOrOutput}.numeric`) : axisEl.querySelector(`.${inputOrOutput}.slider`);
+		const otherInputEl = el.classList.contains("slider") ? axisEl.querySelector(`.${ioStr[ioId]}.numeric`) : axisEl.querySelector(`.${ioStr[ioId]}.slider`);
 		otherInputEl.value = val;
 
 		// move the marker
@@ -574,7 +574,7 @@ function loadFontFromArrayBuffer (arrayBuffer, options={}) {
 			GLOBAL.current[0][axisId] = parseFloat(el.value);
 		}
 		else {
-			GLOBAL.mappings[GLOBAL.draggingIndex][inputOrOutputId][axisId] = parseFloat(el.value);
+			GLOBAL.mappings[GLOBAL.draggingIndex][ioId][axisId] = parseFloat(el.value);
 		}
 
 		GLOBAL.axisTouched = axisId;
@@ -588,7 +588,7 @@ function loadFontFromArrayBuffer (arrayBuffer, options={}) {
 	function axisReset (e) {
 		const el = e.target;
 		const parentEl = el.closest(".axis,.key");
-		const inputOrOutputId = +e.shiftKey; // 0 for input, 1 for output
+		const ioId = +e.shiftKey; // 0 for input, 1 for output
 
 		// is this the "reset all" button in the key row?
 		if (parentEl.classList.contains("key")) {
@@ -597,7 +597,7 @@ function loadFontFromArrayBuffer (arrayBuffer, options={}) {
 				GLOBAL.current[0] = getDefaultAxisCoords(); // don’t reset GLOBAL.current[1] directly
 			}
 			else {
-				GLOBAL.mappings[GLOBAL.draggingIndex][inputOrOutputId] = getDefaultAxisCoords();
+				GLOBAL.mappings[GLOBAL.draggingIndex][ioId] = getDefaultAxisCoords();
 			}
 		}
 
@@ -611,7 +611,7 @@ function loadFontFromArrayBuffer (arrayBuffer, options={}) {
 				GLOBAL.current[0][axisId] = axis.defaultValue; // don’t reset GLOBAL.current[1] directly
 			}
 			else {
-				GLOBAL.mappings[GLOBAL.draggingIndex][inputOrOutputId][axisId] = axis.defaultValue;
+				GLOBAL.mappings[GLOBAL.draggingIndex][ioId][axisId] = axis.defaultValue;
 			}
 		}
 
@@ -624,7 +624,6 @@ function loadFontFromArrayBuffer (arrayBuffer, options={}) {
 
 	function axisCheckboxChange(e) {
 
-		alert ("axes changes");
 		let xSelected, ySelected;
 		const orientationChosen = e.target.name === "x-axis" ? "x-axis" : "y-axis";
 		const orientationNotChosen = e.target.name === "y-axis" ? "x-axis" : "y-axis";
@@ -1376,29 +1375,12 @@ function svgMouseMove(e) {
 	if (!GLOBAL.dragging)
 		return;
 
-//	const axes = GLOBAL.font.fvar.axes;
-
-
-	// const xAxis = axes[visibleAxisIds[0]];
-	// const yAxis = axes[visibleAxisIds[1]];
-
-	//const viewEl = GLOBAL.dragging.closest(".window.view");
 	const el = GLOBAL.dragging; // not e.target
-	// const el = 
-	// console.log("el", el)
-	// const svgEl = el.closest(".mappings-visual");
-	// console.log("svgEl", svgEl)
-	const viewEl = GLOBAL.draggingViewEl; // svgEl.closest(".window.view");
+	const viewEl = GLOBAL.draggingViewEl;
 	const [xAxisId, yAxisId] = getVisibleAxisIds(viewEl);
 	const [xAxis, yAxis] = [xAxisId, yAxisId].map(a => GLOBAL.font.fvar.axes[a]);
-
-	const visibleAxisIds = getVisibleAxisIds(viewEl); // which axes are we using?
-	//const index = parseInt(el.dataset.index); // should be the same as GLOBAL.draggingIndex, as set in mousedown event
 	const index = GLOBAL.draggingIndex;
-	//const rect =  el.closest(".svg-container").getBoundingClientRect();
 	const rect =  viewEl.querySelector(".svg-container").getBoundingClientRect();
-	//const svgEl = el.closest(".mappings-visual");
-
 
 	const mousex = e.clientX;
 	const mousey = rect.height - e.clientY;
@@ -1415,16 +1397,13 @@ function svgMouseMove(e) {
 	}
 	xCoord = clamp(xCoord, xAxis.minValue, xAxis.maxValue);
 	yCoord = clamp(yCoord, yAxis.minValue, yAxis.maxValue);
-	//xCoord = Math.max(xCoord, xAxis.minValue);
-	// yCoord = Math.min(yCoord, yAxis.maxValue);
-	// yCoord = Math.max(yCoord, yAxis.minValue);
 
-	const inputOrOutputId = +el.classList.contains("output"); // yields 0 for input, 1 for output (works for current as well as mappings)
+	const ioId = +el.classList.contains("output"); // yields 0 for input, 1 for output
 	const mapping = index === -1 ? GLOBAL.current : GLOBAL.mappings[GLOBAL.draggingIndex];
-	mapping[inputOrOutputId][xAxisId] = xCoord;
-	mapping[inputOrOutputId][yAxisId] = yCoord;
+	mapping[ioId][xAxisId] = xCoord;
+	mapping[ioId][yAxisId] = yCoord;
 
-	updatePucks(viewEl, svgCoordsFromAxisCoords(viewEl, mapping[inputOrOutputId])); // they were made visible in mousedown event
+	updatePucks(viewEl, svgCoordsFromAxisCoords(viewEl, mapping[ioId])); // they were made visible in mousedown event
 
 	mappingsChanged();
 	updateMappingsSliders(index);
@@ -1495,11 +1474,10 @@ function mappingMouseDown (e) {
 	svgY -= dy;
 
 	// show pucks
-	// Qall(".ruler .puck").forEach(el => el.classList.remove("hidden"));
 	viewEl.querySelectorAll(".ruler .puck").forEach(el => el.classList.remove("hidden"));
-	const inputOrOutputId = el.classList.contains("input") ? 0 : 1;
+	const ioId = +el.classList.contains("output");
 	const mapping = GLOBAL.draggingIndex === -1 ? GLOBAL.current : GLOBAL.mappings[GLOBAL.draggingIndex];
-	updatePucks(viewEl, svgCoordsFromAxisCoords(viewEl, mapping[inputOrOutputId]));
+	updatePucks(viewEl, svgCoordsFromAxisCoords(viewEl, mapping[ioId]));
 
 	// these need to be on the document, not on the mousedown element
 	document.onmousemove = svgMouseMove;
@@ -1587,14 +1565,14 @@ function xmlChanged(e) {
 			mapping[1].push(...mapping[0]);
 
 			// set any non-default inputs, then set any non-default outputs
-			["input", "output"].forEach((io, inputOrOutputId) => {
+			["input", "output"].forEach((io, ioId) => {
 				mappingEl.querySelectorAll(`${io}>dimension`).forEach(dimEl => {
 					const axisName = dimEl.getAttribute("name");
 					const axis = GLOBAL.font.fvar.axes.find(axis => axis.name === axisName);
 					if (axisName && axis) {
 						const value = parseFloat(dimEl.getAttribute("xvalue"));
 						if (valueInAxisRange(value, axis)) {
-							mapping[inputOrOutputId][axis.axisId] = value;
+							mapping[ioId][axis.axisId] = value;
 						}
 						else {
 							errors.push(`${io} axis ${axisName} value ${value} is outside the range [${axis.minValue},${axis.maxValue}]`);
