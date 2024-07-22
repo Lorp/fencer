@@ -1,6 +1,7 @@
 "use strict"
 
-import { SamsaFont, SamsaInstance, SamsaBuffer } from "./samsa-core/samsa-core.js"; // import samsa-core https://github.com/Lorp/samsa-core
+import hbjs from "./harfbuzz/hbjs.js";
+import { SamsaFont, SamsaBuffer } from "./samsa-core/samsa-core.js"; // import samsa-core https://github.com/Lorp/samsa-core
 import { VariationModel } from "./fontra-src-client-core/var-model.js"; // import Fontra var-model https://github.com/googlefonts/fontra
 
 const svgArrowHandleRadius = 12;
@@ -21,6 +22,14 @@ const GLOBAL = {
 	fontFace: undefined,
 	fontBuffer: undefined,
 	instances: [],
+	renderers: {
+		browser: "browser",
+		polyfill: "simple polyfill",
+		harfbuzz: "harfbuzz",
+		samsa: "samsa",
+	},
+	renderFontSize: 200,
+	renderText: "Rag",
 };
 
 function Q (selector) {
@@ -697,7 +706,9 @@ function loadFontFromArrayBuffer (arrayBuffer, options={}) {
 
 	// create initial view by dispatching event to the "Add view" button
 	Q("#add-view").dispatchEvent(new Event("click"));
-		
+
+
+
 }
 
 function onDropFont (e) {
@@ -1354,6 +1365,9 @@ function mappingsChanged(mode) {
 		Qall(".render").forEach( renderEl => renderEl.style.fontFamily = GLOBAL.familyName );
 	});
 
+	// Harfbuzz update
+	loadHarfbuzzFont(GLOBAL.fontBuffer.buffer);
+
 	// calculate the transformed locations of current and instances
 	[GLOBAL.current, ...GLOBAL.instances].forEach(location => instantiateLocation(location));
 
@@ -1998,7 +2012,17 @@ function initFencer() {
 
 	});
 
+	// populate renderers dropdown
+	for (const [key, value] of Object.entries(GLOBAL.renderers)) {
+		const option = EL("option", { id: key });
+		option.textContent = value;
+		Q("#renderer").append(option);
+	}
+	Q("#renderer").onchange = updateRenders;
+	
+
 }
+
 
 function downloadFont() {
 
@@ -2017,16 +2041,25 @@ function downloadFont() {
 
 function updateRenders() {
 
-	// get the axis values
+	const renderer = Q("#renderer").value;
+
+	
+	if (!["harfbuzz", "browser"].includes(renderer)) {
+		alert ("Coming soon");
+		return;
+	}
+
 
 	// update all renders
 	Qall(".render-item").forEach((renderItemEl, r) => {
 		const renderEl = renderItemEl.querySelector(".render");
 		const fvsEntries = [];
+		const fvs = {};
 
 		if (r===0) {
 			GLOBAL.font.fvar.axes.forEach((axis, a) => {
 				fvsEntries.push(`"${axis.axisTag}" ${GLOBAL.current[0][a]}`);
+				fvs[axis.axisTag] = GLOBAL.current[0][a];
 			});
 		}
 		else {
@@ -2038,9 +2071,67 @@ function updateRenders() {
 					valueEl.value = GLOBAL.current[0][a];
 				}
 				fvsEntries.push(`"${axis.axisTag}" ${valueEl.value}`);
+				fvs[axis.axisTag] = valueEl.value;
 			});
-		}		
-		renderEl.style.fontVariationSettings = fvsEntries.join();
+		}
+
+		if (renderer === "browser") {
+
+			// browser method
+			renderEl.innerHTML = GLOBAL.renderText;
+			renderEl.style.fontSize = `${GLOBAL.renderFontSize}px`;
+			renderEl.style.fontVariationSettings = fvsEntries.join();
+			renderEl.style.color = "blue";
+		}
+
+		else if (renderer === "harfbuzz") {
+
+			// Harfbuzz method
+			if (GLOBAL.hb && GLOBAL.hbFont) {
+
+				renderEl.innerHTML = "";
+
+				const font = GLOBAL.hbFont;
+				const hb = GLOBAL.hb;
+				const text = GLOBAL.renderText;
+				const fontSize = GLOBAL.renderFontSize;
+				const upem = GLOBAL.font.head.unitsPerEm;
+				const scale = fontSize/upem;
+				const gPreamble = `<g transform="scale(${scale} ${-scale}),translate(0 ${-upem})" fill="green">`;
+				const gPostamble = "</g>";
+
+				font.setVariations(fvs);
+			
+				const buffer = hb.createBuffer();
+				if (!buffer) {
+					console.log("could not create hb buffer")
+				}
+				buffer.addText(text);
+				buffer.guessSegmentProperties();
+				hb.shape(font, buffer);
+				const result = buffer.json(font);
+			
+				const paths = {}; // indexed by glyphId (use object not array, because this may be very sparse)
+				let x = 0;
+				let svg = "";
+				result.forEach(item => {
+					const path = paths[item.g] || (paths[item.g] = font.glyphToPath(item.g));
+					svg += `<g transform="translate(${x},0)"><path d="${path}"/></g>`;
+					x += item.ax;
+				});
+				const svgHbEl = SVG("svg", {class: "harfbuzz"});
+				svgHbEl.attr({width: 10000, height: 10000})
+				svgHbEl.innerHTML = gPreamble + svg + gPostamble;
+			
+			
+				//document.querySelector("body").append(svgHbEl);
+				renderEl.append(svgHbEl);
+			
+				buffer.destroy();
+	
+			}
+		}
+
 	});
 }
 
@@ -2052,5 +2143,24 @@ function selectMapping(e) {
 
 }
 
-initFencer();
 
+// loadHarfbuzzFont function
+function loadHarfbuzzFont(arrayBuffer) {
+
+	const hb = GLOBAL.hb;
+	
+	if (GLOBAL.hbFont) GLOBAL.hbFont.destroy();
+	if (GLOBAL.hbFace) GLOBAL.hbFace.destroy();
+	if (GLOBAL.hbBlob) GLOBAL.hbBlob.destroy();
+
+	GLOBAL.hbBlob = hb.createBlob(new Uint8Array(arrayBuffer));
+	GLOBAL.hbFace = hb.createFace(GLOBAL.hbBlob, 0);
+	GLOBAL.hbFont = hb.createFont(GLOBAL.hbFace);
+}
+
+
+// load Harfbuzz wasm, them init Fencer
+WebAssembly.instantiateStreaming(fetch("./harfbuzz/hb.wasm")).then(result => {
+	GLOBAL.hb = hbjs(result.instance);
+	initFencer(); // main Fencer init stuff
+});
