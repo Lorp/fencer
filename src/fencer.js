@@ -29,7 +29,6 @@ const GLOBAL = {
 		samsa: "samsa",
 	},
 	renderFontSize: 200,
-	renderText: "Rag",
 };
 
 function Q (selector) {
@@ -2042,6 +2041,7 @@ function downloadFont() {
 function updateRenders() {
 
 	const renderer = Q("#renderer").value;
+	const renderText = Q("#sample-text").value;
 
 	
 	if (!["harfbuzz", "browser"].includes(renderer)) {
@@ -2078,7 +2078,7 @@ function updateRenders() {
 		if (renderer === "browser") {
 
 			// browser method
-			renderEl.innerHTML = GLOBAL.renderText;
+			renderEl.innerHTML = renderText;
 			renderEl.style.fontSize = `${GLOBAL.renderFontSize}px`;
 			renderEl.style.fontVariationSettings = fvsEntries.join();
 			renderEl.style.color = "blue";
@@ -2093,7 +2093,6 @@ function updateRenders() {
 
 				const font = GLOBAL.hbFont;
 				const hb = GLOBAL.hb;
-				const text = GLOBAL.renderText;
 				const fontSize = GLOBAL.renderFontSize;
 				const upem = GLOBAL.font.head.unitsPerEm;
 				const scale = fontSize/upem;
@@ -2106,10 +2105,11 @@ function updateRenders() {
 				if (!buffer) {
 					console.log("could not create hb buffer")
 				}
-				buffer.addText(text);
+				buffer.addText(renderText);
 				buffer.guessSegmentProperties();
 				hb.shape(font, buffer);
 				const result = buffer.json(font);
+				buffer.destroy();
 			
 				const paths = {}; // indexed by glyphId (use object not array, because this may be very sparse)
 				let x = 0;
@@ -2123,12 +2123,7 @@ function updateRenders() {
 				svgHbEl.attr({width: 10000, height: 10000})
 				svgHbEl.innerHTML = gPreamble + svg + gPostamble;
 			
-			
-				//document.querySelector("body").append(svgHbEl);
 				renderEl.append(svgHbEl);
-			
-				buffer.destroy();
-	
 			}
 		}
 
