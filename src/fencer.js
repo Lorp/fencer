@@ -2019,6 +2019,41 @@ function initFencer() {
 	}
 	Q("#renderer").onchange = updateRenders;
 	
+	// render test div to see if avar2 is active
+	const avar2TestFontPath = "../fonts/avar2checkerVF-working.ttf";
+	fetch(avar2TestFontPath)
+		.then(response => response.arrayBuffer())
+		.then(arrayBuffer => {
+			// load the font and attach it to the document
+			const fontFace = new FontFace("avar2-checker", arrayBuffer);
+			document.fonts.add(fontFace);
+
+			// prepare the test div
+			const testDiv = EL("div");
+			testDiv.style.fontFamily = "avar2-checker";
+			testDiv.style.fontSize = "100px";
+			testDiv.style.display = "inline-block";
+			testDiv.textContent = "B"; // the B glyph varies in width with avar2
+			Q(".window-canvas").append(testDiv); // add the test div to the document
+
+			// perform the test on the div and store result
+			testDiv.style.fontVariationSettings = "'AVAR' 0";
+			const width0 = testDiv.getBoundingClientRect().width;
+			testDiv.style.fontVariationSettings = "'AVAR' 100";
+			const width100 = testDiv.getBoundingClientRect().width;		
+			GLOBAL.avar2Active = (width100 > width0); // assign the global
+
+			// clean up
+			testDiv.remove(); // remove the test div
+
+			// switch to harfbuzz if avar2 is unsupported by this browser
+			if (!GLOBAL.avar2Active) {
+				Q("#renderer").value = "harfbuzz";
+				Q("#renderer").dispatchEvent(new Event("change"));
+			}
+
+		});
+
 
 }
 

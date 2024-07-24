@@ -2500,7 +2500,7 @@ class SamsaBuffer extends DataView {
 		this.seek(ivsStart + ivs.regionListOffset);
 
 		ivs.axisCount = this.u16;
-		ivs.regionCount = this.u16;
+		ivs.regionCount = this.u16; // ivs.regionCount may be 0
 		ivs.regions = []; // get the regions
 
 		for (let r=0; r<ivs.regionCount; r++) {
@@ -2513,10 +2513,10 @@ class SamsaBuffer extends DataView {
 
 		// decode the ItemVariationDatas
 		ivs.ivds = [];
-		for (let d=0; d<ivs.itemVariationDataCount; d++) {
+		for (let d=0; d<ivs.itemVariationDataCount; d++) { // ivs.itemVariationDataCount may be 0
 			this.seek(ivsStart + ivs.itemVariationDataOffsets[d]);
 			const ivd = {
-				itemCount: this.u16, // the number of items in each deltaSet
+				itemCount: this.u16, // the number of items in each deltaSet, may be 0
 				regionIds: [],
 				deltaSets: [],
 			};
@@ -2524,10 +2524,7 @@ class SamsaBuffer extends DataView {
 			const regionCount = this.u16;
 			const longWords = wordDeltaCount & 0x8000;
 			wordDeltaCount &= 0x7fff; // fix the value for use
-			console.assert(ivd.itemCount >0, "ivd.itemCount should be >0 but is 0");
-			console.assert(wordDeltaCount <= regionCount, "wordDeltaCount should nicely be <= regionCount");
-			console.assert(regionCount > 0, "regionCount should be >0 but is 0 (non fatal)", wordDeltaCount,  ivd);
-			if (ivd.itemCount > 0 && regionCount > 0 && wordDeltaCount <= regionCount) { // skip bad IVDs (some old font builds have regionCount==0, but they seem harmless if skipped)
+			if (wordDeltaCount <= regionCount) {
 	
 				// populate regionIndexes
 				for (let r=0; r<regionCount; r++) {
@@ -2549,6 +2546,9 @@ class SamsaBuffer extends DataView {
 					ivd.deltaSets.push(deltaSet);
 				}
 				ivs.ivds.push(ivd);
+			}
+			else {
+				// error, ignore it
 			}
 		}
 		return ivs;
