@@ -2027,31 +2027,34 @@ function initFencer() {
 			// load the font and attach it to the document
 			const fontFace = new FontFace("avar2-checker", arrayBuffer);
 			document.fonts.add(fontFace);
+			document.fonts.ready.then(() => {
 
-			// prepare the test div
-			const testDiv = EL("div");
-			testDiv.style.fontFamily = "avar2-checker";
-			testDiv.style.fontSize = "100px";
-			testDiv.style.display = "inline-block";
-			testDiv.textContent = "B"; // the B glyph varies in width with avar2
-			Q(".window-canvas").append(testDiv); // add the test div to the document
+				// prepare the test div
+				const testDiv = EL("div");
+				testDiv.style.fontFamily = "avar2-checker";
+				testDiv.style.fontSize = "100px";
+				testDiv.style.display = "inline-block";
+				testDiv.textContent = "B"; // the B glyph varies in width with avar2
+				Q(".window-canvas").append(testDiv); // add the test div to the document
 
-			// perform the test on the div and store result
-			testDiv.style.fontVariationSettings = "'AVAR' 0";
-			const width0 = testDiv.getBoundingClientRect().width;
-			testDiv.style.fontVariationSettings = "'AVAR' 100";
-			const width100 = testDiv.getBoundingClientRect().width;		
-			GLOBAL.avar2Active = (width100 > width0); // assign the global
-
-			// clean up
-			testDiv.remove(); // remove the test div
-
-			// switch to harfbuzz if avar2 is unsupported by this browser
-			if (!GLOBAL.avar2Active) {
-				Q("#renderer").value = "harfbuzz";
-				Q("#renderer").dispatchEvent(new Event("change"));
-			}
-
+				// perform tests on the div and store results
+				testDiv.style.fontVariationSettings = "'AVAR' 0";
+				window.requestAnimationFrame(() => { // ensures the browser has had a chance to render the content in the div
+					const width0 = testDiv.getBoundingClientRect().width;
+					testDiv.style.fontVariationSettings = "'AVAR' 100";
+					window.requestAnimationFrame(() => { // ensures the browser has had a chance to render the content in the div
+						const width100 = testDiv.getBoundingClientRect().width;		
+						GLOBAL.avar2Active = (width100 > width0); // assign the global
+						testDiv.remove(); // clean up: remove the test div
+		
+						// switch to harfbuzz if avar2 is unsupported by this browser
+						if (!GLOBAL.avar2Active) {
+							Q("#renderer").value = "harfbuzz";
+							Q("#renderer").dispatchEvent(new Event("change"));
+						}
+					});	
+				});
+			});
 		});
 
 
