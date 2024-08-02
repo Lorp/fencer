@@ -743,7 +743,7 @@ function loadFontFromArrayBuffer (arrayBuffer, options={}) {
 						else { // handle the corners of the n-D region
 							// use bit masking to determine which corner we’re at (bit 0 controls whether we’re talking about start or end of the 0th active axis, bit 1 controls 1st active axis, etc.)
 							activeAxisIds.forEach((axisId, a) => {
-								const pos = 2 * ((c & (0x01 << a))>>a); // 2 * 0 or 2 * 1
+								const pos = 2 * ((c >> a) & 0x01); // 2 * 0 or 2 * 1
 								const tent = region[axisId];
 								corner[axisId] = tent[pos]; // tent[0] (start) or tent[2] (end)
 							});
