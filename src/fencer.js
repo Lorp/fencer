@@ -720,7 +720,7 @@ function loadFontFromArrayBuffer (arrayBuffer, options={}) {
 			const locationsTxt = new Set();
 			locationsTxt.add(Array(axisCount).fill(0).join()); // add the default location, prevents it ever being added
 	
-			ivs.ivds.forEach(ivd => {
+			ivs.ivds.forEach((ivd, ivdIndex) => {
 	
 				ivd.regionIds.forEach(regionId => {
 					const region = ivs.regions[regionId];
@@ -756,7 +756,7 @@ function loadFontFromArrayBuffer (arrayBuffer, options={}) {
 						else {
 							locationsTxt.add(locationTxt); // prevent this location from being added again using a serialized version of the array as a hash
 							const location = [[...corner], [...corner]];
-							const deltasI16 = SamsaFont.prototype.itemVariationStoreInstantiate(ivs, location[0])[0];
+							const deltasI16 = SamsaFont.prototype.itemVariationStoreInstantiate(ivs, location[0])[ivdIndex];
 							deltasI16.forEach((delta, d) => {
 								const axisId = activeAxisIds[d];
 								location[1][axisId] = clamp(location[1][axisId] + delta/16384, -1, 1);
