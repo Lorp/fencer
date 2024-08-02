@@ -727,12 +727,13 @@ function loadFontFromArrayBuffer (arrayBuffer, options={}) {
 					const activeAxisIds = [];
 	
 					// for each region, we records its corners (2^n locations) and its peak (1 location) where n is the number of axes that are non-default
+					let numCorners = 1;
 					region.forEach((tent, axisId) => {
 						if (tent[1] !== 0) { // tent[0] is start, tent[1] is peak, tent[2] is end
 							activeAxisIds.push(axisId);
+							numCorners *= 2; // 2^activeAxisIds.length is the number of corners
 						}
 					});
-					const numCorners = Math.pow(2, activeAxisIds.length); // 2^activeAxisIds.length is the number of corners
 					for (let c=-1; c<numCorners; c++) { // -1 we use for the peak, giving us 1+2^n locations (2^n indices remain intact for bit mangling)
 						const corner = Array(axisCount).fill(0); // initialize to default values
 	
