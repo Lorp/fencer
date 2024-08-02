@@ -716,7 +716,6 @@ function loadFontFromArrayBuffer (arrayBuffer, options={}) {
 			const axisCount = GLOBAL.font.fvar.axes.length;
 			const ivs = avar.itemVariationStore;
 			console.log(ivs);
-			const ivd = ivs.ivds[0];
 			const locations = []; // for each location, location[0] is input, location[1] is output	
 			const locationsTxt = new Set();
 			locationsTxt.add(Array(axisCount).fill(0).join()); // add the default location, prevents it ever being added
@@ -752,14 +751,15 @@ function loadFontFromArrayBuffer (arrayBuffer, options={}) {
 						// only proceed if this is a new location
 						const locationTxt = corner.map(v => Math.round(v*16384)).join(); // a serialized int version of the array as a hash
 						if (locationsTxt.has(locationTxt)) {
-							// duplicate location
+							// skip this duplicate location
 						}
 						else {
 							locationsTxt.add(locationTxt); // prevent this location from being added again using a serialized version of the array as a hash
 							const location = [[...corner], [...corner]];
-							const deltasI16 = SamsaFont.prototype.itemVariationStoreInstantiate(ivs, location[0])[0]; // [0] means we only look at deltas in the first IVD (TODO: handle multiple IVDs)
+							const deltasI16 = SamsaFont.prototype.itemVariationStoreInstantiate(ivs, location[0])[0];
 							deltasI16.forEach((delta, d) => {
-								location[1][activeAxisIds[d]] = clamp(location[1][activeAxisIds[d]] + delta/16384, -1, 1);
+								const axisId = activeAxisIds[d];
+								location[1][axisId] = clamp(location[1][axisId] + delta/16384, -1, 1);
 							});	
 							locations.push(location);
 						}
