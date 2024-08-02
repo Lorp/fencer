@@ -698,14 +698,98 @@ function loadFontFromArrayBuffer (arrayBuffer, options={}) {
 		Qall(".axes .axis input.output").forEach(el => el.disabled = true);
 	}
 
+	// inspect incoming avar table
+	const avar = GLOBAL.font.avar;
+	if (!avar || !avar.itemVariationStore) {
+		console.log("No avar2 table");
+	}
+	else {
+		console.log("Yes avar2 table");
+		const importAvar2 = confirm("This font has an avar Version 2 table. Do you want to attempt to import and convert to mappings?");
+		if (importAvar2) {
+
+			console.log(avar);
+
+			// get locations from IVS
+			// from https://github.com/googlefonts/fontra/blob/087fac4c01d5bbd918f3550d03fae5693f0dc292/src/fontra/backends/opentype.py#L176C1-L186C23
+	
+			const axisCount = GLOBAL.font.fvar.axes.length;
+			const ivs = avar.itemVariationStore;
+			console.log(ivs);
+			const ivd = ivs.ivds[0];
+			const locations = []; // for each location, location[0] is input, location[1] is output	
+			const locationsTxt = new Set();
+			locationsTxt.add(Array(axisCount).fill(0).join()); // add the default location, prevents it ever being added
+	
+			ivs.ivds.forEach(ivd => {
+	
+				ivd.regionIds.forEach(regionId => {
+					const region = ivs.regions[regionId];
+					const activeAxisIds = [];
+	
+					// for each region, we records its corners (2^n locations) and its peak (1 location) where n is the number of axes that are non-default
+					region.forEach((tent, axisId) => {
+						if (tent[1] !== 0) { // tent[0] is start, tent[1] is peak, tent[2] is end
+							activeAxisIds.push(axisId);
+						}
+					});
+					const numCorners = Math.pow(2, activeAxisIds.length); // 2^activeAxisIds.length is the number of corners
+					for (let c=-1; c<numCorners; c++) { // -1 we use for the peak, giving us 1+2^n locations (2^n indices remain intact for bit mangling)
+						const corner = Array(axisCount).fill(0); // initialize to default values
+	
+						if (c === -1) { // handle the peak of the n-D region
+							activeAxisIds.forEach(axisId => corner[axisId] = region[axisId][1] ); // [1] obtains the peak
+						}
+						else { // handle the corners of the n-D region
+							// use bit masking to determine which corner we’re at (bit 0 controls whether we’re talking about start or end of the 0th active axis, bit 1 controls 1st active axis, etc.)
+							activeAxisIds.forEach((axisId, a) => {
+								const pos = 2 * ((c & (0x01 << a))>>a); // 2 * 0 or 2 * 1
+								const tent = region[axisId];
+								corner[axisId] = tent[pos]; // tent[0] (start) or tent[2] (end)
+							});
+						}
+	
+						// only proceed if this is a new location
+						const locationTxt = corner.map(v => Math.round(v*16384)).join(); // a serialized int version of the array as a hash
+						if (locationsTxt.has(locationTxt)) {
+							// duplicate location
+						}
+						else {
+							locationsTxt.add(locationTxt); // prevent this location from being added again using a serialized version of the array as a hash
+							const location = [[...corner], [...corner]];
+							const deltasI16 = SamsaFont.prototype.itemVariationStoreInstantiate(ivs, location[0])[0]; // [0] means we only look at deltas in the first IVD (TODO: handle multiple IVDs)
+							deltasI16.forEach((delta, d) => {
+								location[1][activeAxisIds[d]] = clamp(location[1][activeAxisIds[d]] + delta/16384, -1, 1);
+							});	
+							locations.push(location);
+						}
+					}
+				});
+			});
+	
+			// now denormalize these locations
+			locations.forEach(location => {
+				const mapping = [
+					denormalizeTuple(location[0]),
+					denormalizeTuple(location[1]),
+				];
+				GLOBAL.mappings.push(mapping);
+			});
+			console.log(GLOBAL.mappings);
+		}
+
+	}
+	
+	// finalize and kick things off
+
 	// draw mappings SVG
-	//updateSVGTransform();
+	mappingsSelectorPopulate();
+	updateMappingsXML();
 	mappingsChanged(0);
 	updateRenders();
 
 	// create initial view by dispatching event to the "Add view" button
 	Q("#add-view").dispatchEvent(new Event("click"));
-
 
 
 }
