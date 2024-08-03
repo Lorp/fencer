@@ -755,7 +755,7 @@ function loadFontFromArrayBuffer (arrayBuffer, options={}) {
 						}
 						else {
 							locationsTxt.add(locationTxt); // prevent this location from being added again using a serialized version of the array as a hash
-							const location = [[...corner], [...corner]];
+							const location = [corner, [...corner]];
 							const deltasI16 = SamsaFont.prototype.itemVariationStoreInstantiate(ivs, location[0])[ivdIndex];
 							deltasI16.forEach((delta, d) => {
 								const axisId = activeAxisIds[d];
@@ -767,22 +767,13 @@ function loadFontFromArrayBuffer (arrayBuffer, options={}) {
 				});
 			});
 	
-			// now denormalize these locations
-			locations.forEach(location => {
-				const mapping = [
-					denormalizeTuple(location[0]),
-					denormalizeTuple(location[1]),
-				];
-				GLOBAL.mappings.push(mapping);
-			});
+			// now denormalize these locations and push them to the empty mappings array
+			locations.forEach(location => GLOBAL.mappings.push( [ denormalizeTuple(location[0]), denormalizeTuple(location[1]) ] ) );
 			console.log(GLOBAL.mappings);
 		}
-
 	}
 	
-	// finalize and kick things off
-
-	// draw mappings SVG
+	// finalize and kick things off in the UI
 	mappingsSelectorPopulate();
 	updateMappingsXML();
 	mappingsChanged(0);
