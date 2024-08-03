@@ -713,12 +713,11 @@ function loadFontFromArrayBuffer (arrayBuffer, options={}) {
 			// get locations from IVS
 			// from https://github.com/googlefonts/fontra/blob/087fac4c01d5bbd918f3550d03fae5693f0dc292/src/fontra/backends/opentype.py#L176C1-L186C23
 	
-			const axisCount = GLOBAL.font.fvar.axes.length;
 			const ivs = avar.itemVariationStore;
 			console.log(ivs);
 			const locations = []; // for each location, location[0] is input, location[1] is output	
 			const locationsTxt = new Set();
-			locationsTxt.add(Array(axisCount).fill(0).join()); // add the default location, prevents it ever being added
+			locationsTxt.add(Array(ivs.axisCount).fill(0).join()); // add the default location, prevents it ever being added
 	
 			ivs.ivds.forEach((ivd, ivdIndex) => {
 	
@@ -735,7 +734,7 @@ function loadFontFromArrayBuffer (arrayBuffer, options={}) {
 						}
 					});
 					for (let c=-1; c<numCorners; c++) { // -1 we use for the peak, giving us 1+2^n locations (2^n indices remain intact for bit mangling)
-						const corner = Array(axisCount).fill(0); // initialize to default values
+						const corner = Array(ivs.axisCount).fill(0); // initialize to default values
 	
 						if (c === -1) { // handle the peak of the n-D region
 							activeAxisIds.forEach(axisId => corner[axisId] = region[axisId][1] ); // [1] obtains the peak
