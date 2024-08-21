@@ -206,18 +206,13 @@ function mappingsSelectorPopulate() {
 
 // often, xAxisId and yAxisId are undefined, in which case we get the first axis that is not already in a view
 // - for simplicity, either set both axisIds or neither
-function addView(e, xAxisId, yAxisId) {
+function addView(xAxisId, yAxisId) {
 	const axes = GLOBAL.font.fvar.axes;
 	let axisIds = [xAxisId, yAxisId]; // these will be overridden if undefined
 	const otherViewEls = Qall(".window.view");
-	let left = 420, top = 10;
-	if (otherViewEls.length) {
-		const lastViewEl = otherViewEls[otherViewEls.length-1];
-		left = parseFloat(lastViewEl.style.left) + 10;
-		top = parseFloat(lastViewEl.style.top) + 10;
-	}
-
-	const viewEl = EL("div", {class: "window view", style: `width: 500px; height: 500px; left: ${left}px; top: ${top}px;`});
+	let left = GLOBAL.initialWindowDimensions.left;
+	let top = GLOBAL.initialWindowDimensions.top;
+	const viewEl = EL("div", {class: "window view", style: `width: ${GLOBAL.initialWindowDimensions.width}px; height: ${GLOBAL.initialWindowDimensions.height}}px; left: ${left}px; top: ${top}px;`});
 	viewEl.dataset.axisIds = axisIds.join();
 	viewEl.innerHTML = 
 `	<h2>View <span class="description"></span></h2>
@@ -319,6 +314,8 @@ function addView(e, xAxisId, yAxisId) {
 
 	// make topmost
 	viewEl.querySelector("h2").dispatchEvent(new Event("mousedown"));
+
+	return viewEl;
 }
 
 
@@ -715,7 +712,8 @@ function loadFontFromArrayBuffer (arrayBuffer, options={}) {
 	
 			const ivs = avar.itemVariationStore;
 			console.log(ivs);
-			const locations = []; // for each location, location[0] is input, location[1] is output	
+			const locations = []; // for each location, location[0] is input, location[1] is output
+			const locationAttrs = [];
 			const locationsTxt = new Set();
 			locationsTxt.add(Array(ivs.axisCount).fill(0).join()); // add the default location, prevents it ever being added
 	
@@ -757,18 +755,41 @@ function loadFontFromArrayBuffer (arrayBuffer, options={}) {
 							locationsTxt.add(locationTxt); // prevent this location from being added again using a serialized version of the array as a hash
 							const location = [corner, [...corner]];
 							const deltasI16 = SamsaFont.prototype.itemVariationStoreInstantiate(ivs, location[0])[ivdIndex];
+
+							// this would be better handled before we even convert to location to mappings
+							const attrs = {
+								isPin: true,
+								activeAxisIds: activeAxisIds,
+							}
 							deltasI16.forEach((delta, d) => {
 								const axisId = activeAxisIds[d];
+								if (delta !== 0)
+									attrs.isPin = false;
 								location[1][axisId] = clamp(location[1][axisId] + delta/16384, -1, 1);
-							});	
+								console.log(delta); // if all deltas are 0, it’s a pin
+							});
 							locations.push(location);
+
+							locationAttrs.push(attrs);
 						}
 					}
 				});
 			});
-	
-			// now denormalize these locations and push them to the empty mappings array
-			locations.forEach(location => GLOBAL.mappings.push( [ denormalizeTuple(location[0]), denormalizeTuple(location[1]) ] ) );
+
+			// delete redundant pins
+			// - if you have a n-D pin, then delete all matching "subset pins" (i.e. pins of fewer dimensions but with all active dimensions matching those of the n-D pin)
+
+			const locationPins = locations.filter(location => location[0].every((v, a) => v === location[1][a]));
+			console.log("locations.length, locationPins.length", locations.length, locationPins.length);
+			console.log(locationPins);
+
+
+
+			// denormalize the remaining locations, push them to the mappings array
+			locations.forEach(location => {
+				GLOBAL.mappings.push( [ denormalizeTuple(location[0]), denormalizeTuple(location[1]) ] );
+			});
+
 			console.log(GLOBAL.mappings);
 		}
 	}
@@ -1887,19 +1908,18 @@ function selectAxisControls(e) {
 	mappingsSelectorPopulate();
 }
 
+function saveWindowProperties() {
+	// save window states in local storage (position has changed for this window, classes may have changed for other windows)
+	// - TODO: add z-index to the stored properties for all windows when we implement it in UI
+	Qall(".window").forEach(el => {
+		let name = el.querySelector(":scope > h2").textContent.split(" ")[0]; // use the first word of the window title (we don’t want to store separate window properties for each view)
+		const propString = JSON.stringify({left: el.style.left, top: el.style.top, width: el.style.width, height: el.style.height, classes: [...el.classList]});
+		localStorage.setItem(`fencer:window[${name}]`, propString);
+	});
+}
 
 function windowGiveInteractivity(windowEl) {
 
-	function saveWindowProperties() {
-		// save window states in local storage (position has changed for this window, classes may have changed for other windows)
-		// - TODO: add z-index to the stored properties for all windows when we implement it in UI
-		Qall(".window").forEach(el => {
-			let name = el.querySelector(":scope > h2").textContent.split(" ")[0]; // use the first word of the window title (we don’t want to store separate window properties for each view)
-			const propString = JSON.stringify({left: el.style.left, top: el.style.top, width: el.style.width, height: el.style.height, classes: [...el.classList]});
-			localStorage.setItem(`fencer:window[${name}]`, propString);
-		});
-	}
-						
 	let isDragging = false;
 	let isResizing = false;
 	let initialMouseX, initialMouseY, initialWindowX, initialWindowY, initialWindowWidth, initialWindowHeight;
@@ -1911,11 +1931,12 @@ function windowGiveInteractivity(windowEl) {
 
 	// is it an additional view window?
 	if (name.startsWith("View") && Qall(".window.view").length > 1) {
-		const style = Qall(".window.view")[Qall(".window.view").length - 2].style; // get the style of the most recently added view window
-		windowEl.style.left = (parseFloat(style.left) + 20) + "px";
-		windowEl.style.top = (parseFloat(style.top) + 20) + "px";
-		windowEl.style.width = style.width;
-		windowEl.style.height = style.height;
+		const lastWindowEl = Qall(".window.view")[Qall(".window.view").length - 2];
+		const gcs = getComputedStyle(lastWindowEl);		
+		windowEl.style.left = (parseFloat(gcs.left) + 20) + "px";
+		windowEl.style.top = (parseFloat(gcs.top) + 20) + "px";
+		windowEl.style.width = gcs.width;
+		windowEl.style.height = gcs.height;
 	}
 	else if (windowProps) {
 		if (windowProps.left) windowEl.style.left = windowProps.left;
@@ -2025,9 +2046,45 @@ function initFencer() {
 	
 	Q("#mapping-selector").onchange = selectAxisControls;
 
-	// delete the window created by the html
-	// TODO: remove the HTML and this code
-	Q(".window.mappings-ui").remove();
+	// store the initial values of the windows
+	GLOBAL.initialWindowDimensions = {};
+	Qall(".window").forEach(windowEl => {
+		let windowType;
+		if (windowEl.classList.contains("fontinfo"))
+			windowType = "fontinfo";
+		else if (windowEl.classList.contains("view"))
+			windowType = "view";
+		else if (windowEl.classList.contains("renders"))
+			windowType = "renders";
+		else if (windowEl.classList.contains("mappings"))
+			windowType = "mappings";
+
+		const gcs = getComputedStyle(windowEl);
+		const props = {
+			top: gcs.top,
+			left: gcs.left,
+			width: gcs.width,
+			height: gcs.height,
+		}
+
+		if (windowEl.classList.contains("fontinfo") || windowEl.classList.contains("renders")) {
+			delete props.height; // these windows are not resizable in height
+		}
+
+		if (windowType) {
+			GLOBAL.initialWindowDimensions[windowType] = props;
+		}
+
+
+		// GLOBAL.initialWindowDimensions[windowEl];
+		
+		console.log (windowEl);
+		console.log (props);
+
+	});
+
+	// delete the window created by the html (it was created so that we set the initial size in the CSS, not JS)
+	Q(".window.view").remove();
 
 	Q("#sample-text").oninput = sampleTextChange; // handle change of sample text
 	Q("#mapping-selector").onchange = selectMapping; // handle change of mappings selector
@@ -2038,6 +2095,28 @@ function initFencer() {
 	Q("#add-render").onclick = addRender;
 	Q("#download-font").onclick = downloadFont;
 	Q("#show-colors").onchange = mappingsChanged;
+	Q("#reset-ui").onclick = () => {
+
+		// delete all view windows and create a new one
+		Qall(".window.view").forEach(el => el.remove());
+		const viewEl = addView(0, 1);
+		
+		for (const windowType in GLOBAL.initialWindowDimensions) {
+			const props = GLOBAL.initialWindowDimensions[windowType];
+			const windowEl = Q(`.window.${windowType}`);
+			if (windowEl) {
+				for (const prop in props) {
+					windowEl.style[prop] = props[prop];
+				}
+				if (!props.height)
+					windowEl.style.height = "auto";
+			}
+			
+		}
+		saveWindowProperties();
+		mappingsChanged();
+		updateSVGTransform(viewEl);
+	}
 
 	Q(".window.mappings .xml").oninput = xmlChanged;
 
