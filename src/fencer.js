@@ -465,8 +465,8 @@ function loadFontFromArrayBuffer (arrayBuffer, options={}) {
 	key[2].textContent = "→";
 	key[3].textContent = "OUTPUT";
 	key[4].textContent = "refresh";
-	key[5].textContent = "X";
-	key[6].textContent = "Y";
+	// key[5].textContent = "X";
+	// key[6].textContent = "Y";
 	key[4].style.fontFamily = "Material Symbols Outlined";
 	key[4].title = "Reset all input axes\n(shift-click to reset all output axes)";
 	key[4].onclick = axisReset;
@@ -534,12 +534,6 @@ function loadFontFromArrayBuffer (arrayBuffer, options={}) {
 		refreshEl.textContent = "refresh";
 		refreshEl.onclick = axisReset;
 
-		const xAxisEl = EL("input", {type: "radio", name: "x-axis", value: a});
-		const yAxisEl = EL("input", {type: "radio", name: "y-axis", value: a});
-		xAxisEl.checked = a===0;
-		yAxisEl.checked = a===1;
-		xAxisEl.onchange = yAxisEl.onchange = axisCheckboxChange
-		
 		// we are populating this grid definition: grid-template-columns: 40px 40px 1fr auto 40px 1fr auto 16px 16px;
 		axisEl.append(
 			tagEl,
@@ -549,8 +543,6 @@ function loadFontFromArrayBuffer (arrayBuffer, options={}) {
 			outNumEl,
 			outEl,
 			refreshEl,
-			xAxisEl,
-			yAxisEl,
 		);
 
 		Q(".axes").append(axisEl);
@@ -629,53 +621,6 @@ function loadFontFromArrayBuffer (arrayBuffer, options={}) {
 		updateMappingsXML();
 		updateRenders();
 	}
-
-	function axisCheckboxChange(e) {
-
-		let xSelected, ySelected;
-		const orientationChosen = e.target.name === "x-axis" ? "x-axis" : "y-axis";
-		const orientationNotChosen = e.target.name === "y-axis" ? "x-axis" : "y-axis";
-		Qall(".axes .axis").forEach(axisEl => {
-			if (axisEl.querySelector("input[name=x-axis]").checked)
-				xSelected = axisEl.querySelector("input[name=x-axis]").value;
-
-			if (axisEl.querySelector("input[name=y-axis]").checked)
-				ySelected = axisEl.querySelector("input[name=y-axis]").value;
-		});
-
-		// ensure the x and y axis are different: force the other axis to be the first available axis
-		// - TODO: check this works for single-axis fonts
-		if (xSelected && ySelected && (xSelected === ySelected)) {
-			const axisEls = Qall(".axes .axis");
-			for (const axisEl of axisEls) {
-				if (!axisEl.querySelector(`input[name=${orientationNotChosen}]`).checked) {
-					axisEl.querySelector(`input[name=${orientationNotChosen}]`).checked = true;
-					break;
-				}
-			}
-		}
-
-		// update the mappingsView array
-		Qall(".axes .axis").forEach((axisEl, a) => {
-			if (axisEl.querySelector("input[name=x-axis]").checked)
-				GLOBAL.mappingsView[0] = a;
-
-			if (axisEl.querySelector("input[name=y-axis]").checked)
-				GLOBAL.mappingsView[1] = a;
-		});
-
-		// update the title
-		Q(".window.mappings-ui h2 .description").textContent = GLOBAL.font.fvar.axes[GLOBAL.mappingsView[0]].axisTag + "/" + GLOBAL.font.fvar.axes[GLOBAL.mappingsView[1]].axisTag;
-		console.log(GLOBAL.font.fvar.axes[GLOBAL.mappingsView[0]])
-
-		// redraw the mappings SVG
-		// - TODO: decide if we need to update the mappingsView array
-		mappingsChanged();
-
-		// fix the rulers
-		//updateSVGTransform();
-	}
-	
 	
 	// init mappings SVG based on first two axes
 	GLOBAL.mappingsView.length = 0;
@@ -1644,10 +1589,6 @@ function getGraticulesForAxis(viewEl, axis, graticuleSpec) {
 }
 
 function deltaSetScale (deltaSet, scale=0x4000, round=true) {
-	// const scaledDeltaSet = [];
-	// deltaSet.forEach((delta, d) => scaledDeltaSet[d] = round ? Math.round(delta * scale) : delta * scale );
-	// return scaledDeltaSet;
-
 	return round ? deltaSet.map(delta => Math.round(delta * scale)) : deltaSet.map(delta => delta * scale);
 }
 

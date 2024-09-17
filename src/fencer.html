@@ -149,7 +149,8 @@ a:hover, a:visited {
 		overflow-y: scroll;
 		.axis, .key {
 			display: grid;
-			grid-template-columns: 40px 40px 1fr auto 40px 1fr auto 16px 16px;
+			/* grid-template-columns: 40px 40px 1fr auto 40px 1fr auto 16px 16px; */
+			grid-template-columns: 40px 40px 1fr auto 40px 1fr auto; */
 		}
 		.key *:nth-child(2) {
 			grid-column: 2 / 4;
@@ -160,9 +161,9 @@ a:hover, a:visited {
 		.key>*:nth-child(4), .axes .axis>*:nth-child(4) {
 			padding: 0 2px;
 		}
-		.key>*:nth-child(8), .axes .key>*:nth-child(9) {
+		/* .key>*:nth-child(8), .axes .key>*:nth-child(9) {
 			text-align: center;
-		}
+		} */
 		.key {
 			background: #eee;
 		}
