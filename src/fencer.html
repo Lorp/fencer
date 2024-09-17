@@ -149,7 +149,6 @@ a:hover, a:visited {
 		overflow-y: scroll;
 		.axis, .key {
 			display: grid;
-			/* grid-template-columns: 40px 40px 1fr auto 40px 1fr auto 16px 16px; */
 			grid-template-columns: 40px 40px 1fr auto 40px 1fr auto; */
 		}
 		.key *:nth-child(2) {
@@ -161,9 +160,6 @@ a:hover, a:visited {
 		.key>*:nth-child(4), .axes .axis>*:nth-child(4) {
 			padding: 0 2px;
 		}
-		/* .key>*:nth-child(8), .axes .key>*:nth-child(9) {
-			text-align: center;
-		} */
 		.key {
 			background: #eee;
 		}
@@ -426,9 +422,7 @@ input.numeric.default {
 					<label>Controls</label><div><select id="mapping-selector"></select></div>
 				</div>
 				<div class="axes"></div>
-				<div class="extra">
-					<!-- <button id="download-font" disabled>Save font</button> -->
-				</div>
+				<div class="extra"></div>
 			</div>
 
 			<div class="resize no-vertical"></div>
