@@ -23,9 +23,9 @@ const GLOBAL = {
 	fontBuffer: undefined,
 	instances: [],
 	renderers: {
+		harfbuzz: "harfbuzz",
 		browser: "browser",
 		polyfill: "simple polyfill",
-		harfbuzz: "harfbuzz",
 		samsa: "samsa",
 	},
 	renderFontSize: 200,
