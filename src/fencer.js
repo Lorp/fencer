@@ -51,18 +51,18 @@ function SVG (tag, attrs) {
 	return el
 }
 
+Element.prototype.attr = function (attrs) {
+	for (const prop in attrs) {
+		this.setAttributeNS(null, prop, attrs[prop])
+	}
+}
+
 function clamp(value, min, max) {
 	return Math.max(min, Math.min(max, value));
 }
 
 function valueInAxisRange(value, axis) {
 	return typeof value === "number" && value >= axis.minValue && value <= axis.maxValue;
-}
-
-Element.prototype.attr = function (attrs) {
-	for (const prop in attrs) {
-		this.setAttributeNS(null, prop, attrs[prop])
-	}
 }
 
 Element.prototype.setPosition = function (position) {
