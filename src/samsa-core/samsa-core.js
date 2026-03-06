@@ -17,6 +17,7 @@ The underscore prefix is intended to mean the initial version of the variable (_
 accurately reflect fields described in the spec, derive some data from flags, then use them under similar name for the purpose decribed by the name.
 
 2023-07-27: All occurrences of "??" nullish coalescing operator have been replaced (it’s not supported by something in the Figma plugin build process). The ?? lines remain as comments above their replacements.
+2024-10-10: Allowed "??" and "??=" nullish operators.
 
 */
 
@@ -27,8 +28,48 @@ const SAMSAGLOBAL = {
 	endianness: endianness(),
 	littleendian: endianness("LE"),
 	bigendian: endianness("BE"),
-	fingerprints: { WOFF2: 0x774f4632, TTF: 0x00010000, OTF: 0x4f54544f },
-	stdGlyphNames: [".notdef",".null","nonmarkingreturn","space","exclam","quotedbl","numbersign","dollar","percent","ampersand","quotesingle","parenleft","parenright","asterisk","plus","comma","hyphen","period","slash","zero","one","two","three","four","five","six","seven","eight","nine","colon","semicolon","less","equal","greater","question","at","A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","X","Y","Z","bracketleft","backslash","bracketright","asciicircum","underscore","grave","a","b","c","d","e","f","g","h","i","j","k","l","m","n","o","p","q","r","s","t","u","v","w","x","y","z","braceleft","bar","braceright","asciitilde","Adieresis","Aring","Ccedilla","Eacute","Ntilde","Odieresis","Udieresis","aacute","agrave","acircumflex","adieresis","atilde","aring","ccedilla","eacute","egrave","ecircumflex","edieresis","iacute","igrave","icircumflex","idieresis","ntilde","oacute","ograve","ocircumflex","odieresis","otilde","uacute","ugrave","ucircumflex","udieresis","dagger","degree","cent","sterling","section","bullet","paragraph","germandbls","registered","copyright","trademark","acute","dieresis","notequal","AE","Oslash","infinity","plusminus","lessequal","greaterequal","yen","mu","partialdiff","summation","product","pi","integral","ordfeminine","ordmasculine","Omega","ae","oslash","questiondown","exclamdown","logicalnot","radical","florin","approxequal","Delta","guillemotleft","guillemotright","ellipsis","nonbreakingspace","Agrave","Atilde","Otilde","OE","oe","endash","emdash","quotedblleft","quotedblright","quoteleft","quoteright","divide","lozenge","ydieresis","Ydieresis","fraction","currency","guilsinglleft","guilsinglright","fi","fl","daggerdbl","periodcentered","quotesinglbase","quotedblbase","perthousand","Acircumflex","Ecircumflex","Aacute","Edieresis","Egrave","Iacute","Icircumflex","Idieresis","Igrave","Oacute","Ocircumflex","apple","Ograve","Uacute","Ucircumflex","Ugrave","dotlessi","circumflex","tilde","macron","breve","dotaccent","ring","cedilla","hungarumlaut","ogonek","caron","Lslash","lslash","Scaron","scaron","Zcaron","zcaron","brokenbar","Eth","eth","Yacute","yacute","Thorn","thorn","minus","multiply","onesuperior","twosuperior","threesuperior","onehalf","onequarter","threequarters","franc","Gbreve","gbreve","Idotaccent","Scedilla","scedilla","Cacute","cacute","Ccaron","ccaron","dcroat"],
+	fingerprints: { WOFF2: 0x774f4632, TTF: 0x00010000, OTF: 0x4f54544f, true: 0x74727565 }, // 0x4f54544f/"OTTO" is for CFF fonts, 0x74727565/"true" is for Skia.ttf
+	stdGlyphNames: [".notdef",".null","nonmarkingreturn","space","exclam","quotedbl","numbersign","dollar","percent","ampersand","quotesingle","parenleft","parenright","asterisk","plus","comma","hyphen","period","slash","zero","one","two","three","four","five","six","seven","eight","nine","colon","semicolon","less","equal","greater","question","at","A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","X","Y","Z","bracketleft","backslash","bracketright","asciicircum","underscore","grave","a","b","c","d","e","f","g","h","i","j","k","l","m","n","o","p","q","r","s","t","u","v","w","x","y","z","braceleft","bar","braceright","asciitilde","Adieresis","Aring","Ccedilla","Eacute","Ntilde","Odieresis","Udieresis","aacute","agrave","acircumflex","adieresis","atilde","aring","ccedilla","eacute","egrave","ecircumflex","edieresis","iacute","igrave","icircumflex","idieresis","ntilde","oacute","ograve","ocircumflex","odieresis","otilde","uacute","ugrave","ucircumflex","udieresis","dagger","degree","cent","sterling","section","bullet","paragraph","germandbls","registered","copyright","trademark","acute","dieresis","notequal","AE","Oslash","infinity","plusminus","lessequal","greaterequal","yen","mu","partialdiff","summation","product","pi","integral","ordfeminine","ordmasculine","Omega","ae","oslash","questiondown","exclamdown","logicalnot","radical","florin","approxequal","Delta","guillemotleft","guillemotright","ellipsis","nonbreakingspace","Agrave","Atilde","Otilde","OE","oe","endash","emdash","quotedblleft","quotedblright","quoteleft","quoteright","divide","lozenge","ydieresis","Ydieresis","fraction","currency","guilsinglleft","guilsinglright","fi","fl","daggerdbl","periodcentered","quotesinglbase","quotedblbase","perthousand","Acircumflex","Ecircumflex","Aacute","Edieresis","Egrave","Iacute","Icircumflex","Idieresis","Igrave","Oacute","Ocircumflex","apple","Ograve","Uacute","Ucircumflex","Ugrave","dotlessi","circumflex","tilde","macron","breve","dotaccent","ring","cedilla","hungarumlaut","ogonek","caron","Lslash","lslash","Scaron","scaron","Zcaron","zcaron","brokenbar","Eth","eth","Yacute","yacute","Thorn","thorn","minus","multiply","onesuperior","twosuperior","threesuperior","onehalf","onequarter","threequarters","franc","Gbreve","gbreve","Idotaccent","Scedilla","scedilla","Cacute","cacute","Ccaron","ccaron","dcroat"], // 258 standard glyph names
+	mvarLookup: {
+		"hasc": ["OS/2","sTypoAscender"],
+		"hdsc": ["OS/2","sTypoDescender"],
+		"hlgp": ["OS/2","sTypoLineGap"],
+		"hcla": ["OS/2","usWinAscent"],
+		"hcld": ["OS/2","usWinDescent"],
+		"xhgt": ["OS/2","sxHeight"],
+		"cpht": ["OS/2","sCapHeight"],
+		"sbxs": ["OS/2","ySubscriptXSize"],
+		"sbys": ["OS/2","ySubscriptYSize"],
+		"sbxo": ["OS/2","ySubscriptXOffset"],
+		"sbyo": ["OS/2","ySubscriptYOffset"],
+		"spxs": ["OS/2","ySuperscriptXSize"],
+		"spys": ["OS/2","ySuperscriptYSize"],
+		"spxo": ["OS/2","ySuperscriptXOffset"],
+		"spyo": ["OS/2","ySuperscriptYOffset"],
+		"strs": ["OS/2","yStrikeoutSize"],
+		"stro": ["OS/2","yStrikeoutPosition"],
+		"hcrs": ["hhea","caretSlopeRise"],
+		"hcrn": ["hhea","caretSlopeRun"],
+		"hcof": ["hhea","caretOffset"],
+		"unds": ["post","underlineThickness"],
+		"undo": ["post","underlinePosition"],
+		"vasc": ["vhea","ascent"],
+		"vdsc": ["vhea","descent"],
+		"vlgp": ["vhea","lineGap"],
+		"vcrs": ["vhea","caretSlopeRise"],
+		"vcrn": ["vhea","caretSlopeRun"],
+		"vcof": ["vhea","caretOffset"],
+		"gsp0":	["gasp","0"],
+		"gsp1":	["gasp","1"],
+		"gsp2":	["gasp","2"],
+		"gsp3":	["gasp","3"],
+		"gsp4":	["gasp","4"],
+		"gsp5":	["gasp","5"],
+		"gsp6":	["gasp","6"],
+		"gsp7":	["gasp","7"],
+		"gsp8":	["gasp","8"],
+		"gsp9":	["gasp","9"],
+	},
 };
 
 // format codes
@@ -144,7 +185,7 @@ const FORMATS = {
 		maxMemType1: U32,
 		_IF_: [["version", "==", 2.0], {
 			numGlyphs: U16,
-			glyphNameIndex: [U16, "_ARG0_"],
+			glyphNameIndex: [U16, "numGlyphs"],
 		}],
 		_IF_2: [["version", "==", 2.5], {
 			numGlyphs: U16,
@@ -179,7 +220,7 @@ const FORMATS = {
 		ySuperscriptYOffset: U16,
 		yStrikeoutSize: U16,
 		yStrikeoutPosition: U16,
-		sFamilyClass: U16,
+		sFamilyClass: I16,
 		panose: [U8,10],
 		ulUnicodeRange1: U32,
 		ulUnicodeRange2: U32,
@@ -189,9 +230,9 @@ const FORMATS = {
 		fsSelection: U16,
 		usFirstCharIndex: U16,
 		usLastCharIndex: U16,
-		sTypoAscender: U16,
-		sTypoDescender: U16,
-		sTypoLineGap: U16,
+		sTypoAscender: I16,
+		sTypoDescender: I16,
+		sTypoLineGap: I16,
 		usWinAscent: U16,
 		usWinDescent: U16,
 		_IF_: [["version", ">=", 1], {
@@ -199,8 +240,8 @@ const FORMATS = {
 			ulCodePageRange2: U32,
 		}],
 		_IF_2: [["version", ">=", 2], {
-			sxHeight: U16,
-			sCapHeight: U16,
+			sxHeight: I16,
+			sCapHeight: I16,
 			usDefaultChar: U16,
 			usBreakChar: U16,
 			usMaxContext: U16,
@@ -274,7 +315,6 @@ const FORMATS = {
 		designAxesOffset: U32,
 		axisValueCount: U16,
 		offsetToAxisValueOffsets: U32,
-		elidedFallbackNameID: U16
 	},
 
 	MVAR: {
@@ -465,9 +505,11 @@ const GVAR_SHARED_POINT_NUMBERS = 0x8000;
 const GVAR_EMBEDDED_PEAK_TUPLE = 0x8000;
 const GVAR_INTERMEDIATE_REGION = 0x4000;
 const GVAR_PRIVATE_POINT_NUMBERS = 0x2000;
-const DELTAS_ARE_ZERO = 0x80;
-const DELTAS_ARE_WORDS = 0x40;
-const DELTA_RUN_COUNT_MASK = 0x3f;
+const GVAR_DELTAS_ARE_ZERO = 0x80;
+const GVAR_DELTAS_ARE_WORDS = 0x40;
+const GVAR_DELTA_RUN_COUNT_MASK = 0x3f;
+const GVAR_POINTS_ARE_WORDS = 0x80;
+const GVAR_POINT_RUN_COUNT_MASK = 0x7f;
 
 // COLRv1 paint types (multiple formats have the same type)
 const PAINT_LAYERS = 1;
@@ -553,7 +595,7 @@ const SVG_PAINTCOMPOSITE_MODES = [
 // - font is the SamsaFont object
 // - buf is a SamsaBuffer object already set up to cover the table data only, initialized with the table's offset being p=0 and length = its length
 // - return (none), but font.<tableTag> now contains more (possibly all) of the decoded table data
-const TABLE_DECODERS = {
+SAMSAGLOBAL.TABLE_DECODERS = {
 
 	"avar": (font, buf) => {
 		// avar1 and avar2
@@ -651,6 +693,7 @@ const TABLE_DECODERS = {
 								const nonDefaultUVSOffset = bufE.u32;
 								const defaultUVS = [];
 								const nonDefaultUVS = [];
+								const tell = bufE.tell();
 
 								if (defaultUVSOffset) {
 									bufE.seek(defaultUVSOffset);
@@ -664,7 +707,7 @@ const TABLE_DECODERS = {
 									bufE.seek(nonDefaultUVSOffset);
 									const count = bufE.u32;
 									for (let r=0; r<count; r++) {
-										nonDefaultUVS.push({ unicodeValue: bufE.u24, glyphID: bufE.u16 });
+										nonDefaultUVS.push({ unicodeValue: bufE.u24, glyphId: bufE.u16 });
 									}
 								}
 
@@ -672,6 +715,8 @@ const TABLE_DECODERS = {
 									defaultUVS: defaultUVS,
 									nonDefaultUVS: nonDefaultUVS,
 								};
+
+								bufE.seek(tell);
 
 								// so now, we have e.g. varSelector == 0xfe0f, encoding.varSelectors[0xfe0f].defaultUVS == an array of { startUnicodeValue, additionalCount }
 							}
@@ -696,8 +741,8 @@ const TABLE_DECODERS = {
 			if (colr.numBaseGlyphRecords) {
 				buf.seek(colr.baseGlyphRecordsOffset);
 				for (let i=0; i<colr.numBaseGlyphRecords; i++)  {
-					const glyphID = buf.u16;
-					colr.baseGlyphRecords[glyphID] = [buf.u16, buf.u16]; // firstLayerIndex, numLayers
+					const glyphId = buf.u16;
+					colr.baseGlyphRecords[glyphId] = [buf.u16, buf.u16]; // firstLayerIndex, numLayers
 				}
 			}
 
@@ -709,8 +754,8 @@ const TABLE_DECODERS = {
 					colr.numBaseGlyphPaintRecords = buf.u32;
 					colr.baseGlyphPaintRecords = [];
 					for (let i=0; i<colr.numBaseGlyphPaintRecords; i++)  {
-						const glyphID = buf.u16;
-						colr.baseGlyphPaintRecords[glyphID] = colr.baseGlyphListOffset + buf.u32;
+						const glyphId = buf.u16;
+						colr.baseGlyphPaintRecords[glyphId] = colr.baseGlyphListOffset + buf.u32;
 					}
 				}
 
@@ -902,6 +947,20 @@ const TABLE_DECODERS = {
 		});
 	},
 
+	"post": (font, buf) => {
+		const post = font.post;
+		if (post.version === 2.0) {
+			// this avoids duplicating string data: we will use a function to retrieve the string from the buffer
+			post.pascalStringIndices = [];
+			buf.seek(32 + 2 + post.numGlyphs * 2);
+			while (buf.tell() < buf.byteLength) {
+				post.pascalStringIndices.push(buf.tell());
+				if (buf.tell() < buf.byteLength)
+					buf.seekr(buf.u8);
+			}
+		}
+	},
+
 	"vmtx": (font, buf) => {
 		// decode vertical metrics
 		// https://learn.microsoft.com/en-us/typography/opentype/spec/vmtx
@@ -947,9 +1006,75 @@ const TABLE_DECODERS = {
 			}
 		}
 	},
+
+	"STAT": (font, buf) => {
+		const stat = font.STAT;
+		if (stat.version[0] === 1) {
+			if (stat.version[1] > 0) {
+				stat.elidedFallbackNameID = buf.u16;
+			}
+			stat.designAxes = [];
+			stat.designAxesSorted = [];
+			stat.axisValueTables = [];
+	
+			// parse designAxes
+			for (let a=0; a<stat.designAxisCount; a++) {
+				buf.seek(stat.designAxesOffset + a * stat.designAxisSize);
+				const designAxis = {
+					designAxisID: a, // in case we are enumerating a sorted array
+					tag:          buf.tag,
+					nameID:       buf.u16,
+					axisOrdering: buf.u16,
+				};
+				stat.designAxes.push(designAxis);
+				stat.designAxesSorted[designAxis.axisOrdering] = designAxis;
+			}
+
+			// parse axisValueTables
+			for (let a=0; a<stat.axisValueCount; a++) {
+				buf.seek(stat.offsetToAxisValueOffsets + 2 * a);
+				const axisValueOffset = buf.u16;
+				buf.seek(stat.offsetToAxisValueOffsets + axisValueOffset);
+				const format = buf.u16;
+				if (format < 1 || format > 4)
+					continue;
+				const avt = {
+					format: format,
+					axisIndices:[buf.u16],
+					flags: buf.u16,
+					nameID: buf.u16,
+					values: [],
+				};
+				switch (avt.format) {
+					case 1: {
+						avt.values.push(buf.f1616);
+						break;
+					}
+					case 2: {
+						avt.values.push(buf.f1616, buf.f1616, buf.f1616); // value, min, max
+						break;
+					}
+					case 3: {
+						avt.values.push(buf.f1616, buf.f1616); // value, linkedValue
+						break;
+					}
+					case 4: {
+						let axisCount = avt.axisIndices.pop(); // use the value we pushed earlier, and so empty the array
+						while (axisCount--) {
+							avt.axisIndices.push(buf.u16);
+							avt.values.push(buf.f1616);
+						}	
+						break;
+					}
+				}
+				stat.axisValueTables.push(avt);
+			}	
+		}
+	},
+
 }
 
-const TABLE_ENCODERS = {
+SAMSAGLOBAL.TABLE_ENCODERS = {
 
 	"avar": (font, avar) => {
 		// encode avar
@@ -979,8 +1104,6 @@ const TABLE_ENCODERS = {
 			axisSegmentMap.forEach(segment => bufAvarHeader.f214_array = segment); // for each axis, write an array of F214 pairs [fromCoordinate, toCoordinate]
 		});
 
-		// console.log("bufAvarHeader (before avar2)");
-		// console.log(bufAvarHeader);
 		const avar1Length = bufAvarHeader.tell();
 		let avar2Length;
 		
@@ -1018,16 +1141,13 @@ const TABLE_ENCODERS = {
 		}
 
 		const avarFinalSize = majorVersion === 1 ? avar1Length : avar2Length;
-		// console.log(`bufAvarHeader (final, with size = ${avarFinalSize}`);
-		// console.log(bufAvarHeader);
-
 
 		// attempt to decode
+		// TODO: is this test code? if so, remove it
+		// TODO: return avarFinalSize?
 		bufAvarHeader.seek(0);
-
-
 		font.avar = bufAvarHeader.decode(FORMATS["avar"])
-		TABLE_DECODERS["avar"](font, bufAvarHeader);
+		SAMSAGLOBAL.TABLE_DECODERS["avar"](font, bufAvarHeader);
 		return new SamsaBuffer(bufAvarHeader.buffer, 0, avarFinalSize);
 
 	},
@@ -1073,6 +1193,10 @@ function validateTag (tag) {
 	return (tag.length === 4 && [...tag].every(ch => inRange(ch.charCodeAt(0), 0x20, 0x7e)) && !tag.match(/^.* [^ ]+.*$/)); // 1. Test length; 2. Test ASCII; 3. Test no non-terminating spaces
 }
 
+function compareString (a, b) {
+	return a < b ? -1 : a > b ? 1 : 0;
+}
+
 // take an object of attributes, and returning a string suitable for insertion into an XML tag (such as <svg> or <path>)
 function expandAttrs (attrs) {
 	let str = "";
@@ -1090,8 +1214,7 @@ function coverageIndexForGlyph (coverage, g) {
 		coverageIndex = coverage.glyphArray.indexOf(g);
 	}
 	else if (coverage.format === 2) {
-		for (let ra=0; ra<coverage.glyphRanges.length; ra++) {
-			const range = coverage.glyphRanges[ra];
+		for (const range of coverage.glyphRanges) {
 			if (g >= range.startGlyphID && g <= range.endGlyphID) {
 				coverageIndex = range.startCoverageIndex + g - range.startGlyphID;
 				break;
@@ -1425,16 +1548,33 @@ class SamsaBuffer extends DataView {
 	}
 
 	set u32_array(arr) {
-		arr.forEach(num => { this.setUint32(this.p, num), this.p += 4 });
+		for (const num of arr) {
+			this.setUint32(this.p, num);
+			this.p += 4;
+		}
 	}
 
+	get u32_pascalArray() {
+		const arr = [];
+		let count = this.getUint16(this.p);
+		this.p+=2;
+		while (count--) {
+			arr.push(this.getUint32(this.p));
+			this.p+=4;
+		}
+		return arr;
+	}
+	
 	set i32(num) {
 		this.setInt32(this.p, num);
 		this.p += 4;
 	}
 
 	set i32_array(arr) {
-		arr.forEach(num => { this.setInt32(this.p, num), this.p += 4 });
+		for (const num of arr) {
+			this.setInt32(this.p, num);
+			this.p += 4;
+		}
 	}
 
 	get i32() {
@@ -1468,6 +1608,16 @@ class SamsaBuffer extends DataView {
 				return accum;
 			}
 		}
+	}
+
+	// this was defined for VARC table 
+	get u32_var() {
+		let firstByte = this.u8;
+		if (firstByte < 0x80) return firstByte;
+		else if (firstByte < 0xc0) return ((firstByte & 0x3f) << 8) + this.u8;
+		else if (firstByte < 0xe0) return ((firstByte & 0x1f) << 16) + this.u16;
+		else if (firstByte < 0xf0) return ((firstByte & 0x0f) << 24) + this.u24;
+		return this.u32; // firstByte == 0xfx, ignore low 4 bits of firstByte (which should be 0 anyway)
 	}
 
 	// uint24, int24
@@ -1508,13 +1658,39 @@ class SamsaBuffer extends DataView {
 	}
 
 	set u16_array(arr) {
-		arr.forEach(num => { this.setUint16(this.p, num), this.p += 2 });
+		for (const num of arr) {
+			this.setUint16(this.p, num);
+			this.p += 2;
+		}
+	}
+
+	u16_arrayOfLength(count) { // we can’t use a getter as it needs an argument
+		const arr = [];
+		while (count--) {
+			arr.push(this.getUint16(this.p));
+			this.p+=2;
+		}
+		return arr;
 	}
 
 	set u16_pascalArray(arr) {
-		this.setUint16(this.p, arr.length);
+		this.setUint16(arr.length);
 		this.p += 2;
-		arr.forEach(num => { this.setUint16(this.p, num), this.p += 2 });
+		for (const num of arr) {
+			this.setUint16(this.p, num);
+			this.p += 2;
+		}
+	}
+
+	get u16_pascalArray() {
+		const arr = [];
+		let count = this.getUint16(this.p);
+		this.p+=2;
+		while (count--) {
+			arr.push(this.getUint16(this.p));
+			this.p+=2;
+		}
+		return arr;
 	}
 
 	// u16 for WOFF2: https://www.w3.org/TR/WOFF2/#255UInt16
@@ -1563,7 +1739,7 @@ class SamsaBuffer extends DataView {
 			value = code;
 		}
 		return value;
-		}
+	}
 
 	set i16(num) {
 		this.setInt16(this.p, num);
@@ -1577,7 +1753,39 @@ class SamsaBuffer extends DataView {
 	}
 
 	set i16_array(arr) {
-		arr.forEach(num => { this.setInt16(this.p, num), this.p += 2 });
+		for (const num of arr) {
+			this.setInt16(this.p, num);
+			this.p += 2;
+		}
+	}
+
+	i16_arrayOfLength(count) { // we can’t use a getter as it needs an argument
+		const arr = [];
+		while (count--) {
+			arr.push(this.getInt16(this.p));
+			this.p+=2;
+		}
+		return arr;
+	}
+
+	set i16_pascalArray(arr) {
+		this.setUint16(this.p, arr.length);
+		this.p += 2;
+		for (const num of arr) {
+			this.setInt16(this.p, num);
+			this.p += 2;
+		}
+	}
+
+	get i16_pascalArray() {
+		const arr = [];
+		let count = this.getUint16(this.p);
+		this.p+=2;
+		while (count--) {
+			arr.push(this.getInt16(this.p));
+			this.p+=2;
+		}
+		return arr;
 	}
 
 	set f214(num) {
@@ -1586,13 +1794,19 @@ class SamsaBuffer extends DataView {
 	}
 
 	set f214_array(arr) {
-		arr.forEach(num => { this.setInt16(this.p, num * 0x4000), this.p += 2 });
+		for (const num of arr) {
+			this.setInt16(this.p, num * 0x4000);
+			this.p += 2;
+		}
 	}
 
 	set f214_pascalArray(arr) {
 		this.setUint16(this.p, arr.length);
 		this.p += 2;
-		arr.forEach(num => { this.setInt16(this.p, num * 0x4000), this.p += 2 });
+		for (const num of arr) {
+			this.setInt16(this.p, num * 0x4000);
+			this.p += 2;
+		}
 	}
 
 	get f214() {
@@ -1611,7 +1825,15 @@ class SamsaBuffer extends DataView {
 	}
 
 	set u8_array(arr) {
-		arr.forEach(num => this.setUint8(this.p++, num));
+		for (const num of arr)
+			this.setUint8(this.p++, num);
+	}
+
+	u8_arrayOfLength(count) { // we can’t use a getter as it needs an argument
+		const arr = [];
+		while (count--)
+			arr.push(this.getUint8(this.p++));
+		return arr;
 	}
 
 	set i8(num) {
@@ -1619,7 +1841,8 @@ class SamsaBuffer extends DataView {
 	}
 
 	set i8_array(arr) {
-		arr.forEach(num => this.setInt8(this.p++, num));
+		for (const num of arr)
+			this.setInt8(this.p++, num);
 	}
 
 	get i8() {
@@ -1668,67 +1891,6 @@ class SamsaBuffer extends DataView {
 		return ret;
 	}
 
-	// methods for reading an array: "Pascal" arrays start with a u16 count
-	u32array(count) {
-		const arr = [];
-		while (count--) {
-			arr.push(this.getUint32(this.p));
-			this.p+=4;
-		}
-		return arr;
-	}
-
-	u16array(count) {
-		const arr = [];
-		while (count--) {
-			arr.push(this.getUint16(this.p));
-			this.p+=2;
-		}
-		return arr;
-	}
-
-	i16array(count) {
-		const arr = [];
-		while (count--) {
-			arr.push(this.getInt16(this.p));
-			this.p+=2;
-		}
-		return arr;
-	}
-
-	u32pascalArray() {
-		const arr = [];
-		let count = this.getUint16(this.p);
-		this.p+=2;
-		while (count--) {
-			arr.push(this.getUint32(this.p));
-			this.p+=4;
-		}
-		return arr;
-	}
-
-	u16pascalArray() {
-		const arr = [];
-		let count = this.getUint16(this.p);
-		this.p+=2;
-		while (count--) {
-			arr.push(this.getUint16(this.p));
-			this.p+=2;
-		}
-		return arr;
-	}
-
-	i16pascalArray() {
-		const arr = [];
-		let count = this.getUint16(this.p);
-		this.p+=2;
-		while (count--) {
-			arr.push(this.getInt16(this.p));
-			this.p+=2;
-		}
-		return arr;
-	}
-
 	compare(condition) {
 		const [a, comparison, b] = condition;
 		switch (comparison) {
@@ -1741,7 +1903,7 @@ class SamsaBuffer extends DataView {
 		}
 	}
 
-	checkSum(offset=0, length, headTable) {
+	checkSum(offset=0, length) {
 		if (length === undefined) {
 			length = this.byteLength - offset;
 		}
@@ -1750,27 +1912,11 @@ class SamsaBuffer extends DataView {
 		let sum = 0;
 		this.seek(offset);
 
-		// sum the entire table except any trailing bytes that are not a multiple of 4
-		if (!headTable) {
-			// this is not the head table :)
-			while (this.p < offset + mainLength) {
-				sum += this.u32;
-				sum &= 0xffffffff;
-				sum >>>= 0;
-			}
-		}
-		else {
-			// special handling for head table:  skip over the checksumAdjustment field
-			while (this.p < offset + mainLength) {
-				if (this.p - offset === 8) {
-					this.p += 4;
-				}
-				else {
-					sum += this.u32;
-					sum &= 0xffffffff;
-					sum >>>= 0;
-				}
-			}
+		// sum the memory block
+		while (this.p < offset + mainLength) {
+			sum += this.u32;
+			sum &= 0xffffffff;
+			sum >>>= 0;
 		}
 
 		// sum any trailing bytes
@@ -1920,13 +2066,30 @@ class SamsaBuffer extends DataView {
 		// TODO: return bytelength? it may be different from str.length*2
 	}
 
-	decodeGlyph(numBytes, options={}) {
-		
-		//const metrics = options.metrics ?? [0, 0, 0, 0];
-		const metrics = options.metrics === undefined ? [0, 0, 0, 0] : options.metrics;
-		const glyph = numBytes ? new SamsaGlyph(this.decode(FORMATS.GlyphHeader)) : new SamsaGlyph();
+	decodeString(length) {
+		// 8-bit string
+		let str = "";
+		for (let i=0; i<length; i++) {
+			str += String.fromCharCode(this.u8);
+		}
+		return str;
+	}
+
+	decodePascalString() {
+		return this.decodeString(this.u8);
+	}
+
+	decodeGlyph(byteLength, options={}) {
+
+		const metrics = options.metrics ?? [0, 0, 0, 0];
+		const glyphOffset = this.tell();
+		const glyph = byteLength ? new SamsaGlyph(this.decode(FORMATS.GlyphHeader)) : new SamsaGlyph();
 		if (options.id)
 			glyph.id = options.id;
+
+		// set offset & length
+		glyph.offset = glyphOffset;
+		glyph.length = byteLength;
 
 		// set metrics from the font’s hmtx
 		glyph.font = options.font;
@@ -1935,15 +2098,21 @@ class SamsaBuffer extends DataView {
 		}
 
 		// empty glyph
-		if (numBytes === 0) {
+		if (byteLength === 0) {
+			// do nothing, empty glyph
 		}
 
 		// simple glyph
 		else if (glyph.numberOfContours >= 0) { // note that the spec allows for numberOfContours to be 0, in which case we have a zero-contour glyph but with the possibility of instructions to move phantom points
 
-			glyph.endPts = this.u16array(glyph.numberOfContours); // end points of each contour
+			glyph.endPts = this.u16_arrayOfLength(glyph.numberOfContours); // end points of each contour
 			glyph.numPoints = glyph.endPts[glyph.numberOfContours -1] + 1;
-			this.seekr(glyph.instructionLength = this.u16); // skip over instructions
+
+			// get instructions into a SamsaBuffer
+			if (glyph.instructionLength = this.u16) {
+				glyph.instructions = new SamsaBuffer(this.buffer, this.byteOffset + this.tell(), glyph.instructionLength);
+			}
+			this.seekr(glyph.instructionLength);
 
 			// flags
 			const flags = [];
@@ -2038,14 +2207,10 @@ class SamsaBuffer extends DataView {
 		}
 
 		// TODO: fix the metrics points
-		// glyph.points[glyph.numPoints]   = [metrics[0] ?? 0,               0, 0]; // H: Left side bearing point
-		// glyph.points[glyph.numPoints+1] = [metrics[1] ?? 0,               0, 0]; // H: Right side bearing point
-		// glyph.points[glyph.numPoints+2] = [              0, metrics[2] ?? 0, 0]; // V: Top side bearing point
-		// glyph.points[glyph.numPoints+3] = [              0, metrics[3] ?? 0, 0]; // V: Bottom side bearing point
-		glyph.points[glyph.numPoints]   = [metrics[0] ? metrics[0] : 0,               0, 0]; // H: Left side bearing point
-		glyph.points[glyph.numPoints+1] = [metrics[1] ? metrics[1] : 0,               0, 0]; // H: Right side bearing point
-		glyph.points[glyph.numPoints+2] = [              0, metrics[2] ? metrics[2] : 0, 0]; // V: Top side bearing point
-		glyph.points[glyph.numPoints+3] = [              0, metrics[3] ? metrics[3] : 0, 0]; // V: Bottom side bearing point
+		glyph.points[glyph.numPoints]   = [metrics[0] ?? 0,               0, 0]; // H: Left side bearing point
+		glyph.points[glyph.numPoints+1] = [metrics[1] ?? 0,               0, 0]; // H: Right side bearing point
+		glyph.points[glyph.numPoints+2] = [              0, metrics[2] ?? 0, 0]; // V: Top side bearing point
+		glyph.points[glyph.numPoints+3] = [              0, metrics[3] ?? 0, 0]; // V: Bottom side bearing point
 	
 		return glyph;
 	}
@@ -2069,13 +2234,11 @@ class SamsaBuffer extends DataView {
 		// - maximum size of the compiled glyph in bytes (without padding) if options.getMaxCompiledSize
 
 		// set default options
-		if (options.compression === undefined)
-			options.compression = 1; // standard TrueType compression
-		if (options.bbox === undefined)
-			options.bbox = true; // recalculate bounding box
+		options.compression ??= 1; // standard TrueType compression
+		options.bbox ??= true; // recalculate bounding box
 
 		if (options.getMaxCompiledSize) {
-			if (options.compression == 2) {
+			if (options.compression === 2) {
 				if (glyph.numberOfContours > 0)
 					return 
 				else if (glyph.numberOfContours < 0)
@@ -2106,7 +2269,7 @@ class SamsaBuffer extends DataView {
 				if (points && points[0]) {
 					let xMin, xMax, yMin, yMax;
 					[xMin,yMin] = [xMax,yMax] = points[0];
-					for (pt=1; pt<numPoints; pt++) {
+					for (let pt=1; pt<numPoints; pt++) {
 						const P = points[pt][0], Q = points[pt][1];
 						if (P<xMin)
 							xMin=P;
@@ -2182,17 +2345,17 @@ class SamsaBuffer extends DataView {
 				}
 
 				// allocate flags array
-				const fArray = new Uint8Array(this.buffer, this.p, numPoints)
-				this.seekr(numPoints)
+				const fArray = new Uint8Array(this.buffer, this.p, numPoints);
+				this.seekr(numPoints);
 
 				// write point coordinates
-				let prevPt = [0,0,1]
+				let prevPt = [0,0,1];
 				for (let pt=0; pt<glyph.numPoints; pt++) {
 	
-					const point = glyph.points[pt]
-					let dx = point[0] - prevPt[0], dxa = Math.abs(dx)
-					let dy = point[1] - prevPt[1], dya = Math.abs(dy)
-					let flag
+					const point = glyph.points[pt];
+					let dx = point[0] - prevPt[0], dxa = Math.abs(dx);
+					let dy = point[1] - prevPt[1], dya = Math.abs(dy);
+					let flag;
 	
 					// there are 5 types of dx/dy combo
 					// 2 * 8 : 2-byte encodings where dx = 0 or dy = 0
@@ -2203,99 +2366,89 @@ class SamsaBuffer extends DataView {
 	
 					// buckets 0..9: dx==0
 					if (dxa == 0 && dya < 1280) {
-						flag = 0
-						flag += 2 * Math.floor(dya / 256)
+						flag = 0;
+						flag += 2 * Math.floor(dya / 256);
 						if (dy > 0)
-							flag++
-						this.u8 = dya % 256 // write coord data (1 byte)
+							flag++;
+						this.u8 = dya % 256; // write coord data (1 byte)
 					}
 					// buckets 10..19: dy==0
 					else if (dya == 0 && dxa < 1280) {
-						flag = 10
-						flag += 2 * Math.floor(dxa / 256)
+						flag = 10;
+						flag += 2 * Math.floor(dxa / 256);
 						if (dx > 0)
-							flag++	
-						this.u8 = dxa % 256 // write coord data (1 byte)
+							flag++;
+						this.u8 = dxa % 256; // write coord data (1 byte)
 					}
 					// buckets 20..83: dx and dy are fairly short
 					else if (dxa <= 64 && dya <= 64) { // we can use nibbles for dx and dy, so 1 byte
-						flag = 20
-						flag += 16 * Math.floor((dxa-1) / 16)
-						flag += 4 * Math.floor((dya-1) / 16)
+						flag = 20;
+						flag += 16 * Math.floor((dxa-1) / 16);
+						flag += 4 * Math.floor((dya-1) / 16);
 						if (dx > 0)
-							flag++
+							flag++;
 						if (dy > 0)
-							flag += 2
-						let nibx = ((dxa-1) % 16)
-						let niby = ((dya-1) % 16)
-						this.u8 = (nibx << 4) | niby // write coord data (1 byte)
+							flag += 2;
+						let nibx = ((dxa-1) % 16);
+						let niby = ((dya-1) % 16);
+						this.u8 = (nibx << 4) | niby; // write coord data (1 byte)
 					}
 					// buckets 84..119: dx and dy are not quite so short
 					else if (dxa <= 768 && dya <= 768) { // we can use 1 byte for dx, 1 byte for dy
-						flag = 84
-						flag += 12 * Math.floor((dxa-1) / 256)
-						flag += 4 * Math.floor((dya-1) / 256)
+						flag = 84;
+						flag += 12 * Math.floor((dxa-1) / 256);
+						flag += 4 * Math.floor((dya-1) / 256);
 						if (dx > 0)
-							flag++
+							flag++;
 						if (dy > 0)
-							flag += 2
-						this.u8 = (dxa-1) % 256 // write x coord data (1 byte)
-						this.u8 = (dya-1) % 256 // write y coord data (1 byte)
+							flag += 2;
+						this.u8 = (dxa-1) % 256; // write x coord data (1 byte)
+						this.u8 = (dya-1) % 256; // write y coord data (1 byte)
 					}
 					// buckets 120..123
 					else if (dxa < 4096 && dya < 4096) {
-						flag = 120
+						flag = 120;
 						if (dx > 0)
-							flag++
+							flag++;
 						if (dy > 0)
-							flag += 2
-						this.u16 = dxa << 4 | dya >> 8
-						this.u8 = dya % 256
+							flag += 2;
+						this.u16 = dxa << 4 | dya >> 8;
+						this.u8 = dya % 256;
 					}
 					// buckets 124..127
 					else {
-						flag = 124
+						flag = 124;
 						if (dx > 0)
-							flag++
+							flag++;
 						if (dy > 0)
-							flag += 2
-						this.u16 = dxa
-						this.u16 = dya
+							flag += 2;
+						this.u16 = dxa;
+						this.u16 = dya;
 					}
 	
 					// is the point off-curve? if so, set the flag’s most significant bit
 					if (point[2] == 0)
-						flag |= 0x80
+						flag |= 0x80;
 					
 					// write the flag into the flag array
-					fArray[pt] = flag
+					fArray[pt] = flag;
 	
 					// update prevPt
-					prevPt = point
+					prevPt = point;
 				}
 			}
 
 			else {
-
 				// options.compression != 2
-				let pt;
-
-				// new header with bbox
-				this.encode(FORMATS.GlyphHeader, glyph);
-		
-				// endpoints
-				glyph.endPts.forEach(endPt => {
-					this.u16 = endPt;
-				});
-		
-				// instructions (none for now)
-				this.u16 = instructionLength;
+				this.encode(FORMATS.GlyphHeader, glyph); // new header with bbox
+				this.u16_array = glyph.endPts; // write endpoints array
+				this.u16 = instructionLength; // instructions (none for now)
 				this.seekr(instructionLength);
 		
 				// write glyph points
 
 				// compression: none
-				if (options.compression == 0) {
+				if (options.compression === 0) {
 
 					// write uncompressed glyph points (faster in memory and for SSD disks)
 					let cx=0;
@@ -2305,18 +2458,18 @@ class SamsaBuffer extends DataView {
 						// Int16Array method
 						// - a bit faster, but does not work on LE platforms such as Mac M1
 						const fArray = new Uint8Array(this, this.p);
-						fArray[0] = points[0][2] & (options.overlapSimple ? 0x40 : 0x00); // first byte may have an overlap flag
-						for (pt=1; pt<numPoints; pt++) {
+						fArray[0] = points[0][2] | (options.overlapSimple ? 0x40 : 0x00); // set first flag byte (may also need the overlap bit)
+						for (let pt=1; pt<numPoints; pt++) {
 							fArray[pt] = points[pt][2];
 						}
 
 						const pArray = new Int16Array(this, this.p + numPoints); // dangerous, since Int16Array uses platform byte order (M1 Mac does)
-						for (pt=0; pt<numPoints; pt++) {
+						for (let pt=0; pt<numPoints; pt++) {
 							const x = points[pt][0];
 							pArray[pt] = x - cx;
 							cx = x;
 						}
-						for (pt=0; pt<numPoints; pt++) {	
+						for (let pt=0; pt<numPoints; pt++) {	
 							const y = points[pt][1];
 							pArray[numPoints+pt] = y - cy;
 							cy = y;
@@ -2325,34 +2478,33 @@ class SamsaBuffer extends DataView {
 					}
 					else {
 						// DataView method
-						this.u8 = points[0][2] & (options.overlapSimple ? 0x40 : 0x00); // first byte may have an overlap flag
-						for (pt=1; pt<numPoints; pt++) {
+						this.u8 = points[0][2] | (options.overlapSimple ? 0x40 : 0x00); // set first flag byte (may also need the overlap bit)
+						for (let pt=1; pt<numPoints; pt++) {
 							this.u8 = points[pt][2]; // write 1 byte for flag
 						}
 
-						for (pt=0; pt<numPoints; pt++) {
+						for (let pt=0; pt<numPoints; pt++) {
 							const x = points[pt][0]
 							this.i16 = x - cx; // write 2 bytes for dx
 							cx = x;
 						}
 
-						for (pt=0; pt<numPoints; pt++) {	
+						for (let pt=0; pt<numPoints; pt++) {	
 							const y = points[pt][1];
 							this.i16 = y - cy; // write 2 bytes for dy
 							cy = y;
 						}
 					}
-
 				}
 
 				// compression: standard TrueType compression
-				else if (options.compression == 1) {
+				else if (options.compression === 1) {
 
 					// write compressed glyph points (slower)
 					let cx=0, cy=0;
 					const dx=[], dy=[], flags=[];
 			
-					for (pt=0; pt<numPoints; pt++) {
+					for (let pt=0; pt<numPoints; pt++) {
 						const X = dx[pt] = Math.round(points[pt][0]) - cx;
 						const Y = dy[pt] = Math.round(points[pt][1]) - cy;
 						let f = points[pt][2] & 0xc1; // preserve bits 0 (on-curve), 6 (overlaps), 7 (reserved)
@@ -2377,7 +2529,7 @@ class SamsaBuffer extends DataView {
 		
 					// write flags with RLE
 					let rpt = 0;
-					for (pt=0; pt<numPoints; pt++) {
+					for (let pt=0; pt<numPoints; pt++) {
 						if (pt > 0 && rpt < 255 && flags[pt] == flags[pt-1]) {
 							rpt++;
 						}
@@ -2400,7 +2552,7 @@ class SamsaBuffer extends DataView {
 					}
 		
 					// write point coordinates
-					for (pt=0; pt<numPoints; pt++) {
+					for (let pt=0; pt<numPoints; pt++) {
 						if (dx[pt] == 0)
 							continue;
 						if (dx[pt] >= -255 && dx[pt] <= 255)
@@ -2408,7 +2560,7 @@ class SamsaBuffer extends DataView {
 						else
 							this.i16 = dx[pt];
 					}
-					for (pt=0; pt<numPoints; pt++) {
+					for (let pt=0; pt<numPoints; pt++) {
 						if (dy[pt] == 0)
 							continue;
 						if (dy[pt] >= -255 && dy[pt] <= 255)
@@ -2494,6 +2646,114 @@ class SamsaBuffer extends DataView {
 
 	}
 
+	// encodeInstance is how we export a static font!
+	// - TODO: instantiate MVAR, cvar, GSUB etc.
+	encodeInstance(instance, options={}) {
+		options.format ??= "truetype";
+		options.checkSums ??= true;
+		options.glyphCompression ??= true;
+
+		const font = instance.font;
+		const numGlyphs = font.maxp.numGlyphs;
+		const tableListFiltered = font.tableList.filter(table => !["fvar", "gvar", "avar", "cvar", "HVAR", "VVAR", "MVAR", "STAT"].includes(table.tag)); // remove variable-specific tables
+		const tableListNew = [];
+		const tableDirectory = {}; // the new table directory
+		const locas = [0]; // TODO: use a Uint32Array and bit-shift to divide by 2 for max performance
+		const hMetrics = [];
+		const outputBufU8 = new Uint8Array(this.buffer, this.byteOffset); // we can use outputBufU8[outputBuf.p] to write bytes to the current buffer position
+		let indexToLocFormat;
+		let checkSumTotal = 0;
+
+		// skip the header, then write each table
+		// - "glyf" must be written first, as it creates arrays used by "loca" and "hmtx"
+		// - fortunately this happens naturally due to ordering by table tag
+		// - this table ordering is contrary to some optimizers, such as the old CACHETT.EXE
+		this.seek(12 + tableListFiltered.length * 16);
+		tableListFiltered.forEach(table => {
+
+			const tableNew = { tag: table.tag, checkSum: 0, length: 0, offset: this.tell() };
+			switch (table.tag) {
+				case "glyf": {
+					for (let g = 0; g < numGlyphs; g++) {
+						const glyph = font.glyphs[g] ?? font.loadGlyphById(g);
+						const iglyph = glyph.instantiate(instance); // load & instantiate glyph, no decomposition
+						this.encodeGlyph(iglyph, { bbox: true, compression: +options.glyphCompression }); // "+" converts false -> 0, true -> 1"
+						hMetrics.push([Math.round(iglyph.points[iglyph.numPoints+1][0]), iglyph.xMin]); // advanceWidth, leftSideBearing
+						this.padToModulo(2);
+						locas.push(this.tell() - tableNew.offset); // since locas is initialized as [0], locas.length ends up as numGlyphs+1
+					}
+					break;
+				}
+
+				case "loca": {
+					indexToLocFormat = locas[numGlyphs] >= 0x20000 ? 1 : 0;
+					for (const loca of locas) if (indexToLocFormat) {this.u32 = loca;} else {this.u16 = loca/2;}
+					break;
+				}
+
+				case "hmtx": {
+					for (const [advanceWidth, lsb] of hMetrics) {
+						this.u16 = Math.max(0, advanceWidth); // negative values are not allowed
+						this.i16 = lsb; // TODO: exploit advanceWidth compression where hhea.numberOfHMetrics < numGlyphs
+					}
+					break;
+				}
+		
+				default: {
+					const tableBufferU8 = new Uint8Array(table.buffer.buffer, table.buffer.byteOffset, table.length);
+					outputBufU8.set(tableBufferU8, this.tell()); // copy the table buffer to outputBuf
+					this.seekr(table.length);
+					break;
+				}
+			}
+
+			// table.length = this.tell() - table.offset;
+			tableNew.length = this.tell() - tableNew.offset;
+			tableListNew.push(tableNew);
+			tableDirectory[table.tag] = tableNew;
+			this.padToModulo(4);
+		});
+
+		// store the total length... now we will fix the header and table directory
+		const finalLength = this.tell();
+
+		// fixups
+		// - these write to the new font data just written to memory, and do not affect the original loaded font data
+		this.seek(tableDirectory.head.offset + 50); // fix head.indexToLocFormat to the value actually used, rather the one read from the input
+		this.u16 = indexToLocFormat; // either 0 or 1	
+		this.seek(tableDirectory.head.offset + 8); // fix head.checkSumAdjustment to zero so we can correclty checksum
+		this.u32 = 0;	
+		this.seek(tableDirectory.hhea.offset + 34); // fix hhea.numberOfHMetrics
+		this.u16 = hMetrics.length;
+
+		// table checkSums
+		if (options.checkSums) {
+			for (const table of tableListNew) {
+				checkSumTotal += table.checkSum = this.checkSum(table.offset, table.length);
+				checkSumTotal &= 0xffffffff;
+			}
+		}
+
+		// write final header and table directory
+		this.seek(0);
+		this.u32 = font.header.sfntVersion;
+		this.u16 = tableListNew.length;
+		this.u16_array = font.binarySearchParams(tableListNew.length); // write 3 U16s for the binary search params
+		tableListNew
+			.sort((a,b) => compareString(a.tag, b.tag)) // sort by tag
+			.forEach(table => this.u32_array = this.tableDirectoryEntry(table)); // write 4 U32s for each table directory entry
+
+		// final fixups
+		if (options.checkSums) {
+			checkSumTotal += this.checkSum(0, 12 + 16 * tableListNew.length); // add header checkSum
+			checkSumTotal &= 0xffffffff;
+			this.seek(tableDirectory.head.offset + 8); // write the final value into head.checkSumAdjustment
+			this.u32 = ((0xB1B0AFBA - checkSumTotal) + 0x100000000) % 0xffffffff;
+		}
+		this.seek(finalLength);
+		return finalLength; // now the buffer "this" contains the binary font, we return the length to the client (finalLength <= this.byteLength)
+	}
+
 	decodeItemVariationStore() {
 		const ivsStart = this.tell();
 		const ivs = this.decode(FORMATS.ItemVariationStoreHeader);
@@ -2513,10 +2773,10 @@ class SamsaBuffer extends DataView {
 
 		// decode the ItemVariationDatas
 		ivs.ivds = [];
-		for (let d=0; d<ivs.itemVariationDataCount; d++) { // ivs.itemVariationDataCount may be 0
+		for (let d=0; d<ivs.itemVariationDataCount; d++) {
 			this.seek(ivsStart + ivs.itemVariationDataOffsets[d]);
 			const ivd = {
-				itemCount: this.u16, // the number of items in each deltaSet, may be 0
+				itemCount: this.u16, // the number of items in each deltaSet
 				regionIds: [],
 				deltaSets: [],
 			};
@@ -2524,7 +2784,10 @@ class SamsaBuffer extends DataView {
 			const regionCount = this.u16;
 			const longWords = wordDeltaCount & 0x8000;
 			wordDeltaCount &= 0x7fff; // fix the value for use
-			if (wordDeltaCount <= regionCount) {
+			console.assert(ivd.itemCount >0, "ivd.itemCount should be >0 but is 0");
+			console.assert(wordDeltaCount <= regionCount, "wordDeltaCount should be <= regionCount");
+			console.assert(regionCount > 0, "regionCount should be >0 but is 0 (non fatal)", wordDeltaCount,  ivd);
+			if (ivd.itemCount > 0 && regionCount > 0 && wordDeltaCount <= regionCount) { // skip bad IVDs (some old font builds have regionCount==0, but they seem harmless if skipped)
 	
 				// populate regionIndexes
 				for (let r=0; r<regionCount; r++) {
@@ -2546,9 +2809,6 @@ class SamsaBuffer extends DataView {
 					ivd.deltaSets.push(deltaSet);
 				}
 				ivs.ivds.push(ivd);
-			}
-			else {
-				// error, ignore it
 			}
 		}
 		return ivs;
@@ -2626,17 +2886,15 @@ class SamsaBuffer extends DataView {
 	// - used in gvar and cvar tables
 	// - https://learn.microsoft.com/en-us/typography/opentype/spec/otvarcommonformats#packed-point-numbers
 	decodePointIds() {
-		const POINTS_ARE_WORDS = 0x80;
-		const POINT_RUN_COUNT_MASK = 0x7f;
 		const pointIds = [];
 		const _count = this.u8;
-		const count = _count & POINTS_ARE_WORDS ? (_count & POINT_RUN_COUNT_MASK) * 0x0100 + this.u8 : _count;
+		const count = _count & GVAR_POINTS_ARE_WORDS ? (_count & GVAR_POINT_RUN_COUNT_MASK) * 0x0100 + this.u8 : _count;
 		let pointId = 0;
 		let c = 0;
 		while (c < count) {
 			const _runCount = this.u8;
-			const runCount = (_runCount & POINT_RUN_COUNT_MASK) + 1;
-			const getter = _runCount & POINTS_ARE_WORDS ? this.getters[U16] : this.getters[U8];
+			const runCount = (_runCount & GVAR_POINT_RUN_COUNT_MASK) + 1;
+			const getter = _runCount & GVAR_POINTS_ARE_WORDS ? this.getters[U16] : this.getters[U8];
 			for (let r=0; r < runCount; r++) {
 				pointId += getter(); // convert delta ids into absolute ids
 				pointIds.push(pointId);
@@ -2644,6 +2902,70 @@ class SamsaBuffer extends DataView {
 			c += runCount;
 		}
 		return pointIds;
+	}
+
+	encodePointIds(pointIds) {
+
+		// note that the implicit "all points" encoding is intentionally not handled here, being a matter for the caller, knowing when to process an empty pointIds array
+		const numPoints = pointIds.length;
+
+		// handle 0-length arrays immediately
+		if (numPoints === 0) {
+			this.u8 = 0;
+		}
+		else if (numPoints < 0x80 && pointIds[numPoints-1] < 0x100) {
+			// FAST PATH
+			// - this is the common fast case, that handles all glyphs with <128 points; there are more "fast" cases but it’s expensive to test for all of them
+			// - there is one run of u8s, of length numPoints
+			this.u8 = numPoints; // total number of points
+			this.u8 = numPoints-1; // number of points in the run (with -1 adjustment)
+			const u8Packed = new Uint8Array(this.buffer, this.byteOffset + this.tell()); // we write pointIds directly to this Uint8Array
+			let prevPointId = 0;
+			for (let pc=0; pc < numPoints; pc++) {
+				u8Packed[pc] = -prevPointId + (prevPointId = pointIds[pc]); // this order of operations allows the one-liner
+			}
+			this.seekr(numPoints); // make the SamsaBuffer account for the bytes we wrote
+		}
+		else {
+			// SLOW PATH
+			// - we may need u16s or multiple runs
+			// - we night speed this up a little by always writing to the u8Packed array, avoiding SamsaBuffer
+			if (numPoints < 0x80)
+				this.u8 = numPoints; // set length byte
+			else
+				this.u16 = numPoints | (GVAR_POINTS_ARE_WORDS << 8); // set length bit
+
+			// this method avoids the need to create arrays of runs
+			const u8PackedTell = this.byteOffset + this.tell();
+			const u8Packed = new Uint8Array(this.buffer, u8PackedTell); // this Uint8Array allows us to store and increment runSizes directly in memory
+			let prevRunType = 0; // this will be 1 or 2 (representing the byte length of the items in the previous run, but initial value of 0 causes the test "thisRunType === prevRunType" to always fail)
+			let runSizeTell = 0; // the write position of the runSize field of the current run
+			let prevPointId = 0;
+			for (let pc=0; pc < numPoints; pc++) {
+				const pointId = pointIds[pc];
+				const rPointId = pointId - prevPointId; // relative pointId
+				const thisRunType = (rPointId < 0x100) ? 1 : 2; // byte length of the items in the run
+
+				if (thisRunType === prevRunType && (u8Packed[runSizeTell] & GVAR_POINT_RUN_COUNT_MASK) < 0x7f) {
+					// we are already in a run
+					u8Packed[runSizeTell]++; // this is safe whether or not GVAR_POINTS_ARE_WORDS (bit 7) is set
+				}
+				else {
+					// we are starting a new run
+					runSizeTell = this.tell() - u8PackedTell;
+					this.u8 = (thisRunType === 1) ? 0 : GVAR_POINTS_ARE_WORDS; // this field stores count-1 in bits 0..6 (hence the < 0xff check above) and the runType in bit 7
+				}
+
+				switch (thisRunType) {
+					case 1: this.u8 = rPointId; break;
+					case 2: this.u16 = rPointId; break;
+				}				
+
+				// for the next iteration
+				prevRunType = thisRunType;
+				prevPointId = pointId;
+			}
+		}
 	}
 
 	// parse packed deltas
@@ -2654,13 +2976,13 @@ class SamsaBuffer extends DataView {
 		let d = 0;
 		while (d < count) {
 			const _runCount = this.u8;
-			const runCount = (_runCount & DELTA_RUN_COUNT_MASK) + 1;
-			if (_runCount & DELTAS_ARE_ZERO) {
+			const runCount = (_runCount & GVAR_DELTA_RUN_COUNT_MASK) + 1;
+			if (_runCount & GVAR_DELTAS_ARE_ZERO) {
 				for (let r=0; r < runCount; r++) {
 					deltas[d++] = 0;
 				}
 			} else {
-				const getter = _runCount & DELTAS_ARE_WORDS ? this.getters[I16] : this.getters[I8];
+				const getter = _runCount & GVAR_DELTAS_ARE_WORDS ? this.getters[I16] : this.getters[I8];
 				for (let r=0; r < runCount; r++) {
 					deltas[d++] = getter();
 				}
@@ -2670,7 +2992,7 @@ class SamsaBuffer extends DataView {
 	}
 
 	encodeDeltas(deltas) {
-		// deltas are encoded in groups of size [1,64] (0xff & DELTA_RUN_COUNT_MASK + 1 = 64)
+		// deltas are encoded in groups of size [1,64] (0xff & GVAR_DELTA_RUN_COUNT_MASK + 1 = 64)
 		// cost of switching to a new group and back is 2 bytes
 		// cost of not switching to zeroes is 2 bytes per delta if we’re in words, 1 byte per delta if we’re in bytes
 		// cost of not switching to bytes is 1 byte per delta
@@ -2700,7 +3022,7 @@ class SamsaBuffer extends DataView {
 		d=0;
 		runs.forEach(run => {
 			const [numBytes, runCount] = run;
-			const _runCount = runCount | (numBytes == 2 ? DELTAS_ARE_WORDS : 0) | (numBytes == 0 ? DELTAS_ARE_ZERO : 0);
+			const _runCount = runCount | (numBytes == 2 ? GVAR_DELTAS_ARE_WORDS : 0) | (numBytes == 0 ? GVAR_DELTAS_ARE_ZERO : 0);
 			this.u8(_runCount); // this incorporates runCount (bits 0-5 and the flag bits 6 and 7)
 			if (numBytes > 0) { // write nothing for zero deltas
 				for (let i=0; i<=runCount; i++) { // <= 0 means 1 item, 1 means 2 items, etc.
@@ -2728,7 +3050,7 @@ class SamsaBuffer extends DataView {
 
 		// do we have tvt data?
 		if (nextOffset - offset > 0) {
-	
+
 			// jump to the tvt data, record the offset
 			this.seek(gvar.glyphVariationDataArrayOffset + offset);
 			const tvtStart = this.tell();
@@ -2737,28 +3059,54 @@ class SamsaBuffer extends DataView {
 			const _tupleCount = this.u16;
 			const tupleCount = _tupleCount & 0x0FFF;
 			const offsetToSerializedData = this.u16;
+			const bufS = new SamsaBuffer(this.buffer, this.byteOffset + tvtStart + offsetToSerializedData); // set up the serialized data buffer
+			const sharedPointIds = _tupleCount & GVAR_SHARED_POINT_NUMBERS ? bufS.decodePointIds() : null; // get the shared pointIds
 
 			// create all the tuples
 			for (let t=0; t < tupleCount; t++) {
+				this.seekr(2); // serializedDataSize (we assume serializedData is packed, so we don’t use this)
+				const flags = this.u16; // tupleIndex in the spec
+				const tupleIndex = flags & 0x0FFF;
 				const tvt = {
-					serializedDataSize: this.u16,
-					flags: this.u16, // tupleIndex in the spec
 					numPoints: 0,
 					sharedTupleId: -1,
 					peak: [],
 					start: [],
 					end: [],
+					tents: [],
 				};
 
-				// move to a region representation, rather than peak, start, end arrays
-				// either 
-				// region = [[p0,p1,p2,p3],[s0,s1,s2,s3],[e0,e1,e2,e3]]; // fewer objects in general
+				// TODO: move to a "region of tents" all-integer representation, rather than peak, start, end arrays
+				// either (for a 4-axis font):
+				// region = [[p0,p1,p2,p3],[s0,s1,s2,s3],[e0,e1,e2,e3]]; // fewer objects in general and maybe quicker to read
 				// or
-				// region = [[p0,s0,e0],[p1,s1,e1],[p2,s2,e2],[p3,s3,e3]]; // more intuitive, and usually axisCount is max 3 or 4
+				// region = [[p0,s0,e0],[p1,s1,e1],[p2,s2,e2],[p3,s3,e3]]; // more intuitive, and usually axisCount is max 3 or 4... each subarray is a "tent"
 				// also consider a single Int16Array
+				// use a switch on (tvt.flags & GVAR_EMBEDDED_PEAK_TUPLE & GVAR_INTERMEDIATE_REGION)
 
-				const tupleIndex = tvt.flags & 0x0FFF;
-				if (tvt.flags & GVAR_EMBEDDED_PEAK_TUPLE) {
+				/*
+				const tell = this.tell();
+				for (let a=0; a<axisCount; a++) {
+					const peak = (flags & GVAR_EMBEDDED_PEAK_TUPLE) ? gvar.sharedTuples[tupleIndex][a] : this.f214;
+					tvt.tents.push(peak > 0 ? [peak, 0, 1] : [peak, -1, 0]);
+				}
+				if (flags & GVAR_INTERMEDIATE_REGION) {
+					for (let a=0; a<axisCount; a++) {
+						tvt.tents[a][1] = this.f214; // start
+					}
+					for (let a=0; a<axisCount; a++) {
+						tvt.tents[a][2] = this.f214; // end
+					}
+				}
+				for (const tent of tvt.tents) {
+					if (!isValidTent(tent))
+						tent[0] = tent[1] = tent[2] = 0;
+				}			
+				this.seek(tell);
+				console.log(tvt.tents);
+				*/
+				
+				if (flags & GVAR_EMBEDDED_PEAK_TUPLE) {
 					for (let a=0; a<axisCount; a++) {
 						tvt.peak[a] = this.f214;
 					}
@@ -2768,7 +3116,7 @@ class SamsaBuffer extends DataView {
 					tvt.peak = gvar.sharedTuples[tupleIndex]; // set the whole peak array at once, TODO: it would be better if we thought in terms of regions, and assigned complete shared regions
 				}
 
-				if (tvt.flags & GVAR_INTERMEDIATE_REGION) {
+				if (flags & GVAR_INTERMEDIATE_REGION) {
 					for (let a=0; a<axisCount; a++) {
 						tvt.start[a] = this.f214;
 					}
@@ -2798,40 +3146,34 @@ class SamsaBuffer extends DataView {
 							tvt.start[a] = tvt.end[a] = tvt.peak[a] = 0;
 					}
 				}
-				
-				tvts.push(tvt); // store the tvt
-			}
 
-			// is our position ok?
-			console.assert(this.tell() == tvtStart + offsetToSerializedData, "decodeTvts(): current offset is not ok (this.tell() != tvtStart + offsetToSerializedData)", this.tell(), tvtStart + offsetToSerializedData);
-
-			// get pointIds and deltas from the serialized data
-			this.seek(tvtStart + offsetToSerializedData); // jump to the serialized data explicitly		
-			const sharedPointIds = _tupleCount & GVAR_SHARED_POINT_NUMBERS ? this.decodePointIds() : undefined; // get the shared pointIds
-			for (let t=0; t < tupleCount; t++) { // go thru each tuple
-				const tvt = tvts[t];
-				const pointIds = tvt.flags & GVAR_PRIVATE_POINT_NUMBERS ? this.decodePointIds() : sharedPointIds; // use private point ids or use the shared point ids
-				tvt.allPoints = pointIds.length == 0; // flag special case if all points are used, this triggers IUP!
+				// get pointIds and deltas from the serialized data
+				const pointIds = flags & GVAR_PRIVATE_POINT_NUMBERS ? bufS.decodePointIds() : sharedPointIds; // use private point ids or use the shared point ids
+				tvt.allPoints = pointIds.length === 0; // flag special case if all points are used (when unset this triggers IUP!)
 				const tupleNumPoints = tvt.allPoints ? glyph.points.length : pointIds.length; // how many deltas do we need?
-				const xDeltas = this.decodeDeltas(tupleNumPoints);
-				const yDeltas = this.decodeDeltas(tupleNumPoints);
-				tvt.deltas = [];
+				const deltas = bufS.decodeDeltas(tupleNumPoints*2); // xDeltas and yDeltas are concatenated so we read them in one go
+				tvt.deltas = []; // TODO: try preserving pointIds in the tvt, so we can use decoded deltas here without rewriting
 				if (tvt.allPoints) {
 					for (let pt=0; pt < glyph.points.length; pt++) {
-						tvt.deltas[pt] = [xDeltas[pt], yDeltas[pt]];
+						tvt.deltas[pt] = [deltas[pt], deltas[pt+tupleNumPoints]]; // xDelta, yDelta
 					}
 				}
 				else {
 					for (let pt=0, pc=0; pt < glyph.points.length; pt++) {
+						// these points will be moved by IUP
 						if (pt < pointIds[pc] || pc >= tupleNumPoints) {
-							tvt.deltas[pt] = null; // these points will be moved by IUP
+							tvt.deltas[pt] = null;
 						}
+						// these points will be moved explicitly
 						else {
-							tvt.deltas[pt] = [xDeltas[pc], yDeltas[pc]]; // these points will be moved explicitly
+							tvt.deltas[pt] = [deltas[pc], deltas[pc+tupleNumPoints]]; // xDelta, yDelta
 							pc++;
 						}
 					}
+					// after this, we no longer need pointIds
 				}
+
+				tvts.push(tvt); // store the tvt
 			}
 		}
 		return tvts;
@@ -2840,8 +3182,9 @@ class SamsaBuffer extends DataView {
 	decodePaint(context = {}) {
 
 		// readOperands()
-		// - this reads all the variable operands for a paint (we also use this for non-variable versions of the same paint)
+		// - this reads all the operands for a paint
 		// - we look up the number of operands needed in PAINT_VAR_OPERANDS, so we can use the same function for all paint formats
+		// - the arrow function keeps "this" (the buffer) in scope
 		const readOperands = (type) => {
 			const count = PAINT_VAR_OPERANDS[paint.format];
 			for (let i=0; i<count; i++)
@@ -2849,14 +3192,13 @@ class SamsaBuffer extends DataView {
 		};
 		
 		// addVariations()
-		// - adds the variation deltas to the operands
+		// - adds the scaled variation deltas to the operands
 		// - the arrow function keeps "this" (the buffer) in scope
 		const addVariations = (operands) => {
-			const variationsEnabled = true;
-			if (!variationsEnabled || paint.format % 2 == 0 || operands.length == 0) // variations enabled; only odd-numbered paint formats have variations; we need operands
+			if (paint.format % 2 === 0) // only odd-numbered paint formats have variations; we need operands
 				return;
 			const varIndexBase = this.u32; // we must read this even if we don’t have an instance, otherwise reading gets out of sync
-			if (varIndexBase == 0xffffffff || !context.instance) // no variations for this paint; we need an instance
+			if (operands.length === 0 || varIndexBase === 0xffffffff || !context.instance) // we need operands; no variations for this paint; we need an instance
 				return;
 			const deltas = context.instance.deltaSets["COLR"];
 			for (let i=0; i<operands.length; i++) {
@@ -2869,17 +3211,15 @@ class SamsaBuffer extends DataView {
 		};
 
 		// we decode colorLine here, rather than as a method of SamsaBuffer, in order to keep paint in scope and to be able to use addVariations()
-		// - unlike other decodeX methods, it sets the data pointer according to the supplied argument, then restores it
-		const decodeColorLine = (colorLineOffset) => {
-			const tell = this.tell();
-			this.seek(paint.offset + colorLineOffset);
+		// - the arrow function keeps "this" (the buffer) in scope
+		const decodeColorLine = () => {
 			const colorLine = {
 				extend: this.u8, // one of EXTEND_PAD (0), EXTEND_REPEAT (1), EXTEND_REFLECT (2)
-				numStops: this.u16,
 				colorStops: [],
 			};
+			const numStops = this.u16;
 			const operands = [];
-			for (let cst=0; cst<colorLine.numStops; cst++) {
+			for (let cst=0; cst<numStops; cst++) {
 				const colorStop = {};
 				operands[0] = this.i16; // stopOffset
 				colorStop.paletteIndex = this.u16;
@@ -2889,7 +3229,6 @@ class SamsaBuffer extends DataView {
 				colorStop.alpha = operands[1] / 16384;
 				colorLine.colorStops.push(colorStop);
 			}
-			this.seek(tell); // restore the data pointer
 			return colorLine;
 		};
 
@@ -2900,7 +3239,6 @@ class SamsaBuffer extends DataView {
 			children: [],
 		};
 		const operands = [];
-		let tell;
 
 		// keep track of paintIds we have used, to avoid infinite recursion
 		// - we use an Array (not a Set or anything non-LIFO), since we need to push and pop at the beginning of each decodePaint()
@@ -2936,7 +3274,10 @@ class SamsaBuffer extends DataView {
 
 			case 4: case 5: case 6: case 7: case 8: case 9: { // all gradient paints
 				const colorLineOffset = this.u24;
-				paint.colorLine = decodeColorLine(colorLineOffset);
+				const tell = this.tell();
+				this.seek(paint.offset + colorLineOffset);
+				paint.colorLine = decodeColorLine();
+				this.seek(tell); // restore the data pointer
 				readOperands(I16);
 				addVariations(operands);
 				if (paint.format < 6) { // PaintLinearGradient, PaintVarLinearGradient
@@ -2956,15 +3297,15 @@ class SamsaBuffer extends DataView {
 
 			case 10: { // PaintGlyph
 				const nextOffset = this.u24;
-				paint.glyphID = this.u16; // by assigning glyphid we get an actual shape to use
+				paint.glyphId = this.u16; // by assigning glyphid we get an actual shape to use
 				this.seek(paint.offset + nextOffset);
 				paint.children.push(this.decodePaint(context)); // recursive (but we should only get transforms, more Format 10 tables, and a fill from now on)
 				break;
 			}
 
 			case 11: { // PaintColrGlyph
-				const glyphID = this.u16;
-				this.seek(colr.baseGlyphPaintRecords[glyphID]);
+				const glyphId = this.u16;
+				this.seek(colr.baseGlyphPaintRecords[glyphId]);
 				paint.children.push(this.decodePaint(context)); // recursive
 				break;
 			}
@@ -2972,9 +3313,11 @@ class SamsaBuffer extends DataView {
 			case 12: case 13: { // PaintTransform, PaintVarTransform
 				const nextOffset = this.u24;
 				const transformOffset = this.u24;
+				const tell = this.tell();
 				this.seek(paint.offset + transformOffset);
 				readOperands(I32);
 				addVariations(operands);
+				this.seek(tell);
 				paint.matrix = [ operands[0]/0x10000, operands[1]/0x10000, operands[2]/0x10000, operands[3]/0x10000, operands[4]/0x10000, operands[5]/0x10000 ];
 				this.seek(paint.offset + nextOffset);
 				paint.children.push(this.decodePaint(context)); // recursive
@@ -3145,7 +3488,7 @@ class SamsaBuffer extends DataView {
 		});
 
 		// create SamsaBuffer for output font and a Uint8Array view on it
-		const outputBuf = new SamsaBuffer(new ArrayBuffer(25000000)); // hmm, we should allocate more intelligently
+		const outputBuf = new SamsaBuffer(new ArrayBuffer(5000000)); // hmm, we should allocate more intelligently
 		const outputBufU8 = new Uint8Array(outputBuf.buffer); // we can use outputBufU8[outputBuf.p] to write bytes to the current buffer position
 		
 		// skip header for now, we’ll write it later
@@ -3214,10 +3557,7 @@ class SamsaBuffer extends DataView {
 							bboxByte = bufs.bbox.u8; // only read a byte full of bits if we are at the start of that byte
 						const bboxIsEmbedded = bboxByte & bit;
 						if (bboxIsEmbedded) {
-							xMin = bufs.bboxValues.i16;
-							yMin = bufs.bboxValues.i16;
-							xMax = bufs.bboxValues.i16;
-							yMax = bufs.bboxValues.i16;
+							[xMin, yMin, xMax, yMax] = bufs.bboxValues.i16_arrayOfLength(4);
 						}
 		
 						// skip empty glyphs
@@ -3403,15 +3743,15 @@ class SamsaBuffer extends DataView {
 									}
 		
 									// 2. write x or y coordinates (dxArray and dyArray only contain non-zero values, so we avoid a check here!)
-									const writePoints = v => {
+									const writePoint = v => {
 										const va = Math.abs(v);
 										if (va < 256)
 											outputBuf.u8 = va;
 										else
 											outputBuf.i16 = v;
 									};
-									dxArray.forEach(writePoints);
-									dyArray.forEach(writePoints);
+									dxArray.forEach(writePoint);
+									dyArray.forEach(writePoint);
 								}
 								else {
 									outputBufU8.set(unpackedU8, outputBuf.tell());
@@ -3474,10 +3814,7 @@ class SamsaBuffer extends DataView {
 							// write bbox for simple and composite glyphs (works for embedded or calculated bbox)
 							const glyphEnd = outputBuf.tell();
 							outputBuf.seek(glyphStart+2);
-							outputBuf.i16 = xMin;
-							outputBuf.i16 = yMin;
-							outputBuf.i16 = xMax;
-							outputBuf.i16 = yMax;
+							outputBuf.i16_array = [xMin, yMin, xMax, yMax];
 							outputBuf.seek(glyphEnd);
 			
 							// pad glyph to 2 bytes (all glyphs need this)
@@ -3550,19 +3887,10 @@ class SamsaBuffer extends DataView {
 		outputBuf.seek(0);
 		outputBuf.u32 = header.flavor;
 		outputBuf.u16 = tables.length;
-		outputBuf.seek(12); // skip binary search params
+		outputBuf.u16_array = SamsaFont.prototype.binarySearchParams(tables.length); // write 3 U16s for the binary search params
 		tables
-			.sort((a,b) => { if (a.tag < b.tag) return -1; if (a.tag > b.tag) return 1; return 0; }) // sort by tag
-			.forEach(table => {
-				outputBuf.tag = table.tag;
-				outputBuf.u32 = table.checkSum; // not yet calculating checksum
-				outputBuf.u32 = table.offset;
-				outputBuf.u32 = table.length;
-			});
-
-		// write final file
-		const finalBufferU8 = new Uint8Array(outputBufU8.buffer, 0, finalLength);
-		const finalBuffer = new SamsaBuffer(outputBufU8.buffer, 0, finalLength);
+			.sort((a,b) => compareString(a.tag, b.tag)) // sort by tag
+			.forEach(table => outputBuf.u32_array = this.tableDirectoryEntry(table)); // write 4 U32s for the table directory entry
 
 		// return the tables, if requested
 		if (options.tables !== undefined)
@@ -3571,7 +3899,9 @@ class SamsaBuffer extends DataView {
 			options.tableDirectory = tableDirectory;
 
 		// return the SamsaBuffer as either a Uint8Array or a SamsaBuffer, depending on options
-		return options.Uint8Array ? finalBufferU8 : finalBuffer;
+		// TODO: truly release the unused memory, using TypedArray.set() to copy the required part to a new buffer (perhaps make it an option, so the caller can prioritize either speed or memory)
+		return options.Uint8Array ? new Uint8Array(outputBufU8.buffer, 0, finalLength)
+								  : new SamsaBuffer(outputBufU8.buffer, 0, finalLength);
 	}
 
 	// decode header of GSUB and GPOS table
@@ -3653,7 +3983,7 @@ class SamsaBuffer extends DataView {
 			const tell = this.tell();
 			this.seek(featureListOffset + offset);
 			this.seekr(2); // ignore featureParamsOffset
-			feature.lookupIndices = this.u16pascalArray();
+			feature.lookupIndices = this.u16_pascalArray;
 			features.push(feature);
 			this.seek(tell);
 		}
@@ -3665,7 +3995,7 @@ class SamsaBuffer extends DataView {
 		const coverage = { format: this.u16 };
 		switch (coverage.format) {
 			case 1: {
-				coverage.glyphArray = this.u16pascalArray();
+				coverage.glyphArray = this.u16_pascalArray;
 				break;
 			}
 			case 2: {
@@ -3692,19 +4022,24 @@ class SamsaBuffer extends DataView {
 function SamsaFont(buf, options = {}) {
 
 	let valid = true;
+
+	buf.seek(0);
 	this.buf = buf; // SamsaBuffer
 	this.tables = {};
 	this.tableList = [];
 	this.glyphs = [];
 	this.ItemVariationStores = {}; // keys will be "avar", "MVAR", "COLR", "CFF2", "HVAR", "VVAR"... they all get recalculated when a new instance is requested
-	this.tableDecoders = TABLE_DECODERS; // we assign it here so we have access to it in code that imports the library
-	this.tableEncoders = TABLE_ENCODERS; // we assign it here so we have access to it in code that imports the library
+	this.metadata = options.metadata || {};
 
 	// font header
 	this.header = buf.decode(FORMATS.TableDirectory);
 
 	// validate the table header
-	if (12 + this.header.numTables * 16 > buf.length) {
+	if (this.header.numTables > 100) {
+		valid = false;
+		console.error("ERROR: Too many tables:", this.header.numTables);
+	}
+	else if (12 + this.header.numTables * 16 > buf.length) {
 		valid = false;
 		console.error(`ERROR: Buffer too small to hold table directory of ${this.header.numTables} tables.`);
 	}
@@ -3729,9 +4064,18 @@ function SamsaFont(buf, options = {}) {
 	}
 
 	// assign the buffer attribute to each table
-	this.tableList.forEach(table => {
-		table.buffer = this.bufferFromTable(table.tag);
-	});
+	if (options.tableBuffers) {
+		// the caller is supplying the buffers for the tables (unusual)
+		this.tableList.forEach(table => {
+			table.buffer = options.tableBuffers[table.tag]; // fine to assign the others as undefined
+		});
+	}
+	else {
+		// the tables are to be found in the supplied buffer in the normal way
+		this.tableList.forEach(table => {
+			table.buffer = this.bufferFromTable(table.tag);
+		});	
+	}
 
 	if (!valid) {
 		return null;
@@ -3747,16 +4091,18 @@ function SamsaFont(buf, options = {}) {
 		}
 
 		if (this.tables[tag]) {
-
+			//console.log(tag)
 			// decode first part of table (or create an empty object)
-			const tbuf = this.tables[tag].buffer;
-			this[tag] = FORMATS[tag] ? tbuf.decode(FORMATS[tag]) : {};
-			this[tag].buffer = tbuf;
+			const tbuf = this.tables[tag]?.buffer;
+			if (tbuf) {
+				this[tag] = FORMATS[tag] ? tbuf.decode(FORMATS[tag]) : {};
+				this[tag].buffer = tbuf;
 
-			// decode more of the table
-			if (this.tableDecoders[tag]) {
-				this.tableDecoders[tag](this, tbuf);
-			}
+				// decode more of the table
+				if (SAMSAGLOBAL.TABLE_DECODERS[tag]) {
+					SAMSAGLOBAL.TABLE_DECODERS[tag](this, tbuf);
+				}
+			}	
 		}
 	});
 
@@ -3770,7 +4116,7 @@ function SamsaFont(buf, options = {}) {
 		}
 	});
 
-	// options.allGlyphs: load all glyphs?
+	// options.allGlyphs: load all glyphs
 	if (options.allGlyphs) {
 		let offset = 0;
 		// we should do this differently if the font is only lightly loaded, e.g. from a big file that we don’t want to load in full
@@ -3797,6 +4143,7 @@ function SamsaFont(buf, options = {}) {
 }
 
 SamsaFont.prototype.validateChecksums = function () {
+	// TODO: make this work with the head table, with the purer version of the the checkSum function, perhaps using an array of the offsets of the U32s to ignore
 	const errors = [];
 	font.tableList.forEach(table => {
 		let actualSum = font.buf.checkSum(table.offset, table.length, table.tag == "head");
@@ -3811,6 +4158,23 @@ SamsaFont.prototype.bufferFromTable = function (tag) {
 	return new SamsaBuffer(this.buf.buffer, this.tables[tag].offset, this.tables[tag].length);
 }
 
+SamsaFont.prototype.getGlyphName = function (glyphId) {
+	let name = null;
+	if (!this.post) {
+		return null;
+	}
+	if (this.post.version === 2.0) {
+		const index = this.post.glyphNameIndex[glyphId];
+		if (index < 258) {
+			name = SAMSAGLOBAL.stdGlyphNames[index];
+		}
+		else {
+			this.post.buffer.seek(this.post.pascalStringIndices[index - 258]);
+			name = this.post.buffer.decodePascalString();
+		}
+	}
+	return name;
+}
 
 // given an ivs and a tuple, returns a 2d array of values that need to be added to the items they apply to
 // - although delta values are always integers, interpolated deltas are in general floating point
@@ -3830,37 +4194,47 @@ SamsaFont.prototype.itemVariationStoreInstantiate = function (ivs, tuple) {
 
 // process ItemVariationStore to get scalars for an instance (including avar2)
 // - the returned scalars[n] array contains a scalar for each region (therefore regions.length == scalars.length)
-//SamsaFont.prototype.getVariationScalars = function (regions, tuple) {
 SamsaFont.prototype.getVariationScalars = function (ivs, tuple) {
 	const scalars = [];
-	const regions = ivs.regions;
-	regions.forEach(region => { // for each region...
-		// ... go thru each of the axisCount linearRegions in the region
-		let S = 1;
-		for (let a=0; a < ivs.axisCount; a++) {
-			const [start, peak, end] = region[a];
-			if (peak !== 0) { // does the linearRegion participate in the calculation?
-				const v = tuple[a]; // v is the a’th normalized axis value from the tuple
-				if (v == 0) {
-					S = 0;
-					break; // zero scalar, which makes S=0, so quit loop (maybe this is more common than the v==peak case, so should be tested first)
-				}
-				else if (v !== peak) { // we could let the v==peak case fall through, but it’s common so worth testing first
-					const vMstart = v - start, vMend = v - end; // precalculating these speeds things up a bit
-					if (vMstart < 0 || vMend > 0) {
+
+	// ensure ivs.regions is an array... return with error otherwise
+	if (!ivs.regions || !Array.isArray(ivs.regions)) {
+		console.error("ERROR: ivs.regions is not an array.");
+		return null;
+	}
+	else if (tuple.length !== ivs.axisCount) {
+		console.error("ERROR: tuple length does not match ivs.axisCount.");
+		return null;
+	}
+	else {
+		ivs.regions.forEach(region => { // for each region...
+			// ... go thru each of the axisCount linearRegions in the region
+			let S = 1;
+			for (let a=0; a < ivs.axisCount; a++) {
+				const [start, peak, end] = region[a];
+				if (peak !== 0) { // does the linearRegion participate in the calculation?
+					const v = tuple[a]; // v is the a’th normalized axis value from the tuple
+					if (v === 0) {
 						S = 0;
 						break; // zero scalar, which makes S=0, so quit loop (maybe this is more common than the v==peak case, so should be tested first)
 					}
-					else if (v < peak)
-						S *= vMstart / (peak - start);
-					else if (v > peak) // because we already tested all other possibilities (including v==peak) we could remove this test and just have "else"
-						S *= vMend / (peak - end);
+					else if (v !== peak) { // we could let the v==peak case fall through, but it’s common so worth testing first
+						const vMstart = v - start, vMend = v - end; // precalculating these speeds things up a bit
+						if (vMstart < 0 || vMend > 0) {
+							S = 0;
+							break; // zero scalar, which makes S=0, so quit loop (maybe this is more common than the v==peak case, so should be tested first)
+						}
+						else if (v < peak)
+							S *= vMstart / (peak - start);
+						else // (v > peak) // we already tested all other possibilities so we don’t need a test here
+							S *= vMend / (peak - end);
+					}
 				}
 			}
-		}
-		scalars.push(S);
-	});
-	return scalars;
+			scalars.push(S);
+		});
+		return scalars;
+	}
 }
 
 SamsaFont.prototype.loadGlyphById = function (glyphId, cache = true) {
@@ -3868,7 +4242,7 @@ SamsaFont.prototype.loadGlyphById = function (glyphId, cache = true) {
 	buf.seek(this.tables.loca.offset + glyphId * (this.head.indexToLocFormat ? 4 : 2));
 	const offsets = this.head.indexToLocFormat ? [buf.u32, buf.u32] : [buf.u16 * 2, buf.u16 * 2];
 	buf.seek(this.tables.glyf.offset + offsets[0]);
-	const glyph = buf.decodeGlyph(offsets[1] - offsets[0], { id: glyphId, font: this });
+	const glyph = buf.decodeGlyph(offsets[1] - offsets[0], { id: glyphId, font: this }); // offsets[1] - offsets[0] is the byteLength of the glyph
 	if (cache) {
 		this.glyphs[glyphId] = glyph; // preserve in the glyphs array
 	}
@@ -3900,8 +4274,7 @@ SamsaFont.prototype.glyphIdFromUnicode = function (uni) {
 		switch (encoding.format) {
 
 			case 0: { // "Byte encoding table"
-				//g = encoding.mapping[uni] ?? 0;
-				g = encoding.mapping[uni] ? encoding.mapping[uni] : 0;
+				g = encoding.mapping[uni] ?? 0;
 				break;
 			}
 
@@ -4007,7 +4380,7 @@ SamsaFont.prototype.binarySearchParams = function (num) {
 //////////////////////////////////
 //  tupleFromFvs()
 // - fvs is an object where axis tags are keys and axis values are values
-// - returns: a tuple of length this.axisCount, with values normalized but *without* avar mapping; this tuple is suitable to supply new SamsaInstance()
+// - returns: a tuple of length this.axisCount, with values normalized but *without* avar mapping
 //////////////////////////////////
 SamsaFont.prototype.tupleFromFvs = function (fvs) {
 
@@ -4039,6 +4412,28 @@ SamsaFont.prototype.tupleFromFvs = function (fvs) {
 	return valid ? tuple : Array(this.fvar.axisCount).fill(0);
 }
 
+//////////////////////////////////
+//  fvsFromTuple()
+// - tuple is an array of axis values that have been transformed by avar1 mappings, but not avar2 mappings
+// - returns: an fvs-style object where axis tags are keys and axis values are values
+//////////////////////////////////
+SamsaFont.prototype.fvsFromTuple = function (tuple) {
+	let fvs = {};
+	if (!this.fvar)
+		return fvs;
+
+	this.fvar.axes.forEach((axis,a) => {
+		const n = tuple[a];
+		let val = axis.defaultValue;
+		if (n > 0)
+			val += n * (axis.maxValue - axis.defaultValue);
+		else if (n < 0)
+			val += n * (axis.minValue - axis.defaultValue);
+		fvs[axis.axisTag] = val;
+	});
+	return fvs;
+}
+
 
 //////////////////////////////////
 //  instance()
@@ -4046,6 +4441,38 @@ SamsaFont.prototype.tupleFromFvs = function (fvs) {
 //////////////////////////////////
 SamsaFont.prototype.instance = function (axisSettings={}) {
 	return new SamsaInstance(this, axisSettings);
+}
+
+// convenience functions
+SamsaFont.prototype.axes = function () {
+	return this.fvar ? this.fvar.axes : [];
+}
+
+SamsaFont.prototype.instances = function () {
+	return this.fvar ? this.fvar.instances : [];
+}
+
+SamsaFont.prototype.fvsFromCoordinates = function (coordinates) { // note that coordinates here are not normalized, so directly from the user or the fvar table
+	const fvs = {};
+	if (this.fvar) {
+		this.fvar.axes.forEach((axis,a) => {
+			if (coordinates === undefined)
+				fvs[axis.axisTag] = axis.defaultValue; // set coordinates == undefined to get a default fvs (of course you can use an empty object for this)
+			else
+				fvs[axis.axisTag] = coordinates[a];
+		});
+	}
+	return fvs;
+}
+
+SamsaFont.prototype.coordinatesFromFvs = function (axisSettings) {
+	const coordinates = [];
+	if (this.fvar) {
+		this.fvar.axes.forEach((axis,a) => {
+			coordinates[a] = axisSettings[axis.axisTag] ?? axis.defaultValue;
+		});
+	}
+	return coordinates;
 }
 
 
@@ -4056,7 +4483,13 @@ SamsaFont.prototype.instance = function (axisSettings={}) {
 function SamsaInstance(font, axisSettings={}, options={}) {
 
 	this.font = font;
+	if (options.name)
+		this.name = options.name;
+	if (options.ppem)
+		this.ppem = options.ppem;
 	const {avar, gvar} = font; // destructure table data objects
+	this.axisSettings = {...axisSettings};
+	this.coordinates = font.coordinatesFromFvs(axisSettings); // the coordinates of the instance in user space
 	this.userTuple = font.tupleFromFvs(axisSettings); // the original tuple untransformed by avar
 	this.tuple = [...this.userTuple]; // this tuple gets transformed by avar
 	const tuple = this.tuple;
@@ -4075,6 +4508,15 @@ function SamsaInstance(font, axisSettings={}, options={}) {
 	for (let a=0; a<axisCount; a++) {
 		tuple[a] = Math.round(tuple[a] * 16384) / 16384;
 	}
+
+	// set isDefault
+	this.isDefault = true;
+	for (let v of tuple) {
+		if (v) {
+			this.isDefault = false;
+			break;
+		}
+	}		
 
 	// avar mappings must come first! since all subsequent variation operation use the tuple remapped by avar
 	// - the tuple supplied to the SamsaInstance() constructor is modified here (maybe it should be a copy)
@@ -4096,6 +4538,7 @@ function SamsaInstance(font, axisSettings={}, options={}) {
 			}
 			tuple[a] = n;
 		});
+		this.avar1Tuple = [...tuple]; // save the avar1-transformed tuple
 
 		// avar2
 		// - instantiate the avar2 ItemVariationStore
@@ -4118,7 +4561,7 @@ function SamsaInstance(font, axisSettings={}, options={}) {
 					outer = a >> 16; // yes, I know this will always be 0
 					inner = a & 0xffff; // yes, I know this will always be a
 				}
-				if (outer != 0xffff && inner != 0xffff) { // if this entry is non-null... (hmm, might be nicer to have created a sparse array in the first place, skipping nulls and thus avoiding this check)
+				if (outer !== 0xffff && inner !== 0xffff) { // if this entry is non-null... (hmm, might be nicer to have created a sparse array in the first place, skipping nulls and thus avoiding this check)
 					tuple[a] += Math.round(deltas[outer][inner]) / 0x4000; // add the interpolated delta to tuple[a]; note that the spec provides an integer method for rounding
 					tuple[a] = clamp(tuple[a], -1, 1); // clamp the result to [-1,1]
 				}
@@ -4147,7 +4590,7 @@ function SamsaInstance(font, axisSettings={}, options={}) {
 				}
 
 				default: {
-					this.deltaSets[key] = deltaSets;
+					this.deltaSets[key] = deltaSets; // TODO: shouldn’t this be deltas, not deltaSets?
 					break;
 				}
 			}
@@ -4191,17 +4634,6 @@ function SamsaInstance(font, axisSettings={}, options={}) {
 		});
 	}
 }
-
-
-// convenience functions
-SamsaFont.prototype.axes = function () {
-	return this.fvar ? this.fvar.axes : [];
-}
-
-SamsaFont.prototype.instances = function () {
-	return this.fvar ? this.fvar.instances : [];
-}
-
 
 // SamsaInstance.glyphAdvance() - return the advance of a glyph
 // - we need this method in SamsaInstance, not SamsaGlyph, because SamsaGlyph might not be loaded (and we don’t need to load it, because we have hmtx and HVAR)
@@ -4323,6 +4755,7 @@ SamsaInstance.prototype.glyphRunGSUB = function (inputRun, options={}) {
 
 	// which script and language are active?
 	const script = options.script && gsub.scripts[options.script] ? gsub.scripts[options.script] : gsub.scripts["DFLT"];
+	if (!script) return inputRun; // no script, no transformation, in case the requested script is not supported and there is no DFLT script
 	const langSys = options.language && script[options.language] ? script[options.language] : script["dflt"];
 	const requestedFeatures = options.userFeatures || {}; // object with keys as feature tags for keys, true/false for values
 	const lookupGroups = [[], [], []]; // we have initial group, normal group, and custom group
@@ -4381,7 +4814,7 @@ SamsaInstance.prototype.glyphRunGSUB = function (inputRun, options={}) {
 				// get conditions
 				if (conditionSetOffset) {
 					buf.seek(gsub.featureVariationsOffset + conditionSetOffset);
-					const conditionOffsets = buf.u32pascalArray();
+					const conditionOffsets = buf.u32_pascalArray;
 					conditionOffsets.forEach(offset => {
 						buf.seek(gsub.featureVariationsOffset + conditionSetOffset + offset);
 						const format = buf.u16;
@@ -4403,7 +4836,7 @@ SamsaInstance.prototype.glyphRunGSUB = function (inputRun, options={}) {
 							const tell2 = buf.tell(); // init tell2
 							buf.seek(gsub.featureVariationsOffset + featureTableSubstitutionOffset + alternateFeatureOffset);
 							buf.seekr(2); // featureParams, always 0
-							substitution.lookups = buf.u16pascalArray();
+							substitution.lookups = buf.u16_pascalArray;
 							featureVariation.substitutions.push(substitution);
 							buf.seek(tell2); // return to tell2
 						}
@@ -4419,6 +4852,8 @@ SamsaInstance.prototype.glyphRunGSUB = function (inputRun, options={}) {
 	// note that these lookups are specific to GSUB
 	function decodeLookup(lookupListIndex) {
 
+		// function getCoverageFrom
+
 		if (lookupListIndex >= gsub.lookupCount)
 			return false;
 
@@ -4426,35 +4861,36 @@ SamsaInstance.prototype.glyphRunGSUB = function (inputRun, options={}) {
 		const lookupOffset = buf.u16;
 		buf.seek(gsub.lookupListOffset + lookupOffset);
 		const lookup = { type: buf.u16, flag: buf.u16, subtables: [] };
-		const subtableOffsets = buf.u16pascalArray();
+		const subtableOffsets = buf.u16_pascalArray;
 		subtableOffsets.forEach(sto => {
 			const subtableOffset = gsub.lookupListOffset + lookupOffset + sto;
 			buf.seek(subtableOffset);
 			const subtable = { format: buf.u16 };
 			if (lookup.type <= 4) {
 
-				const coverageOffset = buf.u16;
 				switch (lookup.type) {
 
 					// LookupType 1: Single Substitution Subtable
 					case 1: {
-						if (subtable.format == 1) {
+						subtable.coverageOffset = buf.u16;
+						if (subtable.format === 1) {
 							subtable.deltaGlyphID = buf.i16; // note i16
 						}
 						else if (subtable.format == 2) {
-							subtable.substituteGlyphIDs = buf.u16pascalArray();
+							subtable.substituteGlyphIDs = buf.u16_pascalArray;
 						}
 						break;
 					}
 
 					// LookupType 2: Multiple Substitution Subtable
 					case 2: {
-						if (subtable.format == 1) {
+						subtable.coverageOffset = buf.u16;
+						if (subtable.format === 1) {
 							subtable.sequences = [];
-							const sequenceOffsets = buf.u16pascalArray();
+							const sequenceOffsets = buf.u16_pascalArray;
 							sequenceOffsets.forEach(offset => {
 								buf.seek(subtableOffset + offset);
-								subtable.sequences.push(buf.u16pascalArray());
+								subtable.sequences.push(buf.u16_pascalArray);
 							});
 							break;
 						}
@@ -4463,12 +4899,13 @@ SamsaInstance.prototype.glyphRunGSUB = function (inputRun, options={}) {
 
 					// LookupType 3: Alternate Substitution Subtable
 					case 3: {
-						if (subtable.format == 1) {
+						subtable.coverageOffset = buf.u16;
+						if (subtable.format === 1) {
 							subtable.alternateSets = [];
-							const alternateSetOffsets = buf.u16pascalArray();
+							const alternateSetOffsets = buf.u16_pascalArray;
 							alternateSetOffsets.forEach(offset => {
 								buf.seek(subtableOffset + offset);
-								subtable.alternateSets.push(buf.u16pascalArray());
+								subtable.alternateSets.push(buf.u16_pascalArray);
 							});
 						}
 						break;
@@ -4476,18 +4913,19 @@ SamsaInstance.prototype.glyphRunGSUB = function (inputRun, options={}) {
 
 					// LookupType 4: Ligature Substitution Subtable
 					case 4: {
-						if (subtable.format == 1) {
+						subtable.coverageOffset = buf.u16;
+						if (subtable.format === 1) {
 							subtable.ligatureSets = []; // a ligature set is a set of ligatures that share the same first glyph (e.g. ffl, ff, fi, fl)
-							const ligSetOffsets = buf.u16pascalArray();
+							const ligSetOffsets = buf.u16_pascalArray;
 							ligSetOffsets.forEach(offset => {
 								buf.seek(subtableOffset + offset);
 								const ligSet = [];
-								const ligOffsets = buf.u16pascalArray();
+								const ligOffsets = buf.u16_pascalArray;
 								ligOffsets.forEach(offset2 => {
 									buf.seek(subtableOffset + offset + offset2);
 									ligSet.push({
 										ligatureGlyph: buf.u16,
-										componentGlyphIDs: buf.u16array(buf.u16 - 1), // -1 because componentCount includes the initial glyph
+										componentGlyphIDs: buf.u16_arrayOfLength(buf.u16 - 1), // -1 because componentCount includes the initial glyph
 									 });
 								});
 								subtable.ligatureSets.push(ligSet);
@@ -4495,11 +4933,38 @@ SamsaInstance.prototype.glyphRunGSUB = function (inputRun, options={}) {
 						}
 						break;
 					}
+
+					// LookupType 5: Contextual Substitution
+					case 5: {
+						// TODO
+						break;
+					}
+
+					// LookupType 6: Chained Contexts Substitution
+					case 6: {
+						// TODO
+						/*
+						if (subtable.format == 1) {
+							subtable.coverage = buf.decodeCoverage();
+							subtable.classDef = buf.decodeClassDef();
+							subtable.classSet = [];
+							const classSetOffsets = buf.u16_pascalArray;
+							classSetOffsets.forEach(offset => {
+								buf.seek(subtableOffset + offset);
+								subtable.classSet.push(buf.u16_pascalArray);
+							});
+						}
+						*/
+						break;
+
+					}
 				}
 
 				// get coverage for this lookup
-				buf.seek(subtableOffset + coverageOffset);
-				subtable.coverage = buf.decodeCoverage();
+				if (subtable.coverageOffset) {
+					buf.seek(subtableOffset + subtable.coverageOffset);
+					subtable.coverage = buf.decodeCoverage();
+				}
 			}
 			lookup.subtables.push(subtable);
 		})
@@ -4530,8 +4995,8 @@ SamsaInstance.prototype.glyphRunGSUB = function (inputRun, options={}) {
 
 	// sort each lookup group: each lookupGroup becomes a sorted array of integers
 	lookupGroups.forEach(lookupGroup => lookupGroup.sort((a,b) => a-b));
-
 	
+
 	// https://learn.microsoft.com/en-us/typography/opentype/spec/chapter2
 	// During text processing, a client applies a feature to some sequence of glyphs for a string. It then processes 
 	// the lookups referenced by that feature in their lookup list order. For each lookup, the client processes that 
@@ -4607,7 +5072,7 @@ SamsaInstance.prototype.glyphRunGSUB = function (inputRun, options={}) {
 										}
 										if (d === seq.length) { // did we find a ligature?
 											// YES: mutate the run! Note that r does not need to be corrected: in "office", r=1 before the "ffi" ligature substitution, and r=1 (correctly) after the ligature substitution, so next glyph will be "c"
-											run.splice(r, seq.length+1, lig.ligatureGlyph); // splice the ligature glyphID into the array, replacing seq.length+1 items at position r (note that r is soon incremented by 1 as usual)
+											run.splice(r, seq.length+1, lig.ligatureGlyph); // splice the ligature glyphId into the array, replacing seq.length+1 items at position r (note that r is soon incremented by 1 as usual)
 											found = true;
 											break; // success: we can break out of the for loop // TODO: do we need to break out of the lookup subtables loop too?
 										}
@@ -4651,14 +5116,14 @@ SamsaInstance.prototype.glyphLayoutGPOS = function (inputLayout, options={}) {
 		switch (classDef.classFormat) {
 			case 1: {
 				classDef.startGlyphID = buf.u16;
-				classDef.classValueArray = buf.u16pascalArray();
+				classDef.classValueArray = buf.u16_pascalArray;
 				break;
 			}
 			case 2: {
 				classDef.classRanges = [];
 				const classRangeCount = buf.u16;
 				for (let i=0; i<classRangeCount; i++) {
-					classDef.classRanges.push(buf.u16array(3)); // startGlyphID, endGlyphID, class (faster than making an object)
+					classDef.classRanges.push(buf.u16_arrayOfLength(3)); // startGlyphID, endGlyphID, class (faster than making an object)
 				}
 				break;
 			}
@@ -4739,7 +5204,7 @@ SamsaInstance.prototype.glyphLayoutGPOS = function (inputLayout, options={}) {
 
 					// PairPosFormat1: Pair Adjustment Positioning Format 1: Adjustments for Glyph Pairs
 					case 1: {
-						const pairSetOffsets = buf.u16pascalArray();
+						const pairSetOffsets = buf.u16_pascalArray;
 						subtable.pairSets = [];
 						pairSetOffsets.forEach(offset => {
 							buf.seek(subtable.offset + offset);
@@ -4859,7 +5324,7 @@ SamsaInstance.prototype.glyphLayoutGPOS = function (inputLayout, options={}) {
 		const lookupOffset = buf.u16;
 		buf.seek(gpos.lookupListOffset + lookupOffset);
 		let lookup = { type: buf.u16, flag: buf.u16, subtables: [] };
-		const subtableOffsets = buf.u16pascalArray();
+		const subtableOffsets = buf.u16_pascalArray;
 		subtableOffsets.forEach(subtableOffset => {
 			buf.seek(gpos.lookupListOffset + lookupOffset + subtableOffset);
 			lookup.subtables.push(decodeSubtable(lookup.type));
@@ -5095,13 +5560,10 @@ SamsaInstance.prototype.renderText = function (options={}) {
 
 	// defaults
 	// - these would be nicer with the nullish operator ??= (but somewhere in the build procedure to Figma, mullish operators are not supported)
-	if (options.text === undefined) 
-		options.text = "hello, world!";
-	if (options.fontSize === undefined) 
-		options.fontSize = 12;
-	if (options.format === undefined) 
-		options.format = "svg";
-	
+	options.text     ??= "hello, world!";
+	options.fontSize ??= 12;
+	options.format   ??= "svg";
+
 	const font = this.font;
 	const upem = font.head.unitsPerEm;
 	const scale = options.fontSize/upem;
@@ -5154,9 +5616,13 @@ function SamsaGlyph (init={}) {
 	this.points = init.points || [];
 	this.components = init.components || [];
 	this.endPts = init.endPts || [];
-	this.tvts = init.tvts ? font.gvar.buffer.decodeTvts(this) : undefined; // init.tvts is boolean
-	this.curveOrder = 2; 
-	//this.curveOrder = init.curveOrder || (this.font ? this.font.curveOrder : undefined);
+	this.tvts = init.tvts ? font.gvar.buffer.decodeTvts(this) : undefined; // init.tvts is boolean // TODO: this doesn’t work, move it to an options parameter?
+	this.curveOrder = init.curveOrder || 2;
+
+	this.xMin = init.xMin || 0;
+	this.yMin = init.yMin || 0;
+	this.xMax = init.xMax || 0;
+	this.yMax = init.yMax || 0;
 }
 
 
@@ -5196,7 +5662,7 @@ SamsaGlyph.prototype.instantiate = function(arg, options={}) {
 	iglyph.tvts = this.tvts ? this.tvts : this.tvts = font.gvar ? font.gvar.buffer.decodeTvts(this) : []; // an empty array means we have found no TVTS; undefined means we have not yet looked
 	iglyph.curveOrder = this.curveOrder;
 	iglyph.touched = []; // helpful for visualising variations
-	iglyph.viz = {tvts: []}; // visualization data
+	iglyph.viz = []; // visualization data
 
 	// instantiate points: copy the points of glyph into iglyph
 	let p=this.points.length;
@@ -5332,7 +5798,7 @@ SamsaGlyph.prototype.instantiate = function(arg, options={}) {
 		// store S and scaledDeltas so we can use them in visualization
 		// - maybe we should recalculate multiple AS values and 1 S value in the GUI so we don’t add load to samsa-core
 		if (options.visualization) {
-			iglyph.viz.tvts.push({
+			iglyph.viz.push({
 				S: S,
 				scaledDeltas: scaledDeltas,
 			});
@@ -5618,7 +6084,6 @@ SamsaGlyph.prototype.exportPath = function (ctx) {
 
 			// LOOP 1: convert the glyph contours into an SVG-compatible contours array
 			startPt = 0;
-			//this.endPts.forEach(endPt => {
 			glyph.endPts.forEach(endPt => {
 				
 				contourLen = endPt-startPt+1; // number of points in this contour
@@ -5626,8 +6091,6 @@ SamsaGlyph.prototype.exportPath = function (ctx) {
 
 				// insert on-curve points between any two consecutive off-curve points
 				for (p=startPt; p<=endPt; p++) {
-					// pt = this.points[p];
-					// pt_ = this.points[(p-startPt+1)%contourLen+startPt];
 					pt = glyph.points[p];
 					pt_ = glyph.points[(p-startPt+1)%contourLen+startPt];
 					contour.push (pt);
@@ -5646,7 +6109,7 @@ SamsaGlyph.prototype.exportPath = function (ctx) {
 
 			// LOOP 2: convert contours array to an actual SVG path
 			// - we’ve already fixed things in loop 1 so there are never consecutive off-curve points
-			contours.forEach(contour => {
+			for (const contour of contours) {
 				for (p=0; p<contour.length; p++) {
 					pt = contour[p];
 					if (p==0) {
@@ -5663,7 +6126,7 @@ SamsaGlyph.prototype.exportPath = function (ctx) {
 					}
 				}
 				ctx.closepath();
-			});
+			}
 
 			break;
 
@@ -5770,8 +6233,10 @@ SamsaGlyph.prototype.paintSVG = function (paint, context) {
 	const palette = font.CPAL.palettes[context.paletteId || 0];
 	if (context.color === undefined)
 		context.color = 0x000000ff; // black
+	context.depth ??= 0;
+	context.depth ++;
 
-	let svg = `<g>`;
+	let svg = "+".repeat(context.depth) + `<g>`;
 
 	switch (PAINT_TYPES[paint.format]) {
 
@@ -5784,13 +6249,13 @@ SamsaGlyph.prototype.paintSVG = function (paint, context) {
 
 		case PAINT_SHAPE: {
 			// retrieve the glyph path definition if we don't already have it, and insert it into defs
-			if (!defs[`p${paint.glyphID}`]) {
-				const glyph = font.glyphs[paint.glyphID] || font.loadGlyphById(paint.glyphID);
+			if (!defs[`p${paint.glyphId}`]) {
+				const glyph = font.glyphs[paint.glyphId] || font.loadGlyphById(paint.glyphId);
 				const iglyph = glyph.instantiate(context.instance);
 				const path = iglyph.svgGlyphMonochrome(0);
-				defs[`p${paint.glyphID}`] = `<path id="p${paint.glyphID}" d="${path}"/>`;
+				defs[`p${paint.glyphId}`] = `<path id="p${paint.glyphId}" d="${path}"/>`;
 			}
-			context.lastGlyphId = paint.glyphID;
+			context.lastGlyphId = paint.glyphId;
 			svg += this.paintSVG(paint.children[0], context); // there’s only one child; this should be a fill or a gradient (or maybe another PAINT_SHAPE)
 			break;
 		}
@@ -5857,25 +6322,27 @@ SamsaGlyph.prototype.paintSVG = function (paint, context) {
 				// always push the 2 shapes as defs
 				// defs.push(`<rect id="${src}" x="0" y="0" width="100" height="100" fill="#0000ff80"/>`); // src
 				// defs.push(`<rect id="${dest}" x="50" y="50" width="100" height="100" fill="#ff0000"/>`); // dest
+
+				// https://codepen.io/lorp/pen/wvRMEeY
 				
 				switch (modeType) {
 					
 					// https://developer.mozilla.org/en-US/docs/Web/SVG/Element/feComposite
 					case "F": {
-						defs[`filter-${m}`] = `<filter id="filter-${m}">
-							<feImage href="#${dest}" x="0px" y="0px" width="300px" height="300px" filterUnits="userSpaceOnUse" primitiveUnits="userSpaceOnUse" />
-							<feComposite in="SourceGraphic" operator="${mode}" />
-							</filter>`;
-						svg += `<g><use href="#${src}" style="filter:url(#filter-${m})" /></g>`;      
+						defs[`filter-${m}`] = `<filter id="filter-${m}">` +
+							`<feImage href="#${dest}" x="0px" y="0px" width="300px" height="300px" filterUnits="userSpaceOnUse" primitiveUnits="userSpaceOnUse" />` +
+							`<feComposite in="SourceGraphic" operator="${mode}" />` +
+							`</filter>`;
+						svg += `<g><use href="#${src}" style="filter:url(#filter-${m})" /></g>`;
 						break;
 					}
 					
 					// https://developer.mozilla.org/en-US/docs/Web/CSS/mix-blend-mode
 					case "M": {
-						svg += `<g style="isolation: isolate;">
-									<use href="#src" style="mix-blend-mode: ${mode};" />
-									<use href="#dest" style="mix-blend-mode: ${mode};" />
-								</g>`;
+						svg += `<g style="isolation: isolate;">` +
+									`<use href="#src" style="mix-blend-mode: ${mode};" />` +
+									`<use href="#dest" style="mix-blend-mode: ${mode};" />` +
+								`</g>`;
 						break;
 					}
 					
@@ -5931,7 +6398,7 @@ SamsaGlyph.prototype.paintSVG = function (paint, context) {
 						// get the colorLine stops for all gradient types
 						let stops = "";
 						let gradientElement;
-						paint.colorLine.colorStops.forEach(colorStop => {
+						for (const colorStop of paint.colorLine.colorStops) {
 							const color = colorStop.paletteIndex == 0xffff ? context.color : palette.colors[colorStop.paletteIndex];
 							const attrs = {
 								offset: `${colorStop.stopOffset*100}%`,
@@ -5940,7 +6407,7 @@ SamsaGlyph.prototype.paintSVG = function (paint, context) {
 							if (colorStop.alpha != 1)
 								attrs["stop-opacity"] = colorStop.alpha;
 							stops += `<stop${expandAttrs(attrs)}/>`;
-						});
+						};
 
 						switch (paintFormatStatic) {
 
@@ -5998,6 +6465,8 @@ SamsaGlyph.prototype.paintSVG = function (paint, context) {
 	}
 	
 	svg += "</g>";
+	svg += "\n";
+	context.depth --;
 	return svg;
 }
 
@@ -6010,6 +6479,7 @@ SamsaGlyph.prototype.svgGlyphCOLRv1 = function (context={}) {
 		//console.log(paintDag);
 		if (paintDag) {
 			const svgResult = this.paintSVG(paintDag, context); // we could bring the paintSVG function inside here, but there seems little point
+			console.log(svgResult);
 			return svgResult; // this is a <g> element ready to be inserted into an <svg>, but we must also remember to add the defs (paths and gradients) from the context
 		}
 		else {
@@ -6026,8 +6496,7 @@ SamsaGlyph.prototype.svgGlyphCOLRv0 = function (context={}) { // we need to poss
 		const buf = font.bufferFromTable("COLR");
 		const colr = font.COLR;
 		const cpal = font.CPAL;
-		//const defaultColor = context.color ?? 0x000000ff; // default color // allows 0x000000000 (a valid transparent color)
-		const defaultColor = context.color === undefined ? 0x000000ff : context.color; // default color // allows 0x000000000 (a valid transparent color)
+		const defaultColor = context.color ?? 0x000000ff; // default color // allows 0x000000000 (a valid transparent color)
 		const palette = cpal.palettes[context.paletteId || 0];
 		let paths = "";
 		// TODO: store these paths in defs for efficient reuse

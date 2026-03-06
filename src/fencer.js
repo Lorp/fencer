@@ -1,13 +1,16 @@
 "use strict"
 
 import hbjs from "./harfbuzz/hbjs.js";
-import { SamsaFont, SamsaBuffer } from "./samsa-core/samsa-core.js"; // import samsa-core https://github.com/Lorp/samsa-core
+import { SamsaFont, SamsaBuffer, SAMSAGLOBAL } from "./samsa-core/samsa-core.js"; // import samsa-core https://github.com/Lorp/samsa-core
 import { VariationModel } from "./fontra-src-client-core/var-model.js"; // import Fontra var-model https://github.com/googlefonts/fontra
 
 const svgArrowHandleRadius = 12;
+const svgTargetHandleRadius = 6;
 const svgCurrentLocationRadius = 7;
-const svgArrowLineWidth = 2;
-const svgMappingHandle = `<circle cx="0" cy="0" r="${svgArrowHandleRadius}" fill="currentColor" stroke="none"/>`;
+const svgArrowLineWidth = 3;
+const svgMappingColor = "green";
+const svgMappingSourceHandle = `<circle cx="0" cy="0" r="${svgArrowHandleRadius}" fill="transparent" stroke="${svgMappingColor}" stroke-width="${svgArrowLineWidth}"/>`;
+const svgMappingTargetHandle = `<circle cx="0" cy="0" r="${svgTargetHandleRadius}" fill="${svgMappingColor}" stroke="none"/>`;
 const svgCurrentLocation = `<circle cx="0" cy="0" r="${svgCurrentLocationRadius+svgArrowLineWidth}" fill="white" stroke="none"/><circle cx="0" cy="0" r="${svgCurrentLocationRadius}" fill="currentColor" stroke="none"/>`;
 const instanceColor = "#f00";
 const ioStr = ["input","output"];
@@ -1144,9 +1147,9 @@ function drawView(viewEl) {
 		elInput.classList.add("input", "location", "mapping");
 		elOutput.classList.add("output", "location", "mapping");
 	
-		elInput.innerHTML = svgMappingHandle;
-		elOutput.innerHTML = svgMappingHandle;
-	
+		elInput.innerHTML = svgMappingSourceHandle;
+		elOutput.innerHTML = svgMappingTargetHandle;
+
 		elInput.onmousedown = mappingMouseDown;
 		elOutput.onmousedown = mappingMouseDown;
 
@@ -1157,16 +1160,34 @@ function drawView(viewEl) {
 		const svgCoordsTo = svgCoordsFromAxisCoords(viewEl, mapping[1]);
 
 		elInput.setPosition(svgCoordsFrom);
-		elInput.style.opacity = 0.8;
 		elOutput.setPosition(svgCoordsTo);
-		elOutput.style.opacity = 0.4;
 
-		// draw the arrow
-		const arrowSvg = svgArrow({index: m, x1: svgCoordsFrom[0], y1: svgCoordsFrom[1], x2: svgCoordsTo[0], y2: svgCoordsTo[1], tipLen: 11, tipWid: 11, strokeWidth: 2});
+		// draw the arrow from edge of source circle to center of target circle
+		let arrowX1 = svgCoordsFrom[0];
+		let arrowY1 = svgCoordsFrom[1];
+		const arrowX2 = svgCoordsTo[0];
+		const arrowY2 = svgCoordsTo[1];
+
+		// note, we are not drawing an actual arrow any more
+
+		// calculate arrow start position at the edge of the source circle
+		const dx = arrowX2 - svgCoordsFrom[0];
+		const dy = arrowY2 - svgCoordsFrom[1];
+		const distance = Math.sqrt(dx * dx + dy * dy);
+
+		if (distance > 0) {
+			// move start point to edge of source circle in direction of target
+			arrowX1 = svgCoordsFrom[0] + (dx / distance) * svgArrowHandleRadius;
+			arrowY1 = svgCoordsFrom[1] + (dy / distance) * svgArrowHandleRadius;
+		}
+
+		// draw line from source to target
+		const elConnect = SVG("line", {x1: arrowX1, y1: arrowY1, x2: arrowX2, y2: arrowY2, stroke: svgMappingColor, "stroke-width": svgArrowLineWidth});
+		const arrowSvg = svgArrow({index: m, x1: arrowX1, y1: arrowY1, x2: arrowX2, y2: arrowY2, tipLen: 11, tipWid: 11, strokeWidth: 2});
 		arrowSvg.classList.add("mapping");
 
 		// add them all to the SVG element		
-		g.append(arrowSvg, elOutput, elInput);
+		g.append(elOutput, elInput, elConnect);
 	});
 
 	// display the current location (untransformed #0 and transformed #1)
@@ -1383,7 +1404,7 @@ function mappingsChanged(mode) {
 		avar.ivsBuffer = new SamsaBuffer(ivsBufOversize.buffer, 0, ivsLength); // the ivsBuffer we use is a slice of ivsBufOversize
 
 		// write new avar table
-		avarBuf = GLOBAL.font.tableEncoders.avar(GLOBAL.font, avar);
+		avarBuf = SAMSAGLOBAL.TABLE_ENCODERS.avar(GLOBAL.font, avar);
 
 		GLOBAL.ivs = ivs;
 	
