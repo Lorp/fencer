@@ -1186,8 +1186,8 @@ function drawView(viewEl) {
 		const arrowSvg = svgArrow({index: m, x1: arrowX1, y1: arrowY1, x2: arrowX2, y2: arrowY2, tipLen: 11, tipWid: 11, strokeWidth: 2});
 		arrowSvg.classList.add("mapping");
 
-		// add them all to the SVG element		
-		g.append(elOutput, elInput, elConnect);
+		// add them all to the SVG element (order is important, since we want the smaller output circle to be selected first when they overlap)")
+		g.append(elConnect, elInput, elOutput);
 	});
 
 	// display the current location (untransformed #0 and transformed #1)
